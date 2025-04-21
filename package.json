@@ -1,6 +1,6 @@
 {
   "name": "@ekiden/ts-sdk",
-  "version": "1.16.5",
+  "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.сjs",
   "module": "./dist/index.js",
@@ -39,6 +39,9 @@
     "copy-dts": "copyfiles -u 1 \"src/**/*.d.ts\" dist"
   },
   "dependencies": {
+    "@aptos-labs/ts-sdk": "^1.38.0",
+    "@aptos-labs/wallet-adapter-core": "^5.4.0",
+    "aptos": "^1.21.0",
     "bignumber.js": "^9.1.2",
     "tsdef": "^0.0.14"
   },
