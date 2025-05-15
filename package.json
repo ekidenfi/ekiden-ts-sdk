@@ -38,13 +38,7 @@
     "prepare": "husky",
     "copy-dts": "copyfiles -u 1 \"src/**/*.d.ts\" dist"
   },
-  "dependencies": {
-    "@aptos-labs/ts-sdk": "^1.38.0",
-    "@aptos-labs/wallet-adapter-core": "^5.4.0",
-    "aptos": "^1.21.0",
-    "bignumber.js": "^9.1.2",
-    "tsdef": "^0.0.14"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
@@ -64,11 +58,8 @@
     "tsup": "^8.2.4",
     "typescript": "^5.6.2"
   },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.18.0"
-  },
   "engines": {
     "node": ">=22.14.0"
   },
-  "packageManager": "pnpm@10.7.1+sha512.2d92c86b7928dc8284f53494fb4201f983da65f0fb4f0d40baafa5cf628fa31dae3e5968f12466f17df7e97310e30f343a648baea1b9b350685dafafffdf5808"
+  "packageManager": "pnpm@10.11.0+sha512.6540583f41cc5f628eb3d9773ecee802f4f9ef9923cc45b69890fb47991d4b092964694ec3a4f738a420c918a333062c8b925d312f42e4f0c263eb603551f977"
 }

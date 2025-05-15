@@ -1,2 +1,3 @@
-import { EkidenPerpetual } from "./EkidenPerpetual";
-export default EkidenPerpetual;
+export * from "./client";
+export * from "./config";
+export * from "./types";
