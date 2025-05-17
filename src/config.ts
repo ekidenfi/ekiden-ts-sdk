@@ -1,13 +1,26 @@
-export type EkidenConfig = {
+import type { Aptos } from "@aptos-labs/ts-sdk";
+
+export type EkidenClientConfig = {
   baseURL: string;
-  wsURL?: string;
+  aptos?: Aptos;
+  aptosClient?: AptosClient;
+  wallet?: string;
 };
 
-export const MAINNET: EkidenConfig = {
+export const MAINNET: EkidenClientConfig = {
   baseURL: "https://api.ekiden.fi",
-  wsURL: "wss://api.ekiden.fi/v1",
-};
-export const TESTNET: EkidenConfig = {
-  baseURL: "https://api.testnet.ekiden.fi",
-  wsURL: "wss://api.testnet.ekiden.fi/v1",
+}
+
+export const TESTNET: EkidenClientConfig = {
+  baseURL: "https://api.ekiden.fi",
+}
+
+
+export interface VaultOptions {
+  wallet?: string;
+}
+
+export type VaultResource = {
+  type: string;
+  data: object;
 };

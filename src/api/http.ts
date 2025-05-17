@@ -1,5 +1,4 @@
-import { EkidenConfig } from "src/config";
-
+import { EkidenClientConfig } from "../config";
 import type {
   AuthorizeParams,
   AuthorizeResponse,
@@ -16,10 +15,10 @@ import type {
   VaultResponse,
 } from "../types";
 
-export class EkidenAPIClient {
+export class HttpClient {
   private token?: string;
 
-  constructor(readonly config: EkidenConfig) {}
+  constructor(readonly config: EkidenClientConfig) {}
 
   private get baseURL() {
     return this.config.baseURL;

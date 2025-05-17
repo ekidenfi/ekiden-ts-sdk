@@ -38,7 +38,9 @@
     "prepare": "husky",
     "copy-dts": "copyfiles -u 1 \"src/**/*.d.ts\" dist"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@aptos-labs/ts-sdk": "^2.0.0"
+  },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@typescript-eslint/eslint-plugin": "^6.19.1",
