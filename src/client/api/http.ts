@@ -1,5 +1,5 @@
-import { HttpClient } from "../../api/http";
-import type { EkidenClientConfig } from "../../config";
+import { HttpClient } from "@/api/http";
+import type { EkidenClientConfig } from "@/config";
 
 export class HttpAPIClient {
   api: HttpClient;

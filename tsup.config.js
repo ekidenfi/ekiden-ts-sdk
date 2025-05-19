@@ -1,9 +1,14 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig((options) => ({
-  platform: "neutral",
+export default defineConfig({
   entry: ["src/index.ts"],
-  // minify: true,
+  platform: "neutral",
   splitting: true,
+  clean: true,
+  dts: true,
+  format: ["esm", "cjs"],
+  target: "es2020",
+  sourcemap: true,
+  minify: true,
   metafile: false,
-}));
+});

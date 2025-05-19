@@ -1,4 +1,4 @@
-import { EkidenClientConfig } from "../config";
+import { EkidenClientConfig } from "@/config";
 import type {
   AuthorizeParams,
   AuthorizeResponse,
@@ -13,7 +13,7 @@ import type {
   OrderResponse,
   PositionResponse,
   VaultResponse,
-} from "../types";
+} from "@/types";
 
 export class HttpClient {
   private token?: string;

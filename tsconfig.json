@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "declaration": true,
     "paths": {
-      "src/*": ["./src/*"]
+      "@/*": ["./src/*"],
     },
     "ignoreDeprecations": "5.0",
     "allowSyntheticDefaultImports": true,

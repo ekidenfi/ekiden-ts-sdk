@@ -1,15 +1,14 @@
-import { EkidenClientConfig } from "../config";
-import { HttpAPIClient } from "./api/http";
-import { AptosVault } from "./aptos/vault";
+import { HttpAPIClient } from "./api";
+
+import { Vault } from "@/aptos";
+import { EkidenClientConfig } from "@/config";
 
 export class EkidenClient {
-  readonly config: EkidenClientConfig;
   readonly httpApi: HttpAPIClient;
-  readonly vault: AptosVault;
 
-  constructor(config: EkidenClientConfig) {
-    this.config = config;
+  readonly vault = Vault;
+
+  constructor(readonly config: EkidenClientConfig) {
     this.httpApi = new HttpAPIClient(config);
-    this.vault = new AptosVault(config);
   }
 }

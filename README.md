@@ -41,6 +41,12 @@ const markets = await ekiden.getMarkets();
 
 // Fetch user orders
 const orders = await ekiden.getUserOrders({ market_addr: "0x..." });
+
+// Fetch user vaults
+const vaults = await ekiden.getUserVaults();
+
+// Fetch user positions
+const positions = await ekiden.getUserPositions();
 ```
 
 ---
@@ -50,6 +56,7 @@ const orders = await ekiden.getUserOrders({ market_addr: "0x..." });
 - **EkidenClient** — main entry point, aggregates REST, payload utilities, and Aptos helpers.
 - **EkidenAPIClient** — low-level REST client with JWT support.
 - **Types** — all types are centralized in `src/types.ts`.
+- **Vault** — Aptos vault helpers (imported as `ekiden.vault`).
 
 ---
 
@@ -65,6 +72,7 @@ const orders = await ekiden.getUserOrders({ market_addr: "0x..." });
 - `getUserFills(params)` — fetch user fills (JWT)
 - `getUserVaults(params)` — fetch user vaults (JWT)
 - `getUserPositions(params)` — fetch user positions (JWT)
+- `vault.*` — Aptos vault utilities (see `src/aptos/vault.ts`)
 
 ---
 
@@ -79,6 +87,39 @@ const order = await ekiden.createOrder({
   type: "limit",
   nonce: 1,
   signature: "0x..."
+});
+```
+
+---
+
+## Example: Vault Usage
+
+```ts
+import { EkidenClient, TESTNET } from "@ekiden/ts-sdk";
+
+const ekiden = new EkidenClient(TESTNET);
+
+// Deposit to vault
+const depositPayload = ekiden.vault.deposit({
+  vaultAddress: "0x...",
+  userAddress: "0x...",
+  token: "0x...",
+  amount: 1000n,
+});
+
+// Withdraw from vault
+const withdrawPayload = ekiden.vault.withdraw({
+  vaultAddress: "0x...",
+  userAddress: "0x...",
+  token: "0x...",
+  amount: 500n,
+});
+
+// Get vault balance
+const balanceOfPayload = ekiden.vault.balanceOf({
+  vaultAddress: "0x...",
+  userAddress: "0x...",
+  token: "0x...",
 });
 ```
 
