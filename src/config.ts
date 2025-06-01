@@ -1,16 +1,16 @@
-import type { Aptos } from "@aptos-labs/ts-sdk";
-
 export type EkidenClientConfig = {
   baseURL: string;
-  aptos?: Aptos;
+  wsURL?: string; // Optional WebSocket endpoint
 };
 
 export const MAINNET: EkidenClientConfig = {
   baseURL: "https://api.ekiden.fi",
+  wsURL: "wss://api.ekiden.fi/ws",
 };
 
 export const TESTNET: EkidenClientConfig = {
   baseURL: "https://api.ekiden.fi",
+  wsURL: "wss://api.ekiden.fi/ws",
 };
 
 export interface VaultOptions {

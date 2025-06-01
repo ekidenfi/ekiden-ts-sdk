@@ -112,3 +112,55 @@ export interface ListPositionsParams extends PaginationParams {
 }
 
 export interface ListVaultsParams extends PaginationParams {}
+
+// Exported types for WebSocket API
+
+export type PriceLevel = [price: number, size: number];
+
+export type OrderbookSnapshot = {
+  type: "orderbook_snapshot";
+  asks: PriceLevel[];
+  bids: PriceLevel[];
+  market_addr: string;
+  seq: number;
+  matched_at: number;
+};
+
+export type OrderbookDelta = {
+  type: "orderbook_delta";
+  asks: PriceLevel[];
+  bids: PriceLevel[];
+  seq: number;
+  matched_at: number;
+};
+
+export type OrderbookEvent = OrderbookSnapshot | OrderbookDelta;
+
+export type OrderbookChannel = `orderbook/${string}`;
+
+export type OrderbookSubscribeRequest = {
+  method: "subscribe";
+  channel: OrderbookChannel;
+};
+
+export type OrderbookUnsubscribeRequest = {
+  method: "unsubscribe";
+  channel: OrderbookChannel;
+};
+
+export type OrderbookSubscribedResponse = {
+  type: "subscribed";
+  channel: OrderbookChannel;
+};
+
+export type OrderbookEventMessage = {
+  type: "event";
+  channel: OrderbookChannel;
+  data: OrderbookEvent;
+};
+
+export type OrderbookWsMessage =
+  | OrderbookSubscribedResponse
+  | OrderbookEventMessage;
+
+export type OrderbookEventHandler = (event: OrderbookEventMessage) => void;

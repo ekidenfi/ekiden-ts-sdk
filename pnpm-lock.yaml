@@ -11,6 +11,9 @@ importers:
       '@aptos-labs/ts-sdk':
         specifier: ^2.0.0
         version: 2.0.0(got@11.8.6)
+      reconnecting-websocket:
+        specifier: ^4.4.0
+        version: 4.4.0
     devDependencies:
       '@jest/globals':
         specifier: ^29.7.0
@@ -2323,6 +2326,9 @@ packages:
   readdirp@4.1.2:
     resolution: {integrity: sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg==}
     engines: {node: '>= 14.18.0'}
+
+  reconnecting-websocket@4.4.0:
+    resolution: {integrity: sha512-D2E33ceRPga0NvTDhJmphEgJ7FUYF0v4lr1ki0csq06OdlxKfugGzN0dSkxM/NfqCxYELK4KcaTOUOjTV6Dcng==}
 
   reflect.getprototypeof@1.0.10:
     resolution: {integrity: sha512-00o4I+DVrefhv+nX0ulyi3biSHCPDe+yLv5o/p6d/UVlirijB8E16FtfwSAi4g3tcqrQ4lRAqQSoFEZJehYEcw==}
@@ -5413,6 +5419,8 @@ snapshots:
       util-deprecate: 1.0.2
 
   readdirp@4.1.2: {}
+
+  reconnecting-websocket@4.4.0: {}
 
   reflect.getprototypeof@1.0.10:
     dependencies:
