@@ -164,3 +164,38 @@ export type OrderbookWsMessage =
   | OrderbookEventMessage;
 
 export type OrderbookEventHandler = (event: OrderbookEventMessage) => void;
+
+// --- WebSocket: trades channel types ---
+
+export type TradesChannel = `trades/${string}`;
+
+export type Trade = {
+  price: number;
+  size: number;
+  side: "buy" | "sell";
+};
+
+export type TradesEventData = {
+  type: "trades";
+  trades: Trade[];
+  market_addr: string;
+  seq: number;
+};
+
+export type TradesEventMessage = {
+  type: "event";
+  channel: TradesChannel;
+  data: TradesEventData;
+};
+
+export type TradesSubscribeRequest = {
+  method: "subscribe";
+  channel: TradesChannel;
+};
+
+export type TradesUnsubscribeRequest = {
+  method: "unsubscribe";
+  channel: TradesChannel;
+};
+
+export type TradesEventHandler = (event: TradesEventMessage) => void;

@@ -5,57 +5,82 @@ import {
   OrderbookEventHandler,
   OrderbookSubscribeRequest,
   OrderbookUnsubscribeRequest,
-  OrderbookWsMessage,
+  TradesChannel,
+  TradesEventHandler,
+  TradesSubscribeRequest,
+  TradesUnsubscribeRequest,
 } from "@/types";
 
-export class OrderbookWsClient {
+class BaseChannelWsClient<
+  Channel extends string,
+  EventHandler extends (event: any) => void,
+  SubscribeReq,
+  UnsubscribeReq,
+> {
   private ws: ReconnectingWebSocket;
-  private handlers: Map<OrderbookChannel, Set<OrderbookEventHandler>> =
-    new Map();
+  private handlers: Map<Channel, Set<EventHandler>> = new Map();
 
   constructor(private url: string) {
     this.ws = new ReconnectingWebSocket(url);
     this.ws.addEventListener("message", (event) => this.handleMessage(event));
   }
 
-  subscribe(channel: OrderbookChannel, handler: OrderbookEventHandler) {
+  subscribe(channel: Channel, handler: EventHandler) {
     if (!this.handlers.has(channel)) {
       this.handlers.set(channel, new Set());
-      this.send({ method: "subscribe", channel });
+      this.send({ method: "subscribe", channel } as SubscribeReq);
     }
-
     this.handlers.get(channel)!.add(handler);
   }
 
-  unsubscribe(channel: OrderbookChannel, handler: OrderbookEventHandler) {
+  unsubscribe(channel: Channel, handler: EventHandler) {
     const set = this.handlers.get(channel);
     if (!set) return;
-
     set.delete(handler);
-
     if (set.size === 0) {
-      this.send({ method: "unsubscribe", channel });
+      this.send({ method: "unsubscribe", channel } as UnsubscribeReq);
       this.handlers.delete(channel);
     }
   }
 
-  private handleMessage(event: MessageEvent) {
+  protected handleMessage(event: MessageEvent) {
     try {
-      const msg: OrderbookWsMessage = JSON.parse(event.data);
-
+      const msg = JSON.parse(event.data);
       if (msg.type === "event" && this.handlers.has(msg.channel)) {
         this.handlers.get(msg.channel)!.forEach((h) => h(msg));
       }
     } catch (err) {
-      console.warn("[OrderbookWsClient] Failed to parse message", err);
+      console.warn(`[${this.constructor.name}] Failed to parse message`, err);
     }
   }
 
-  private send(msg: OrderbookSubscribeRequest | OrderbookUnsubscribeRequest) {
+  private send(msg: SubscribeReq | UnsubscribeReq) {
     this.ws.send(JSON.stringify(msg));
   }
 
   close() {
     this.ws.close();
+  }
+}
+
+export class OrderbookWsClient extends BaseChannelWsClient<
+  OrderbookChannel,
+  OrderbookEventHandler,
+  OrderbookSubscribeRequest,
+  OrderbookUnsubscribeRequest
+> {
+  constructor(url: string) {
+    super(url);
+  }
+}
+
+export class TradesWsClient extends BaseChannelWsClient<
+  TradesChannel,
+  TradesEventHandler,
+  TradesSubscribeRequest,
+  TradesUnsubscribeRequest
+> {
+  constructor(url: string) {
+    super(url);
   }
 }
