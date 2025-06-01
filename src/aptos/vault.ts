@@ -2,6 +2,7 @@ import {
   AccountAddress,
   type AccountAddressInput,
   type InputEntryFunctionData,
+  InputViewFunctionData,
 } from "@aptos-labs/ts-sdk";
 
 import { parseAbi } from "@/utils";
@@ -51,7 +52,7 @@ export class Vault {
     vaultAddress: string;
     userAddress: AccountAddressInput;
     token: string;
-  }): InputEntryFunctionData {
+  }): InputViewFunctionData {
     return {
       function: `${args.vaultAddress}::perpetual_vault::balanceOf`,
       typeArguments: [
@@ -59,10 +60,6 @@ export class Vault {
         `${args.token}::perpetual_collateral::PerpetualCollateral`,
       ],
       functionArguments: [AccountAddress.from(args.userAddress)],
-      abi: parseAbi({
-        generic_type_params: [{ constraints: [] }, { constraints: [] }],
-        params: ["&signer", "address"],
-      }),
     };
   }
 }
