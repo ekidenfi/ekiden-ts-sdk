@@ -45,10 +45,10 @@ export interface OrderResponse {
 
 export interface CreateOrderParams {
   market_addr: string;
-  side: string;
+  side: "buy" | "sell";
   size: number;
   price: number;
-  type: string;
+  type: "market" | "limit";
   nonce: number;
   signature: string;
 }
