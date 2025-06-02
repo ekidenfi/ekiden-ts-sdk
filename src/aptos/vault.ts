@@ -10,40 +10,38 @@ import { parseAbi } from "@/utils";
 export class Vault {
   static deposit(args: {
     vaultAddress: string;
-    userAddress: AccountAddressInput;
-    token: string;
+    assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
     return {
-      function: `${args.vaultAddress}::perpetual_vault::deposit`,
-      typeArguments: [
-        `${args.token}::perpetual_vault_type::UserVault`,
-        `${args.token}::perpetual_collateral::PerpetualCollateral`,
-      ],
-      functionArguments: [AccountAddress.from(args.userAddress), args.amount],
+      function: `${args.vaultAddress}::vault::deposit`,
+      functionArguments: [args.assetMetadata, args.amount],
       abi: parseAbi({
-        generic_type_params: [{ constraints: [] }, { constraints: [] }],
-        params: ["&signer", "address", "u64"],
+        generic_type_params: [],
+        params: [
+          "&signer",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+          "u64",
+        ],
       }),
     };
   }
 
   static withdraw(args: {
     vaultAddress: string;
-    userAddress: AccountAddressInput;
-    token: string;
+    assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
     return {
-      function: `${args.vaultAddress}::perpetual_vault::withdraw`,
-      typeArguments: [
-        `${args.token}::perpetual_vault_type::UserVault`,
-        `${args.token}::perpetual_collateral::PerpetualCollateral`,
-      ],
-      functionArguments: [AccountAddress.from(args.userAddress), args.amount],
+      function: `${args.vaultAddress}::vault::withdraw`,
+      functionArguments: [args.assetMetadata, args.amount],
       abi: parseAbi({
-        generic_type_params: [{ constraints: [] }, { constraints: [] }],
-        params: ["&signer", "address", "u64"],
+        generic_type_params: [],
+        params: [
+          "&signer",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+          "u64",
+        ],
       }),
     };
   }
