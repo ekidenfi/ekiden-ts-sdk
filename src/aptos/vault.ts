@@ -8,18 +8,20 @@ import {
 import { parseAbi } from "@/utils";
 
 export class Vault {
-  static deposit(args: {
+  static depositIntoUserSub(args: {
     vaultAddress: string;
+    subUserAddress: string;
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
     return {
-      function: `${args.vaultAddress}::vault::deposit`,
-      functionArguments: [args.assetMetadata, args.amount],
+      function: `${args.vaultAddress}::vault::deposit_into_user_sub`,
+      functionArguments: [args.subUserAddress, args.assetMetadata, args.amount],
       abi: parseAbi({
         generic_type_params: [],
         params: [
           "&signer",
+          "address",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],
@@ -27,18 +29,20 @@ export class Vault {
     };
   }
 
-  static withdraw(args: {
+  static withdrawFromUserSub(args: {
     vaultAddress: string;
+    subUserAddress: string;
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
     return {
-      function: `${args.vaultAddress}::vault::withdraw`,
-      functionArguments: [args.assetMetadata, args.amount],
+      function: `${args.vaultAddress}::vault::withdraw_from_user_sub`,
+      functionArguments: [args.subUserAddress, args.assetMetadata, args.amount],
       abi: parseAbi({
         generic_type_params: [],
         params: [
           "&signer",
+          "address",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],

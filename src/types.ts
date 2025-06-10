@@ -53,6 +53,19 @@ export interface CreateOrderParams {
   signature: string;
 }
 
+export interface BuildOrderParams {
+  side: "buy" | "sell";
+  size: string;
+  price: string;
+  type: "market" | "limit";
+}
+
+export interface MarketShort {
+  address: string;
+  quote_decimals: number;
+  base_decimals: number;
+}
+
 export interface CreateOrderResponse {
   sid: string;
 }

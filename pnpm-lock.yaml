@@ -11,6 +11,12 @@ importers:
       '@aptos-labs/ts-sdk':
         specifier: ^2.0.0
         version: 2.0.0(got@11.8.6)
+      '@noble/hashes':
+        specifier: ^1.8.0
+        version: 1.8.0
+      bignumber.js:
+        specifier: ^9.3.0
+        version: 9.3.0
       reconnecting-websocket:
         specifier: ^4.4.0
         version: 4.4.0
@@ -922,6 +928,9 @@ packages:
 
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
+
+  bignumber.js@9.3.0:
+    resolution: {integrity: sha512-EM7aMFTXbptt/wZdMlBv2t8IViwQL+h6SLHosp8Yf0dqJMTnY6iL32opnAB6kAdL0SZPuvcAzFr31o0c/R3/RA==}
 
   brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
@@ -3758,6 +3767,8 @@ snapshots:
       babel-preset-current-node-syntax: 1.1.0(@babel/core@7.26.10)
 
   balanced-match@1.0.2: {}
+
+  bignumber.js@9.3.0: {}
 
   brace-expansion@1.1.11:
     dependencies:
