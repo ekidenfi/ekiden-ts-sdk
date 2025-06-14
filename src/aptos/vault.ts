@@ -10,18 +10,28 @@ import { parseAbi } from "@/utils";
 export class Vault {
   static depositIntoUserSub(args: {
     vaultAddress: string;
-    subUserAddress: string;
+    subAddress: Uint8Array;
+    rootAddress: Uint8Array;
+    signature: Uint8Array;
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::deposit_into_user_sub`,
-      functionArguments: [args.subUserAddress, args.assetMetadata, args.amount],
+      functionArguments: [
+        args.subAddress,
+        args.rootAddress,
+        args.signature,
+        args.assetMetadata,
+        args.amount,
+      ],
       abi: parseAbi({
         generic_type_params: [],
         params: [
           "&signer",
-          "address",
+          "vector<u8>",
+          "vector<u8>",
+          "vector<u8>",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],
