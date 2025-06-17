@@ -1,4 +1,3 @@
 export * from "./BN";
-export * from "./buildSignedOrderParams";
-export * from "./generateOrderSid";
+export * from "./buildOrderPayload";
 export * from "./parseAbi";

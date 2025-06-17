@@ -2,8 +2,6 @@ import { EkidenClientConfig } from "@/config";
 import type {
   AuthorizeParams,
   AuthorizeResponse,
-  CreateOrderParams,
-  CreateOrderResponse,
   FillResponse,
   ListFillsParams,
   ListOrdersParams,
@@ -12,6 +10,8 @@ import type {
   MarketResponse,
   OrderResponse,
   PositionResponse,
+  SendIntentParams,
+  SendIntentResponse,
   VaultResponse,
 } from "@/types";
 
@@ -108,19 +108,6 @@ export class HttpClient {
     );
   }
 
-  async createOrder(params: CreateOrderParams): Promise<CreateOrderResponse> {
-    this.ensureAuth();
-    return this.request<CreateOrderResponse>(
-      "/user/orders",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true },
-    );
-  }
-
   async getUserFills(params: ListFillsParams): Promise<FillResponse[]> {
     this.ensureAuth();
     return this.request<FillResponse[]>(
@@ -147,6 +134,19 @@ export class HttpClient {
       "/user/positions",
       {},
       { auth: true, query: params },
+    );
+  }
+
+  async sendIntent(params: SendIntentParams): Promise<SendIntentResponse> {
+    this.ensureAuth();
+    return this.request<SendIntentResponse>(
+      "/user/intent",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
+      { auth: true },
     );
   }
 }

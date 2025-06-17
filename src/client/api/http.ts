@@ -28,8 +28,8 @@ export class HttpAPIClient {
     return this.api.getUserOrders(params);
   }
 
-  async createOrder(params: Parameters<HttpClient["createOrder"]>[0]) {
-    return this.api.createOrder(params);
+  async sendIntent(params: Parameters<HttpClient["sendIntent"]>[0]) {
+    return this.api.sendIntent(params);
   }
 
   async getUserFills(params: Parameters<HttpClient["getUserFills"]>[0]) {

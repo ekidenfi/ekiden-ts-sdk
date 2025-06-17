@@ -1,6 +1,6 @@
 {
   "name": "@ekidenfi/ts-sdk",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "type": "module",
   "main": "./dist/index.сjs",
   "module": "./dist/index.js",
@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^2.0.0",
+    "@noble/curves": "^1.9.2",
     "@noble/hashes": "^1.8.0",
     "bignumber.js": "^9.3.0",
     "reconnecting-websocket": "^4.4.0"

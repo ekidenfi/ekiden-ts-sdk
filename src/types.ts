@@ -37,20 +37,8 @@ export interface OrderResponse {
   status: string;
   user_addr: string;
   market_addr: string;
-  nonce: number;
-  signature: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateOrderParams {
-  market_addr: string;
-  side: "buy" | "sell";
-  size: number;
-  price: number;
-  type: "market" | "limit";
-  nonce: number;
-  signature: string;
+  seq: number;
+  timestamp: number;
 }
 
 export interface BuildOrderParams {
@@ -66,10 +54,6 @@ export interface MarketShort {
   base_decimals: number;
 }
 
-export interface CreateOrderResponse {
-  sid: string;
-}
-
 export interface FillResponse {
   sid: string;
   side: string;
@@ -82,8 +66,8 @@ export interface FillResponse {
   maker_order_sid: string;
   maker_addr: string;
   market_addr: string;
-  created_at: string;
-  updated_at: string;
+  seq: number;
+  timestamp: number;
 }
 
 export interface PositionResponse {
@@ -93,8 +77,8 @@ export interface PositionResponse {
   margin: number;
   funding_index: number;
   epoch: number;
-  created_at: string;
-  updated_at: string;
+  seq: number;
+  timestamp: number;
 }
 
 export interface VaultResponse {
@@ -125,6 +109,80 @@ export interface ListPositionsParams extends PaginationParams {
 }
 
 export interface ListVaultsParams extends PaginationParams {}
+
+export interface SendIntentParams {
+  nonce: number;
+  payload: ActionPayload;
+  signature: string;
+}
+
+export interface SendIntentResponse {
+  output: IntentOutput;
+  seq: number;
+  version: number;
+  timestamp: number;
+}
+
+export type ActionPayload =
+  | OrderCreateAction
+  | OrderCancelAction
+  | LeverageAssignAction;
+
+export interface OrderCreateAction {
+  type: "order_create";
+  orders: OrderCreate[];
+}
+
+export interface OrderCreate {
+  market_addr: string;
+  price: number;
+  side: string;
+  size: number;
+  type: string;
+}
+
+export interface OrderCancelAction {
+  type: "order_cancel";
+  cancels: OrderCancel[];
+}
+
+export interface OrderCancel {
+  sid: string;
+}
+
+export interface LeverageAssignAction {
+  type: "leverage_assign";
+  leverage: number;
+  market_addr: string;
+}
+
+export type IntentOutput =
+  | OrderCreateIntentOutput
+  | OrderCancelIntentOutput
+  | LeverageAssignIntentOutput;
+
+export interface OrderCreateIntentOutput {
+  type: "order_create";
+  outputs: OrderCreateOutput[];
+}
+
+export interface OrderCreateOutput {
+  sid: string;
+}
+
+export interface OrderCancelIntentOutput {
+  type: "order_cancel";
+  outputs: OrderCancelOutput[];
+}
+
+export interface OrderCancelOutput {
+  success: boolean;
+}
+
+export interface LeverageAssignIntentOutput {
+  type: "leverage_assign";
+  success: boolean;
+}
 
 // Exported types for WebSocket API
 
