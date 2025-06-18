@@ -244,6 +244,7 @@ export type Trade = {
   price: number;
   size: number;
   side: "buy" | "sell";
+  timestamp: number;
 };
 
 export type TradesEventData = {
