@@ -209,30 +209,11 @@ export type OrderbookEvent = OrderbookSnapshot | OrderbookDelta;
 
 export type OrderbookChannel = `orderbook/${string}`;
 
-export type OrderbookSubscribeRequest = {
-  method: "subscribe";
-  channel: OrderbookChannel;
-};
-
-export type OrderbookUnsubscribeRequest = {
-  method: "unsubscribe";
-  channel: OrderbookChannel;
-};
-
-export type OrderbookSubscribedResponse = {
-  type: "subscribed";
-  channel: OrderbookChannel;
-};
-
 export type OrderbookEventMessage = {
   type: "event";
   channel: OrderbookChannel;
   data: OrderbookEvent;
 };
-
-export type OrderbookWsMessage =
-  | OrderbookSubscribedResponse
-  | OrderbookEventMessage;
 
 export type OrderbookEventHandler = (event: OrderbookEventMessage) => void;
 
@@ -260,14 +241,9 @@ export type TradesEventMessage = {
   data: TradesEventData;
 };
 
-export type TradesSubscribeRequest = {
-  method: "subscribe";
-  channel: TradesChannel;
-};
-
-export type TradesUnsubscribeRequest = {
-  method: "unsubscribe";
-  channel: TradesChannel;
-};
-
 export type TradesEventHandler = (event: TradesEventMessage) => void;
+
+export type ChannelMap = {
+  [key: OrderbookChannel]: OrderbookEventMessage;
+  [key: TradesChannel]: TradesEventMessage;
+};

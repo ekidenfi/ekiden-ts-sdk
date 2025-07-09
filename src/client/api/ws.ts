@@ -1,36 +1,30 @@
-import { OrderbookWsClient, TradesWsClient } from "@/api/ws";
+import { WsClient } from "@/api/ws";
 import type { EkidenClientConfig } from "@/config";
+import { ChannelMap, OrderbookEventHandler, TradesEventHandler } from "@/types";
 
 export class WsAPIClient {
-  orderbook: OrderbookWsClient;
-  trades: TradesWsClient;
+  ws: WsClient<string, ChannelMap>;
 
   constructor(readonly config: EkidenClientConfig) {
     if (!config.wsURL) {
       throw new Error("WebSocket URL is not configured");
     }
-    this.orderbook = new OrderbookWsClient(config.wsURL);
-    this.trades = new TradesWsClient(config.wsURL);
+    this.ws = new WsClient(config.wsURL);
   }
 
-  subscribeOrderbook(
-    marketAddr: string,
-    handler: Parameters<OrderbookWsClient["subscribe"]>[1],
-  ) {
-    this.orderbook.subscribe(`orderbook/${marketAddr}`, handler);
-    return () => this.orderbook.unsubscribe(`orderbook/${marketAddr}`, handler);
+  subscribeOrderbook(marketAddr: string, handler: OrderbookEventHandler) {
+    const channel = `orderbook/${marketAddr}` as const;
+    this.ws.subscribe(channel, handler);
+    return () => this.ws.unsubscribe(channel, handler);
   }
 
-  subscribeTrades(
-    marketAddr: string,
-    handler: Parameters<TradesWsClient["subscribe"]>[1],
-  ) {
-    this.trades.subscribe(`trades/${marketAddr}`, handler);
-    return () => this.trades.unsubscribe(`trades/${marketAddr}`, handler);
+  subscribeTrades(marketAddr: string, handler: TradesEventHandler) {
+    const channel = `trades/${marketAddr}` as const;
+    this.ws.subscribe(channel, handler);
+    return () => this.ws.unsubscribe(channel, handler);
   }
 
   close() {
-    this.orderbook.close();
-    this.trades.close();
+    this.ws.close();
   }
 }
