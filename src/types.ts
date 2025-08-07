@@ -123,6 +123,16 @@ export interface SendIntentResponse {
   timestamp: number;
 }
 
+export interface SendIntentWithCommitResponse {
+  output: IntentOutput;
+  sid: string;
+  status: number;
+  seq: number;
+  version: number;
+  timestamp: number;
+  error_message: string;
+}
+
 export type ActionPayload =
   | OrderCreateAction
   | OrderCancelAction

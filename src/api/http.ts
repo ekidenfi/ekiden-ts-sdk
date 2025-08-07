@@ -12,6 +12,7 @@ import type {
   PositionResponse,
   SendIntentParams,
   SendIntentResponse,
+  SendIntentWithCommitResponse,
   VaultResponse,
 } from "@/types";
 
@@ -141,6 +142,21 @@ export class HttpClient {
     this.ensureAuth();
     return this.request<SendIntentResponse>(
       "/user/intent",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
+      { auth: true },
+    );
+  }
+
+  async sendIntentWithCommit(
+    params: SendIntentParams,
+  ): Promise<SendIntentWithCommitResponse> {
+    this.ensureAuth();
+    return this.request<SendIntentWithCommitResponse>(
+      "/user/intent/commit",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

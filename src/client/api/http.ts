@@ -32,6 +32,12 @@ export class HttpAPIClient {
     return this.api.sendIntent(params);
   }
 
+  async sendIntentWithCommit(
+    params: Parameters<HttpClient["sendIntentWithCommit"]>[0],
+  ) {
+    return this.api.sendIntentWithCommit(params);
+  }
+
   async getUserFills(params: Parameters<HttpClient["getUserFills"]>[0]) {
     return this.api.getUserFills(params);
   }
