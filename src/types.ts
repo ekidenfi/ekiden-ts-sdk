@@ -315,7 +315,7 @@ export interface OrderCreate {
   side: string;
   size: number;
   type: string;
-  // leverage: number;
+  leverage: number;
 }
 
 export interface OrderCancelAction {

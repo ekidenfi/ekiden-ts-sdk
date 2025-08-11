@@ -30,9 +30,9 @@ export const buildOrderPayload = ({
       serializer.serializeStr(order.side);
       serializer.serializeU64(BigInt(order.size));
       serializer.serializeU64(BigInt(order.price));
+      serializer.serializeU64(BigInt(order.leverage));
       serializer.serializeStr(order.type);
       serializer.serializeStr(order.market_addr);
-      // serializer.serializeU64(BigInt(order.leverage));
     }
   } else {
     throw new Error(`Unknown action type: ${(payload as any).type}`);
