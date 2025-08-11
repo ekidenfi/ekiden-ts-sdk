@@ -51,4 +51,28 @@ export class HttpAPIClient {
   ) {
     return this.api.getUserPositions(params);
   }
+
+  async getFundingRates(params?: Parameters<HttpClient["getFundingRates"]>[0]) {
+    return this.api.getFundingRates(params);
+  }
+
+  async getFundingRateByMarket(
+    marketAddr: Parameters<HttpClient["getFundingRateByMarket"]>[0],
+  ) {
+    return this.api.getFundingRateByMarket(marketAddr);
+  }
+
+  async getFundingEpoch() {
+    return this.api.getFundingEpoch();
+  }
+
+  async getCandles(params: Parameters<HttpClient["getCandles"]>[0]) {
+    return this.api.getCandles(params);
+  }
+
+  async getMarketStats(
+    marketAddr: Parameters<HttpClient["getMarketStats"]>[0],
+  ) {
+    return this.api.getMarketStats(marketAddr);
+  }
 }

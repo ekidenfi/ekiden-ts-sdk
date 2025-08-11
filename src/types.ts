@@ -110,6 +110,118 @@ export interface ListPositionsParams extends PaginationParams {
 
 export interface ListVaultsParams extends PaginationParams {}
 
+export interface GetFundingRateParams {
+  /** Market address to get funding rate for */
+  market_addr?: string;
+  /** Symbol to get funding rate for (alternative to market_addr) */
+  symbol?: string;
+}
+
+export interface FundingRateResponse {
+  /** Market address */
+  market_addr: string;
+  /** Market symbol */
+  symbol: string;
+  /** Current funding rate as a percentage (e.g., 0.01 = 1%) */
+  funding_rate_percentage: number;
+  /** Funding rate in raw format (scaled) */
+  funding_rate_raw: number;
+  /** Current mark price */
+  mark_price: number;
+  /** Current oracle price */
+  oracle_price: number;
+  /** Premium rate (mark - oracle) / oracle */
+  premium_rate_percentage: number;
+  /** Next funding time (ISO string) */
+  next_funding_time: string;
+  /** Funding interval in seconds */
+  funding_interval_seconds: number;
+  /** Time until next funding in seconds */
+  time_to_next_funding_seconds: number;
+  /** Current funding index */
+  funding_index: number;
+  /** Last updated timestamp (ISO string) */
+  last_updated: string;
+}
+
+export interface FundingHistoryResponse {
+  /** Market address */
+  market_addr: string;
+  /** Historical funding rates */
+  funding_rates: FundingRateHistoryEntry[];
+}
+
+export interface FundingRateHistoryEntry {
+  /** Funding rate as percentage */
+  funding_rate_percentage: number;
+  /** Funding rate raw value */
+  funding_rate_raw: number;
+  /** Mark price at the time */
+  mark_price: number;
+  /** Oracle price at the time */
+  oracle_price: number;
+  /** Timestamp when this rate was applied (ISO string) */
+  timestamp: string;
+  /** Funding index at this time */
+  funding_index: number;
+}
+
+export interface FundingEpochResponse {
+  /** Current funding epoch timestamp */
+  current_funding_epoch: number;
+  /** Funding interval in seconds */
+  funding_interval_seconds: number;
+  /** Formatted timestamp */
+  timestamp: string;
+}
+
+export interface ListCandlesParams extends PaginationParams {
+  /** Market address */
+  market_addr: string;
+  /** Timeframe (e.g., "1m", "5m", "1h", "1d") */
+  timeframe: string;
+  /** Start time as Unix timestamp */
+  start_time?: number;
+  /** End time as Unix timestamp */
+  end_time?: number;
+}
+
+export interface CandleResponse {
+  /** Unix timestamp for the candle open time */
+  timestamp: number;
+  /** Opening price */
+  open: number;
+  /** Highest price in the period */
+  high: number;
+  /** Lowest price in the period */
+  low: number;
+  /** Closing price */
+  close: number;
+  /** Total volume traded in the period */
+  volume: number;
+  /** Number of trades in the period */
+  count: number;
+}
+
+export interface MarketStatsResponse {
+  /** Market address */
+  market_addr: string;
+  /** Current price */
+  current_price?: number;
+  /** Price 24 hours ago */
+  price_24h_ago?: number;
+  /** Price change percentage in 24h */
+  price_change_24h?: number;
+  /** Highest price in 24h */
+  high_24h?: number;
+  /** Lowest price in 24h */
+  low_24h?: number;
+  /** Volume traded in 24h */
+  volume_24h: number;
+  /** Number of trades in 24h */
+  trades_24h: number;
+}
+
 export interface SendIntentParams {
   nonce: number;
   payload: ActionPayload;

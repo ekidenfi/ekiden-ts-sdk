@@ -2,12 +2,18 @@ import { EkidenClientConfig } from "@/config";
 import type {
   AuthorizeParams,
   AuthorizeResponse,
+  CandleResponse,
   FillResponse,
+  FundingEpochResponse,
+  FundingRateResponse,
+  GetFundingRateParams,
+  ListCandlesParams,
   ListFillsParams,
   ListOrdersParams,
   ListPositionsParams,
   ListVaultsParams,
   MarketResponse,
+  MarketStatsResponse,
   OrderResponse,
   PositionResponse,
   SendIntentParams,
@@ -164,5 +170,33 @@ export class HttpClient {
       },
       { auth: true },
     );
+  }
+
+  async getFundingRates(
+    params: GetFundingRateParams = {},
+  ): Promise<FundingRateResponse[]> {
+    return this.request<FundingRateResponse[]>(
+      "/funding-rates",
+      {},
+      { query: params },
+    );
+  }
+
+  async getFundingRateByMarket(
+    marketAddr: string,
+  ): Promise<FundingRateResponse> {
+    return this.request<FundingRateResponse>(`/funding-rates/${marketAddr}`);
+  }
+
+  async getFundingEpoch(): Promise<FundingEpochResponse> {
+    return this.request<FundingEpochResponse>("/funding-rates/epoch");
+  }
+
+  async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
+    return this.request<CandleResponse[]>("/candles", {}, { query: params });
+  }
+
+  async getMarketStats(marketAddr: string): Promise<MarketStatsResponse> {
+    return this.request<MarketStatsResponse>(`/candles/stats/${marketAddr}`);
   }
 }
