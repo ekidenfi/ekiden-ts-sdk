@@ -261,6 +261,7 @@ export interface OrderCreate {
   side: string;
   size: number;
   type: string;
+  leverage: number;
 }
 
 export interface OrderCancelAction {
