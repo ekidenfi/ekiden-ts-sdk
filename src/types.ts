@@ -222,6 +222,60 @@ export interface MarketStatsResponse {
   trades_24h: number;
 }
 
+export interface PortfolioResponse {
+  /** User's address */
+  user_addr: string;
+  /** List of all user's positions */
+  positions: PortfolioPosition[];
+  /** List of all user's vault balances */
+  vault_balances: PortfolioVault[];
+  /** Portfolio summary */
+  summary: PortfolioSummary;
+}
+
+export interface PortfolioPosition {
+  /** Position ID */
+  sid: string;
+  /** Market address */
+  market_addr: string;
+  /** Position size (positive for long, negative for short) */
+  size: number;
+  /** Average entry price */
+  price: number;
+  /** Margin allocated to this position */
+  margin: number;
+  /** Funding index */
+  funding_index: number;
+  /** Position epoch */
+  epoch: number;
+  /** Sequence number */
+  seq: number;
+  /** Position timestamp */
+  timestamp: number;
+}
+
+export interface PortfolioVault {
+  /** Vault ID */
+  id: number;
+  /** Asset address */
+  asset_addr: string;
+  /** Current balance */
+  balance: number;
+}
+
+export interface PortfolioSummary {
+  /** Total number of open positions */
+  total_positions: number;
+  /** Total number of vaults */
+  total_vaults: number;
+  /** Total balance (estimated in USD) */
+  total_balance: number;
+  /** Total margin used across all positions */
+  total_margin_used: number;
+  /** Total available balance across all vaults */
+  total_available_balance: number;
+}
+
 export interface SendIntentParams {
   nonce: number;
   payload: ActionPayload;
@@ -261,7 +315,7 @@ export interface OrderCreate {
   side: string;
   size: number;
   type: string;
-  leverage: number;
+  // leverage: number;
 }
 
 export interface OrderCancelAction {

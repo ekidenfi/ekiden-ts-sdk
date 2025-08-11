@@ -15,6 +15,7 @@ import type {
   MarketResponse,
   MarketStatsResponse,
   OrderResponse,
+  PortfolioResponse,
   PositionResponse,
   SendIntentParams,
   SendIntentResponse,
@@ -198,5 +199,14 @@ export class HttpClient {
 
   async getMarketStats(marketAddr: string): Promise<MarketStatsResponse> {
     return this.request<MarketStatsResponse>(`/candles/stats/${marketAddr}`);
+  }
+
+  async getUserPortfolio(): Promise<PortfolioResponse> {
+    this.ensureAuth();
+    return this.request<PortfolioResponse>(
+      "/user/portfolio",
+      {},
+      { auth: true },
+    );
   }
 }

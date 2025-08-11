@@ -75,4 +75,8 @@ export class HttpAPIClient {
   ) {
     return this.api.getMarketStats(marketAddr);
   }
+
+  async getUserPortfolio() {
+    return this.api.getUserPortfolio();
+  }
 }
