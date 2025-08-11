@@ -176,7 +176,7 @@ export class HttpClient {
     params: GetFundingRateParams = {},
   ): Promise<FundingRateResponse[]> {
     return this.request<FundingRateResponse[]>(
-      "/funding-rates",
+      "/funding_rate",
       {},
       { query: params },
     );
@@ -185,11 +185,11 @@ export class HttpClient {
   async getFundingRateByMarket(
     marketAddr: string,
   ): Promise<FundingRateResponse> {
-    return this.request<FundingRateResponse>(`/funding-rates/${marketAddr}`);
+    return this.request<FundingRateResponse>(`/funding_rate/${marketAddr}`);
   }
 
   async getFundingEpoch(): Promise<FundingEpochResponse> {
-    return this.request<FundingEpochResponse>("/funding-rates/epoch");
+    return this.request<FundingEpochResponse>("/funding_rate/epoch");
   }
 
   async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
