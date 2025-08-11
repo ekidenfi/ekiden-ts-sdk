@@ -90,6 +90,40 @@ export interface VaultResponse {
   updated_at: string;
 }
 
+export interface UserProfileResponse {
+  positions: Position[];
+  summary: Summary;
+  user_addr: string;
+  vault_balances: VaultBalance[];
+}
+
+export interface Position {
+  epoch: number;
+  funding_index: number;
+  margin: number;
+  market_addr:   string;
+  price: number;
+  seq: number;
+  sid: string;
+  size: number;
+  timestamp: number;
+}
+
+export interface Summary {
+  total_available_balance: number;
+  total_balance: number;
+  total_margin_used: number;
+  total_positions: number;
+  total_vaults: number;
+}
+
+export interface VaultBalance {
+  asset_addr: string;
+  balance: number;
+  id: number;
+}
+
+
 export interface PaginationParams {
   page?: number;
   per_page?: number;

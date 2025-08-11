@@ -19,6 +19,7 @@ import type {
   SendIntentParams,
   SendIntentResponse,
   SendIntentWithCommitResponse,
+  UserProfileResponse,
   VaultResponse,
 } from "@/types";
 
@@ -130,6 +131,15 @@ export class HttpClient {
       "/user/vaults",
       {},
       { auth: true, query: params },
+    );
+  }
+
+  async getUserProfile(): Promise<UserProfileResponse[]> {
+    this.ensureAuth();
+    return this.request<UserProfileResponse[]>(
+      "user/portfolio",
+      {},
+      { auth: true },
     );
   }
 

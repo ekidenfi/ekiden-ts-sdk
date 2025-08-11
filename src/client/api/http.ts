@@ -52,6 +52,10 @@ export class HttpAPIClient {
     return this.api.getUserPositions(params);
   }
 
+  async getUserProfile() {
+    return this.api.getUserProfile();
+  }
+
   async getFundingRates(params?: Parameters<HttpClient["getFundingRates"]>[0]) {
     return this.api.getFundingRates(params);
   }
