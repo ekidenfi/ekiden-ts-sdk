@@ -25,19 +25,26 @@ bun add @ekiden/ts-sdk
 ## Quick Start
 
 ```ts
+import { Ed25519Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
+
 import { EkidenClient, TESTNET } from "@ekiden/ts-sdk";
 
 const ekiden = new EkidenClient(TESTNET);
 
+const privateKey = new Ed25519PrivateKey(ENV.PRIVATE_KEY);
+const account = new Ed25519Account({ privateKey });
+
+const publicKey = account.publicKey.toString();
+
+const messageBytes = new TextEncoder().encode("AUTHORIZE");
+const signature = account.sign(messageBytes).toString();
+
+
 // Authorize (get JWT)
 const { token } = await ekiden.authorize({
-  signature: "0x...",
-  public_key: "0x..."
+  signature: signature,
+  public_key: publicKey
 });
-ekiden.setToken(token);
-
-// Fetch markets
-const markets = await ekiden.getMarkets();
 
 // Fetch user orders
 const orders = await ekiden.getUserOrders({ market_addr: "0x..." });
@@ -64,7 +71,6 @@ const positions = await ekiden.getUserPositions();
 
 - `authorize(params)` — user authorization, get JWT
 - `setToken(token)` — set JWT for private methods
-- `getMarkets()` — fetch markets
 - `getOrders(params)` — fetch public orders
 - `getFills(params)` — fetch public fills
 - `getUserOrders(params)` — fetch user orders (JWT)
