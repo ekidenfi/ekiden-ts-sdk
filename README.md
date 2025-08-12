@@ -100,34 +100,33 @@ const order = await ekiden.createOrder({
 
 ## Example: Vault Usage
 
+For detailed examples of how to work with vault deposits and withdrawals, see the `example/` folder:
+
+- **`example/deposit.js`** — complete example of depositing assets into a vault
+- **`example/withdraw.js`** — complete example of withdrawing assets from a vault
+
+Both examples show the full flow including:
+- Setting up Aptos client and account
+- Creating transaction payloads using `ekiden.vault` utilities
+- Gas estimation and transaction submission
+- Waiting for transaction confirmation
+
 ```ts
-import { EkidenClient, TESTNET } from "@ekiden/ts-sdk";
-
-const ekiden = new EkidenClient(TESTNET);
-
-// Deposit to vault
-const depositPayload = ekiden.vault.deposit({
+// Basic vault operations
+const depositPayload = ekiden.vault.depositIntoUser({
   vaultAddress: "0x...",
-  userAddress: "0x...",
-  token: "0x...",
-  amount: 1000n,
+  assetMetadata: "0x...",
+  amount: BigInt(1000000)
 });
 
-// Withdraw from vault
-const withdrawPayload = ekiden.vault.withdraw({
+const withdrawPayload = ekiden.vault.requestWithdrawFromUser({
   vaultAddress: "0x...",
-  userAddress: "0x...",
-  token: "0x...",
-  amount: 500n,
-});
-
-// Get vault balance
-const balanceOfPayload = ekiden.vault.balanceOf({
-  vaultAddress: "0x...",
-  userAddress: "0x...",
-  token: "0x...",
+  assetMetadata: "0x...",
+  amount: BigInt(1000000)
 });
 ```
+
+
 
 ---
 

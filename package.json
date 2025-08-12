@@ -1,6 +1,6 @@
 {
   "name": "@ekidenfi/ts-sdk",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "type": "module",
   "main": "./dist/index.сjs",
   "module": "./dist/index.js",
@@ -50,6 +50,7 @@
     "@typescript-eslint/eslint-plugin": "^6.19.1",
     "@typescript-eslint/parser": "^6.19.1",
     "copyfiles": "^2.4.1",
+    "dotenv": "^17.2.1",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
