@@ -276,6 +276,11 @@ export interface PortfolioSummary {
   total_available_balance: number;
 }
 
+export interface UserLeverageParams {
+  market_addr: string;
+  leverage: number;
+}
+
 export interface SendIntentParams {
   nonce: number;
   payload: ActionPayload;

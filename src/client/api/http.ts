@@ -79,4 +79,8 @@ export class HttpAPIClient {
   async getUserPortfolio() {
     return this.api.getUserPortfolio();
   }
+
+  async setUserLeverage(params: Parameters<HttpClient["setUserLeverage"]>[0]) {
+    return this.api.setUserLeverage(params);
+  }
 }

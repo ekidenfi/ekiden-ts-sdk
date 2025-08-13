@@ -20,6 +20,7 @@ import type {
   SendIntentParams,
   SendIntentResponse,
   SendIntentWithCommitResponse,
+  UserLeverageParams,
   VaultResponse,
 } from "@/types";
 
@@ -223,6 +224,21 @@ export class HttpClient {
     return this.request<PortfolioResponse>(
       "/user/portfolio",
       {},
+      { auth: true },
+    );
+  }
+
+  async setUserLeverage(
+    params: UserLeverageParams,
+  ): Promise<PortfolioResponse> {
+    this.ensureAuth();
+    return this.request<PortfolioResponse>(
+      "/user/leverage",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
       { auth: true },
     );
   }
