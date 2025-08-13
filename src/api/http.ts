@@ -65,9 +65,26 @@ export class HttpClient {
 
     if (!response.ok) {
       const method = options.method || "GET";
-      throw new Error(
-        `${method} ${path} failed with status ${response.status}`,
-      );
+
+      // Try to get error details from response body
+      let errorMessage = `${method} ${path} failed with status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        if (errorData.error) {
+          errorMessage = errorData.error;
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+      } catch {
+        // If JSON parsing fails, keep the default error message
+      }
+
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      (error as any).statusText = response.statusText;
+      throw error;
     }
 
     return response.json();
