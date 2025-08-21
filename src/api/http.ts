@@ -114,15 +114,19 @@ export class HttpClient {
   }
 
   async getMarkets(): Promise<MarketResponse[]> {
-    return this.request<MarketResponse[]>("/markets");
+    return this.request<MarketResponse[]>("/market/markets");
   }
 
   async getOrders(params: ListOrdersParams): Promise<OrderResponse[]> {
-    return this.request<OrderResponse[]>("/orders", {}, { query: params });
+    return this.request<OrderResponse[]>(
+      "/market/orders",
+      {},
+      { query: params },
+    );
   }
 
   async getFills(params: ListFillsParams): Promise<FillResponse[]> {
-    return this.request<FillResponse[]>("/fills", {}, { query: params });
+    return this.request<FillResponse[]>("/market/fills", {}, { query: params });
   }
 
   async getUserOrders(params: ListOrdersParams): Promise<OrderResponse[]> {
@@ -195,7 +199,7 @@ export class HttpClient {
     params: GetFundingRateParams = {},
   ): Promise<FundingRateResponse[]> {
     return this.request<FundingRateResponse[]>(
-      "/funding_rate",
+      "/market/funding_rate",
       {},
       { query: params },
     );
@@ -204,19 +208,27 @@ export class HttpClient {
   async getFundingRateByMarket(
     marketAddr: string,
   ): Promise<FundingRateResponse> {
-    return this.request<FundingRateResponse>(`/funding_rate/${marketAddr}`);
+    return this.request<FundingRateResponse>(
+      `/market/funding_rate/${marketAddr}`,
+    );
   }
 
   async getFundingEpoch(): Promise<FundingEpochResponse> {
-    return this.request<FundingEpochResponse>("/funding_rate/epoch");
+    return this.request<FundingEpochResponse>("/market/funding_rate/epoch");
   }
 
   async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
-    return this.request<CandleResponse[]>("/candles", {}, { query: params });
+    return this.request<CandleResponse[]>(
+      "/market/candles",
+      {},
+      { query: params },
+    );
   }
 
   async getMarketStats(marketAddr: string): Promise<MarketStatsResponse> {
-    return this.request<MarketStatsResponse>(`/candles/stats/${marketAddr}`);
+    return this.request<MarketStatsResponse>(
+      `/market/candles/stats/${marketAddr}`,
+    );
   }
 
   async getUserPortfolio(): Promise<PortfolioResponse> {
