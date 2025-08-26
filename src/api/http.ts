@@ -68,30 +68,31 @@ export class HttpClient {
       const method = options.method || "GET";
 
       // Try to get error details from response body
-      let errorMessage = `${method} ${path} failed with status ${response.status}`;
+      const errorMessage = `${method} ${path} failed with status ${response.status}`;
+      let errorResponseContent = "";
+
+      let rawText = "";
       try {
-        const errorData = await response.json();
-        if (errorData.error) {
-          errorMessage = errorData.error;
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (typeof errorData === "string") {
-          errorMessage = errorData;
+        rawText = await response.text();
+        try {
+          const errorData = JSON.parse(rawText);
+          if (errorData.error) {
+            errorResponseContent = errorData.error;
+          } else if (errorData.message) {
+            errorResponseContent = errorData.message;
+          } else if (typeof errorData === "string") {
+            errorResponseContent = errorData;
+          }
+        } catch {
+          if (rawText) {
+            errorResponseContent = rawText;
+          }
         }
       } catch {
-        // Fallback: try to get plain text error
-        try {
-          const text = await response.text();
-          if (text) errorMessage = text;
-        } catch {
-          // ignore
-        }
+        // ignore
       }
 
-      const error = new Error(errorMessage);
-      (error as any).status = response.status;
-      (error as any).statusText = response.statusText;
-      throw error;
+      throw new Error(`${errorMessage}: ${errorResponseContent}`);
     }
 
     return response.json();
