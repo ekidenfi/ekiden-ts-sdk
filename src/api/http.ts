@@ -79,7 +79,13 @@ export class HttpClient {
           errorMessage = errorData;
         }
       } catch {
-        // If JSON parsing fails, keep the default error message
+        // Fallback: try to get plain text error
+        try {
+          const text = await response.text();
+          if (text) errorMessage = text;
+        } catch {
+          // ignore
+        }
       }
 
       const error = new Error(errorMessage);
