@@ -33,6 +33,7 @@ export const buildOrderPayload = ({
       serializer.serializeU64(BigInt(order.leverage));
       serializer.serializeStr(order.type);
       serializer.serializeStr(order.market_addr);
+      serializer.serializeBool(order.is_cross);
     }
   } else {
     throw new Error(`Unknown action type: ${(payload as any).type}`);
