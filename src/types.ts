@@ -321,6 +321,7 @@ export interface OrderCreate {
   size: number;
   type: string;
   leverage: number;
+  is_cross: boolean;
 }
 
 export interface OrderCancelAction {
