@@ -11,6 +11,8 @@ import type {
   ListFillsParams,
   ListOrdersParams,
   ListPositionsParams,
+  ListUserFillsParams,
+  ListUserOrdersParams,
   ListVaultsParams,
   MarketResponse,
   MarketStatsResponse,
@@ -102,7 +104,7 @@ export class HttpClient {
     const url = new URL(`${this.baseURL}${path}`);
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
+        if (value !== undefined && value !== null && value !== "") {
           url.searchParams.append(key, String(value));
         }
       });
@@ -136,7 +138,9 @@ export class HttpClient {
     return this.request<FillResponse[]>("/market/fills", {}, { query: params });
   }
 
-  async getUserOrders(params: ListOrdersParams): Promise<OrderResponse[]> {
+  async getUserOrders(
+    params: ListUserOrdersParams = {},
+  ): Promise<OrderResponse[]> {
     this.ensureAuth();
     return this.request<OrderResponse[]>(
       "/user/orders",
@@ -145,7 +149,9 @@ export class HttpClient {
     );
   }
 
-  async getUserFills(params: ListFillsParams): Promise<FillResponse[]> {
+  async getUserFills(
+    params: ListUserFillsParams = {},
+  ): Promise<FillResponse[]> {
     this.ensureAuth();
     return this.request<FillResponse[]>(
       "/user/fills",

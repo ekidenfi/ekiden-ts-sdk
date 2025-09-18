@@ -33,6 +33,7 @@ export interface OrderResponse {
   side: string;
   size: number;
   price: number;
+  leverage: number;
   type: string;
   status: string;
   user_addr: string;
@@ -77,6 +78,8 @@ export interface PositionResponse {
   margin: number;
   funding_index: number;
   epoch: number;
+  market_addr: string;
+  user_addr: string;
   seq: number;
   timestamp: number;
 }
@@ -97,11 +100,20 @@ export interface PaginationParams {
 
 export interface ListOrdersParams extends PaginationParams {
   market_addr: string;
-  side?: string;
+  side?: string | null;
+}
+
+export interface ListUserOrdersParams extends PaginationParams {
+  market_addr?: string;
+  side?: string | null;
 }
 
 export interface ListFillsParams extends PaginationParams {
   market_addr: string;
+}
+
+export interface ListUserFillsParams extends PaginationParams {
+  market_addr?: string;
 }
 
 export interface ListPositionsParams extends PaginationParams {
