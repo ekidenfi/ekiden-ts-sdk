@@ -1,6 +1,8 @@
 export interface AuthorizeParams {
   signature: string;
   public_key: string;
+  timestamp_ms: number;
+  nonce: string;
 }
 
 export interface AuthorizeResponse {
