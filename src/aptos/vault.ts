@@ -3,6 +3,9 @@ import {
   type AccountAddressInput,
   type InputEntryFunctionData,
   InputViewFunctionData,
+  MoveOption,
+  MoveVector,
+  U8,
 } from "@aptos-labs/ts-sdk";
 
 import { parseAbi } from "@/utils";
@@ -75,12 +78,27 @@ export class Vault {
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
+    // Build sub link proof: pubkey(32) || root_addr(32) || sig(64)
+    const proofBytes = new Uint8Array(
+      args.subAddress.length + args.rootAddress.length + args.signature.length,
+    );
+    proofBytes.set(args.subAddress, 0);
+    proofBytes.set(args.rootAddress, args.subAddress.length);
+    proofBytes.set(
+      args.signature,
+      args.subAddress.length + args.rootAddress.length,
+    );
+
+    const noneAddr = new MoveOption<AccountAddress>();
+    const proofOpt = new MoveOption<MoveVector<U8>>(MoveVector.U8(proofBytes));
+
     return {
-      function: `${args.vaultAddress}::vault::deposit_into_user_sub`,
+      function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_trading`,
       functionArguments: [
-        args.subAddress,
-        args.rootAddress,
-        args.signature,
+        noneAddr, // existing_funding_sub
+        proofOpt, // new_funding_sub_link_proof
+        noneAddr, // existing_trading_sub
+        proofOpt, // new_trading_sub_link_proof
         args.assetMetadata,
         args.amount,
       ],
@@ -88,9 +106,10 @@ export class Vault {
         generic_type_params: [],
         params: [
           "&signer",
-          "vector<u8>",
-          "vector<u8>",
-          "vector<u8>",
+          "0x1::option::Option<address>",
+          "0x1::option::Option<vector<u8>>",
+          "0x1::option::Option<address>",
+          "0x1::option::Option<vector<u8>>",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],

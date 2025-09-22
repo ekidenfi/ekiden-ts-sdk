@@ -1,8 +1,8 @@
 import { HttpAPIClient, WsAPIClient } from "./api";
 
+import { PrivateWSClient } from "@/api/private-ws";
 import { Vault } from "@/aptos";
 import { EkidenClientConfig } from "@/config";
-import { PrivateWSClient } from "@/api/private-ws";
 
 export class EkidenClient {
   readonly httpApi: HttpAPIClient;

@@ -1,4 +1,5 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
+
 import type { OrderResponse } from "@/types";
 
 export interface AuthRequest {
