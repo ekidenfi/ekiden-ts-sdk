@@ -70,7 +70,7 @@ export class Vault {
     };
   }
 
-  static depositIntoUserSub(args: {
+  static depositIntoFunding(args: {
     vaultAddress: string;
     subAddress: Uint8Array;
     rootAddress: Uint8Array;
@@ -93,12 +93,52 @@ export class Vault {
     const proofOpt = new MoveOption<MoveVector<U8>>(MoveVector.U8(proofBytes));
 
     return {
+      function: `${args.vaultAddress}::vault::deposit_into_funding`,
+      functionArguments: [
+        noneAddr, // existing_sub
+        proofOpt, // new_sub_link_proof
+        args.assetMetadata,
+        args.amount,
+      ],
+      abi: parseAbi({
+        generic_type_params: [],
+        params: [
+          "&signer",
+          "0x1::option::Option<address>",
+          "0x1::option::Option<vector<u8>>",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+          "u64",
+        ],
+      }),
+    };
+  }
+
+  static depositIntoUserSub(args: {
+    vaultAddress: string;
+    subAddress: Uint8Array;
+    rootAddress: Uint8Array;
+    signature: Uint8Array;
+    assetMetadata: string;
+    amount: bigint;
+  }): InputEntryFunctionData {
+    // Build sub link proof: pubkey(32) || root_addr(32) || sig(64)
+    const proofBytes = new Uint8Array(
+      args.subAddress.length + args.rootAddress.length + args.signature.length,
+    );
+    proofBytes.set(args.subAddress, 0);
+    proofBytes.set(args.rootAddress, args.subAddress.length);
+    proofBytes.set(
+      args.signature,
+      args.subAddress.length + args.rootAddress.length,
+    );
+
+    return {
       function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_trading`,
       functionArguments: [
-        noneAddr, // existing_funding_sub
-        proofOpt, // new_funding_sub_link_proof
-        noneAddr, // existing_trading_sub
-        proofOpt, // new_trading_sub_link_proof
+        null, // existing_funding_sub (None)
+        Array.from(proofBytes), // new_funding_sub_link_proof as plain array
+        null, // existing_trading_sub (None)
+        null, // new_trading_sub_link_proof (None)
         args.assetMetadata,
         args.amount,
       ],

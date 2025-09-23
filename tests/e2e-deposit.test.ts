@@ -48,6 +48,9 @@ describe("Aptos testnet live vault deposit_into_funding_with_transfer_to_trading
     const signature = subAccount
       .sign(sender.accountAddress.toString())
       .toUint8Array();
+    console.log("subAddress length:", subAddress.length);
+    console.log("rootAddress length:", rootAddress.length);
+    console.log("signature length:", signature.length);
     const payload = Vault.depositIntoUserSub({
       subAddress,
       rootAddress,

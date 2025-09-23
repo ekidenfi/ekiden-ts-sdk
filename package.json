@@ -39,7 +39,7 @@
     "copy-dts": "copyfiles -u 1 \"src/**/*.d.ts\" dist"
   },
   "dependencies": {
-    "@aptos-labs/ts-sdk": "^2.0.0",
+    "@aptos-labs/ts-sdk": "^5.0.0",
     "@noble/curves": "^1.9.2",
     "@noble/hashes": "^1.8.0",
     "bignumber.js": "^9.3.0",
