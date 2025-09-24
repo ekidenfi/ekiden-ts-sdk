@@ -4,8 +4,6 @@ import {
   type InputEntryFunctionData,
   InputViewFunctionData,
   MoveOption,
-  MoveVector,
-  U8,
 } from "@aptos-labs/ts-sdk";
 
 import { parseAbi } from "@/utils";
@@ -18,7 +16,7 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::request_withdraw_from_user`,
-      functionArguments: [args.assetMetadata, args.amount],
+      functionArguments: [AccountAddress.from(args.assetMetadata), args.amount],
       abi: parseAbi({
         generic_type_params: [],
         params: [
@@ -38,7 +36,11 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::request_withdraw_from_user_sub`,
-      functionArguments: [args.subUserAddress, args.assetMetadata, args.amount],
+      functionArguments: [
+        args.subUserAddress,
+        AccountAddress.from(args.assetMetadata),
+        args.amount,
+      ],
       abi: parseAbi({
         generic_type_params: [],
         params: [
@@ -58,7 +60,7 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::deposit_into_user`,
-      functionArguments: [args.assetMetadata, args.amount],
+      functionArguments: [AccountAddress.from(args.assetMetadata), args.amount],
       abi: parseAbi({
         generic_type_params: [],
         params: [
@@ -90,14 +92,12 @@ export class Vault {
     );
 
     const noneAddr = new MoveOption<AccountAddress>();
-    const proofOpt = new MoveOption<MoveVector<U8>>(MoveVector.U8(proofBytes));
-
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding`,
       functionArguments: [
         noneAddr, // existing_sub
-        proofOpt, // new_sub_link_proof
-        args.assetMetadata,
+        null, // new_sub_link_proof
+        AccountAddress.from(args.assetMetadata),
         args.amount,
       ],
       abi: parseAbi({
@@ -120,26 +120,44 @@ export class Vault {
     signature: Uint8Array;
     assetMetadata: string;
     amount: bigint;
+    fundingSubAddress: string;
+    tradingSubAddress: string;
+    tradingSubKey: Uint8Array;
+    tradingRootAddress: Uint8Array;
+    tradingSignature: Uint8Array;
   }): InputEntryFunctionData {
-    // Build sub link proof: pubkey(32) || root_addr(32) || sig(64)
-    const proofBytes = new Uint8Array(
+    // Build funding sub link proof: pubkey(32) || root_addr(32) || sig(64)
+    const fundingProofBytes = new Uint8Array(
       args.subAddress.length + args.rootAddress.length + args.signature.length,
     );
-    proofBytes.set(args.subAddress, 0);
-    proofBytes.set(args.rootAddress, args.subAddress.length);
-    proofBytes.set(
+    fundingProofBytes.set(args.subAddress, 0);
+    fundingProofBytes.set(args.rootAddress, args.subAddress.length);
+    fundingProofBytes.set(
       args.signature,
       args.subAddress.length + args.rootAddress.length,
+    );
+
+    // Build trading sub proof: trading_pubkey(32) || root_addr(32) || trading_sig(64)
+    const tradingProofBytes = new Uint8Array(
+      args.tradingSubKey.length +
+        args.tradingRootAddress.length +
+        args.tradingSignature.length,
+    );
+    tradingProofBytes.set(args.tradingSubKey, 0);
+    tradingProofBytes.set(args.tradingRootAddress, args.tradingSubKey.length);
+    tradingProofBytes.set(
+      args.tradingSignature,
+      args.tradingSubKey.length + args.tradingRootAddress.length,
     );
 
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_trading`,
       functionArguments: [
-        null, // existing_funding_sub (None)
-        Array.from(proofBytes), // new_funding_sub_link_proof as plain array
-        null, // existing_trading_sub (None)
-        null, // new_trading_sub_link_proof (None)
-        args.assetMetadata,
+        null, // funding_sub (use funding address instead of None)
+        null, // funding_proof - Option with MoveVector
+        AccountAddress.from(args.tradingSubAddress), // trading_sub (required address)
+        null, // trading_proof (now using proper trading proof)
+        AccountAddress.from(args.assetMetadata),
         args.amount,
       ],
       abi: parseAbi({
@@ -148,7 +166,7 @@ export class Vault {
           "&signer",
           "0x1::option::Option<address>",
           "0x1::option::Option<vector<u8>>",
-          "0x1::option::Option<address>",
+          "address",
           "0x1::option::Option<vector<u8>>",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
@@ -165,7 +183,11 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::withdraw_from_user_sub`,
-      functionArguments: [args.subUserAddress, args.assetMetadata, args.amount],
+      functionArguments: [
+        args.subUserAddress,
+        AccountAddress.from(args.assetMetadata),
+        args.amount,
+      ],
       abi: parseAbi({
         generic_type_params: [],
         params: [
@@ -190,6 +212,54 @@ export class Vault {
         `${args.token}::perpetual_collateral::PerpetualCollateral`,
       ],
       functionArguments: [AccountAddress.from(args.userAddress)],
+    };
+  }
+
+  static ownedSubAccs(args: {
+    vaultAddress: string;
+    userAddress: AccountAddressInput;
+  }): InputViewFunctionData {
+    return {
+      function: `${args.vaultAddress}::user::owned_sub_accs`,
+      functionArguments: [AccountAddress.from(args.userAddress)],
+    };
+  }
+
+  static isEkidenUser(args: {
+    ekidenAddress: string;
+    userAddress: AccountAddressInput;
+  }): InputViewFunctionData {
+    return {
+      function: `${args.ekidenAddress}::userr::is_ekiden_user`,
+      functionArguments: [AccountAddress.from(args.userAddress)],
+    };
+  }
+
+  static isFundingVaultExists(args: {
+    vaultAddress: string;
+    userAddress: AccountAddressInput;
+    assetMetadata: string;
+  }): InputViewFunctionData {
+    return {
+      function: `${args.vaultAddress}::vault::is_funding_vault_exists`,
+      functionArguments: [
+        AccountAddress.from(args.userAddress),
+        AccountAddress.from(args.assetMetadata),
+      ],
+    };
+  }
+
+  static isTradingVaultExists(args: {
+    vaultAddress: string;
+    subAddress: AccountAddressInput;
+    assetMetadata: string;
+  }): InputViewFunctionData {
+    return {
+      function: `${args.vaultAddress}::vault::is_trading_vault_exists`,
+      functionArguments: [
+        AccountAddress.from(args.subAddress),
+        AccountAddress.from(args.assetMetadata),
+      ],
     };
   }
 }
