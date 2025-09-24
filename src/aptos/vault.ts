@@ -113,50 +113,32 @@ export class Vault {
     };
   }
 
-  static depositIntoUserSub(args: {
+  static depositIntoFundingWithTransferToTrading(args: {
     vaultAddress: string;
-    subAddress: Uint8Array;
-    rootAddress: Uint8Array;
-    signature: Uint8Array;
+    fundingSubAddress?: string;
+    fundingProof?: Uint8Array;
+    tradingSubAddress: string;
+    tradingProof?: Uint8Array;
     assetMetadata: string;
     amount: bigint;
-    fundingSubAddress: string;
-    tradingSubAddress: string;
-    tradingSubKey: Uint8Array;
-    tradingRootAddress: Uint8Array;
-    tradingSignature: Uint8Array;
   }): InputEntryFunctionData {
-    // Build funding sub link proof: pubkey(32) || root_addr(32) || sig(64)
-    const fundingProofBytes = new Uint8Array(
-      args.subAddress.length + args.rootAddress.length + args.signature.length,
-    );
-    fundingProofBytes.set(args.subAddress, 0);
-    fundingProofBytes.set(args.rootAddress, args.subAddress.length);
-    fundingProofBytes.set(
-      args.signature,
-      args.subAddress.length + args.rootAddress.length,
-    );
+    const fundingSubOption = args.fundingSubAddress
+      ? new MoveOption<AccountAddress>(
+          AccountAddress.from(args.fundingSubAddress),
+        )
+      : new MoveOption<AccountAddress>();
 
-    // Build trading sub proof: trading_pubkey(32) || root_addr(32) || trading_sig(64)
-    const tradingProofBytes = new Uint8Array(
-      args.tradingSubKey.length +
-        args.tradingRootAddress.length +
-        args.tradingSignature.length,
-    );
-    tradingProofBytes.set(args.tradingSubKey, 0);
-    tradingProofBytes.set(args.tradingRootAddress, args.tradingSubKey.length);
-    tradingProofBytes.set(
-      args.tradingSignature,
-      args.tradingSubKey.length + args.tradingRootAddress.length,
-    );
+    const fundingProofOption = args.fundingProof ? args.fundingProof : null;
+
+    const tradingProofOption = args.tradingProof ? args.tradingProof : null;
 
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_trading`,
       functionArguments: [
-        null, // funding_sub (use funding address instead of None)
-        null, // funding_proof - Option with MoveVector
-        AccountAddress.from(args.tradingSubAddress), // trading_sub (required address)
-        null, // trading_proof (now using proper trading proof)
+        fundingSubOption,
+        fundingProofOption,
+        AccountAddress.from(args.tradingSubAddress),
+        tradingProofOption,
         AccountAddress.from(args.assetMetadata),
         args.amount,
       ],

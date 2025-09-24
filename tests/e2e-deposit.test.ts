@@ -177,18 +177,27 @@ describe("Aptos testnet live vault operations", () => {
     console.log("signature length:", signature.length);
     console.log("subAccountAddress:", subAccountAddress);
 
-    const payload = Vault.depositIntoUserSub({
-      subAddress,
-      rootAddress,
-      signature,
-      assetMetadata,
-      amount,
+    // Build funding and trading proofs
+    const fundingProof = new Uint8Array([
+      ...Array.from(subAddress),
+      ...Array.from(rootAddress),
+      ...Array.from(signature),
+    ]);
+
+    const tradingProof = new Uint8Array([
+      ...Array.from(subAddress), // same as subAddress
+      ...Array.from(rootAddress), // same as rootAddress  
+      ...Array.from(signature), // same as signature
+    ]);
+
+    const payload = Vault.depositIntoFundingWithTransferToTrading({
       vaultAddress,
       fundingSubAddress: subAccountAddress,
+      fundingProof,
       tradingSubAddress: subAccountAddress,
-      tradingSubKey: subAddress, // same as subAddress
-      tradingRootAddress: rootAddress, // same as rootAddress
-      tradingSignature: signature, // same as signature
+      tradingProof,
+      assetMetadata,
+      amount,
     });
     const committed = await sendTx(aptos, sender, payload);
     console.log("committed", committed);
