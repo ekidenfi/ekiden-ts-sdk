@@ -122,24 +122,19 @@ export class Vault {
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
-    const fundingSubOption = args.fundingSubAddress
-      ? new MoveOption<AccountAddress>(
-          AccountAddress.from(args.fundingSubAddress),
-        )
-      : new MoveOption<AccountAddress>();
-
-    const fundingProofOption = args.fundingProof ? args.fundingProof : null;
-
-    const tradingProofOption = args.tradingProof ? args.tradingProof : null;
+    // For wallet compatibility, we need to pass options differently
+    const fundingSubOption = args.fundingSubAddress || null;
+    const fundingProofOption = args.fundingProof || null;
+    const tradingProofOption = args.tradingProof || null;
 
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_trading`,
       functionArguments: [
         fundingSubOption,
         fundingProofOption,
-        AccountAddress.from(args.tradingSubAddress),
+        args.tradingSubAddress,
         tradingProofOption,
-        AccountAddress.from(args.assetMetadata),
+        args.assetMetadata,
         args.amount,
       ],
       abi: parseAbi({
