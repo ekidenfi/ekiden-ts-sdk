@@ -128,7 +128,7 @@ export class Vault {
     const tradingProofOption = args.tradingProof || null;
 
     return {
-      function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_trading`,
+      function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_cross_trading`,
       functionArguments: [
         fundingSubOption,
         fundingProofOption,
