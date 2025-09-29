@@ -177,6 +177,33 @@ export class Vault {
     };
   }
 
+  static withdrawFromFunding(args: {
+    vaultAddress: string;
+    subAccAddress?: string;
+    assetMetadata: string;
+    amount: bigint;
+  }): InputEntryFunctionData {
+    const subAccOption = args.subAccAddress ? args.subAccAddress : null;
+    
+    return {
+      function: `${args.vaultAddress}::vault::withdraw_from_funding`,
+      functionArguments: [
+        subAccOption,
+        AccountAddress.from(args.assetMetadata),
+        args.amount,
+      ],
+      abi: parseAbi({
+        generic_type_params: [],
+        params: [
+          "&signer",
+          "0x1::option::Option<address>",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+          "u64",
+        ],
+      }),
+    };
+  }
+
   static balanceOf(args: {
     vaultAddress: string;
     userAddress: AccountAddressInput;
@@ -232,7 +259,7 @@ export class Vault {
     assetMetadata: string;
   }): InputViewFunctionData {
     return {
-      function: `${args.vaultAddress}::vault::is_trading_vault_exists`,
+      function: `${args.vaultAddress}::vault::is_cross_trading_vault_exists`,
       functionArguments: [
         AccountAddress.from(args.subAddress),
         AccountAddress.from(args.assetMetadata),

@@ -153,7 +153,7 @@ describe("Aptos testnet live vault operations", () => {
     expect(subAccounts.length).toBeGreaterThan(0);
   });
 
-  test("submits deposit_into_funding_with_transfer_to_trading and confirms", async () => {
+  test("submits deposit_into_funding_with_transfer_to_cross_trading and confirms", async () => {
     const subAccount = Account.fromPrivateKey({
       privateKey: new Ed25519PrivateKey(subPrivateKey),
     });
@@ -186,7 +186,7 @@ describe("Aptos testnet live vault operations", () => {
 
     const tradingProof = new Uint8Array([
       ...Array.from(subAddress), // same as subAddress
-      ...Array.from(rootAddress), // same as rootAddress  
+      ...Array.from(rootAddress), // same as rootAddress
       ...Array.from(signature), // same as signature
     ]);
 

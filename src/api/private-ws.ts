@@ -169,17 +169,14 @@ export class PrivateWSClient {
 
       switch (message.op) {
         case "subscribed":
-          console.log("Subscribed:", message.args);
           break;
         case "unsubscribed":
-          console.log("Unsubscribed:", message.args);
           break;
         case "error":
           console.warn("WebSocket error:", message.message);
           break;
         case "pong":
           const rtt = Date.now() * 1e6 - (message.client_ts ?? 0);
-          console.log("RTT ns:", rtt);
           break;
         case "event":
           this.handleEvent(message);
