@@ -336,6 +336,7 @@ export interface OrderCreate {
   type: string;
   leverage: number;
   is_cross: boolean;
+  time_in_force: string | undefined;
 }
 
 export interface OrderCancelAction {
