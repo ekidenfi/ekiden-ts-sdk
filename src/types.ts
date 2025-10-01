@@ -408,8 +408,8 @@ export type OrderbookEvent = OrderbookSnapshot | OrderbookDelta;
 export type OrderbookChannel = `orderbook/${string}`;
 
 export type OrderbookEventMessage = {
-  type: "event";
-  channel: OrderbookChannel;
+  op: "event";
+  topic: OrderbookChannel;
   data: OrderbookEvent;
 };
 
@@ -417,7 +417,7 @@ export type OrderbookEventHandler = (event: OrderbookEventMessage) => void;
 
 // --- WebSocket: trades channel types ---
 
-export type TradesChannel = `trades/${string}`;
+export type TradesChannel = `trade/${string}`;
 
 export type Trade = {
   price: number;
@@ -434,8 +434,8 @@ export type TradesEventData = {
 };
 
 export type TradesEventMessage = {
-  type: "event";
-  channel: TradesChannel;
+  op: "event";
+  topic: TradesChannel;
   data: TradesEventData;
 };
 

@@ -19,7 +19,7 @@ export class WsAPIClient {
   }
 
   subscribeTrades(marketAddr: string, handler: TradesEventHandler) {
-    const channel = `trades/${marketAddr}` as const;
+    const channel = `trade/${marketAddr}` as const;
     this.ws.subscribe(channel, handler);
     return () => this.ws.unsubscribe(channel, handler);
   }

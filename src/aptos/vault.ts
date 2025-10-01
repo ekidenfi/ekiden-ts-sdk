@@ -79,6 +79,7 @@ export class Vault {
     signature: Uint8Array;
     assetMetadata: string;
     amount: bigint;
+    fundingAddress: string;
   }): InputEntryFunctionData {
     // Build sub link proof: pubkey(32) || root_addr(32) || sig(64)
     const proofBytes = new Uint8Array(
@@ -91,11 +92,13 @@ export class Vault {
       args.subAddress.length + args.rootAddress.length,
     );
 
-    const noneAddr = new MoveOption<AccountAddress>();
+    const fundingAddr = new MoveOption<AccountAddress>(
+      AccountAddress.from(args.fundingAddress),
+    );
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding`,
       functionArguments: [
-        noneAddr, // existing_sub
+        fundingAddr, // existing_sub (funding account address)
         null, // new_sub_link_proof
         AccountAddress.from(args.assetMetadata),
         args.amount,
@@ -264,6 +267,78 @@ export class Vault {
         AccountAddress.from(args.subAddress),
         AccountAddress.from(args.assetMetadata),
       ],
+    };
+  }
+
+  static transfer(args: {
+    vaultAddress: string;
+    vaultFrom?: string;
+    vaultTo?: string;
+    assetMetadata: string;
+    amount: bigint;
+    vaultFromType: string;
+    vaultToType: string;
+  }): InputEntryFunctionData {
+    return {
+      function: `${args.vaultAddress}::vault::transfer`,
+      typeArguments: [
+        args.vaultFromType,
+        args.vaultToType,
+      ],
+      functionArguments: [
+        args.vaultFrom || null,
+        args.vaultTo || null,
+        AccountAddress.from(args.assetMetadata),
+        args.amount,
+      ],
+      abi: parseAbi({
+        generic_type_params: [
+          { constraints: [] },
+          { constraints: [] },
+        ],
+        params: [
+          "&signer",
+          "0x1::option::Option<address>",
+          "0x1::option::Option<address>",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+          "u64",
+        ],
+      }),
+    };
+  }
+
+  static getSubAccs(args: {
+    vaultAddress: string;
+    subAddresses: string[];
+  }): InputViewFunctionData {
+    return {
+      function: `${args.vaultAddress}::user::get_sub_accs`,
+      functionArguments: [args.subAddresses],
+    };
+  }
+
+  static createEkidenUser(args: {
+    vaultAddress: string;
+    fundingLinkProof: Uint8Array;
+    crossTradingLinkProof: Uint8Array;
+    assetMetadata: string;
+  }): InputEntryFunctionData {
+    return {
+      function: `${args.vaultAddress}::user::create_ekiden_user`,
+      functionArguments: [
+        args.fundingLinkProof,
+        args.crossTradingLinkProof,
+        AccountAddress.from(args.assetMetadata),
+      ],
+      abi: parseAbi({
+        generic_type_params: [],
+        params: [
+          "&signer",
+          "vector<u8>",
+          "vector<u8>",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+        ],
+      }),
     };
   }
 }
