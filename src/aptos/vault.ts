@@ -3,7 +3,6 @@ import {
   type AccountAddressInput,
   type InputEntryFunctionData,
   InputViewFunctionData,
-  MoveOption,
 } from "@aptos-labs/ts-sdk";
 
 import { parseAbi } from "@/utils";
@@ -74,32 +73,14 @@ export class Vault {
 
   static depositIntoFunding(args: {
     vaultAddress: string;
-    subAddress: Uint8Array;
-    rootAddress: Uint8Array;
-    signature: Uint8Array;
+    subAddress: string;
     assetMetadata: string;
     amount: bigint;
-    fundingAddress: string;
   }): InputEntryFunctionData {
-    // Build sub link proof: pubkey(32) || root_addr(32) || sig(64)
-    const proofBytes = new Uint8Array(
-      args.subAddress.length + args.rootAddress.length + args.signature.length,
-    );
-    proofBytes.set(args.subAddress, 0);
-    proofBytes.set(args.rootAddress, args.subAddress.length);
-    proofBytes.set(
-      args.signature,
-      args.subAddress.length + args.rootAddress.length,
-    );
-
-    const fundingAddr = new MoveOption<AccountAddress>(
-      AccountAddress.from(args.fundingAddress),
-    );
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding`,
       functionArguments: [
-        fundingAddr, // existing_sub (funding account address)
-        null, // new_sub_link_proof
+        args.subAddress,
         AccountAddress.from(args.assetMetadata),
         args.amount,
       ],
@@ -107,8 +88,7 @@ export class Vault {
         generic_type_params: [],
         params: [
           "&signer",
-          "0x1::option::Option<address>",
-          "0x1::option::Option<vector<u8>>",
+          "address",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],
@@ -118,36 +98,25 @@ export class Vault {
 
   static depositIntoFundingWithTransferToTrading(args: {
     vaultAddress: string;
-    fundingSubAddress?: string;
-    fundingProof?: Uint8Array;
+    fundingSubAddress: string;
     tradingSubAddress: string;
-    tradingProof?: Uint8Array;
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
-    // For wallet compatibility, we need to pass options differently
-    const fundingSubOption = args.fundingSubAddress || null;
-    const fundingProofOption = args.fundingProof || null;
-    const tradingProofOption = args.tradingProof || null;
-
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_cross_trading`,
       functionArguments: [
-        fundingSubOption,
-        fundingProofOption,
+        args.fundingSubAddress,
         args.tradingSubAddress,
-        tradingProofOption,
-        args.assetMetadata,
+        AccountAddress.from(args.assetMetadata),
         args.amount,
       ],
       abi: parseAbi({
         generic_type_params: [],
         params: [
           "&signer",
-          "0x1::option::Option<address>",
-          "0x1::option::Option<vector<u8>>",
           "address",
-          "0x1::option::Option<vector<u8>>",
+          "address",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],
@@ -187,7 +156,7 @@ export class Vault {
     amount: bigint;
   }): InputEntryFunctionData {
     const subAccOption = args.subAccAddress ? args.subAccAddress : null;
-    
+
     return {
       function: `${args.vaultAddress}::vault::withdraw_from_funding`,
       functionArguments: [
@@ -281,10 +250,7 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::transfer`,
-      typeArguments: [
-        args.vaultFromType,
-        args.vaultToType,
-      ],
+      typeArguments: [args.vaultFromType, args.vaultToType],
       functionArguments: [
         args.vaultFrom || null,
         args.vaultTo || null,
@@ -292,10 +258,7 @@ export class Vault {
         args.amount,
       ],
       abi: parseAbi({
-        generic_type_params: [
-          { constraints: [] },
-          { constraints: [] },
-        ],
+        generic_type_params: [{ constraints: [] }, { constraints: [] }],
         params: [
           "&signer",
           "0x1::option::Option<address>",
@@ -335,6 +298,29 @@ export class Vault {
         params: [
           "&signer",
           "vector<u8>",
+          "vector<u8>",
+          "0x1::object::Object<0x1::fungible_asset::Metadata>",
+        ],
+      }),
+    };
+  }
+
+  static createAndLinkSubAccount(args: {
+    vaultAddress: string;
+    linkProof: Uint8Array;
+    assetMetadata: string;
+  }): InputEntryFunctionData {
+    return {
+      function: `${args.vaultAddress}::user::create_and_link_sub_account`,
+      typeArguments: [`${args.vaultAddress}::vault::UserCrossTrading`],
+      functionArguments: [
+        args.linkProof,
+        AccountAddress.from(args.assetMetadata),
+      ],
+      abi: parseAbi({
+        generic_type_params: [{ constraints: [] }],
+        params: [
+          "&signer",
           "vector<u8>",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
         ],

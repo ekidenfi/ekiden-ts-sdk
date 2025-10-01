@@ -27,7 +27,7 @@ import type {
 } from "@/types";
 
 export class HttpClient {
-  private token?: string;
+  token?: string;
 
   constructor(readonly config: EkidenClientConfig) {}
 
