@@ -28,6 +28,19 @@ export interface MarketResponse {
   epoch: number;
   created_at: string;
   updated_at: string;
+  addr?: string;
+  price_feed_id?: string;
+  max_leverage_isolated?: number;
+  initial_margin_ratio_isolated?: number;
+  maintenance_margin_ratio_isolated?: number;
+  isolated_margin_enabled?: boolean;
+}
+
+export interface GetMarketInfoParams {
+  market_addr?: string;
+  symbol?: string;
+  page?: number;
+  per_page?: number;
 }
 
 export interface OrderResponse {
@@ -84,6 +97,13 @@ export interface PositionResponse {
   user_addr: string;
   seq: number;
   timestamp: number;
+  side?: "buy" | "sell";
+  entry_price?: number;
+  is_cross?: boolean;
+  mark_price?: number;
+  unrealized_pnl?: number;
+  realized_pnl_delta?: number;
+  realized_pnl_cum?: number;
 }
 
 export interface VaultResponse {

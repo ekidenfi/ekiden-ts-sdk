@@ -44,7 +44,6 @@ describe("Aptos testnet live vault operations", () => {
     });
 
     const result = await aptos.view({ payload });
-    console.log("Owned subaccounts:", result);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result[0]).toBeDefined();

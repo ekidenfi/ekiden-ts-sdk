@@ -7,6 +7,7 @@ import type {
   FundingEpochResponse,
   FundingRateResponse,
   GetFundingRateParams,
+  GetMarketInfoParams,
   ListCandlesParams,
   ListFillsParams,
   ListOrdersParams,
@@ -128,6 +129,16 @@ export class HttpClient {
 
   async getMarkets(): Promise<MarketResponse[]> {
     return this.request<MarketResponse[]>("/market/market_info");
+  }
+
+  async getMarketInfo(
+    params: GetMarketInfoParams = {},
+  ): Promise<MarketResponse[]> {
+    return this.request<MarketResponse[]>(
+      "/market/market_info",
+      {},
+      { query: params },
+    );
   }
 
   async getOrders(params: ListOrdersParams): Promise<OrderResponse[]> {

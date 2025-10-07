@@ -33,12 +33,9 @@ async function depositExample() {
   const privateKey = new Ed25519PrivateKey(config.privateKey);
   const account = new Ed25519Account({ privateKey });
 
-  console.log(1, account.accountAddress.toString());
-
   const bal = await aptos.getAccountAPTAmount({
     accountAddress: account.accountAddress.toString(),
   });
-  console.log("APT (octas):", bal, "≈ APT:", Number(bal) / 1e8);
 
   const transactionPayload = ekiden.vault.depositIntoUser({
     vaultAddress: config.vaultAddress,

@@ -312,7 +312,7 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::user::create_and_link_sub_account`,
-      typeArguments: [`${args.vaultAddress}::vault::UserCrossTrading`],
+      typeArguments: [`${args.vaultAddress}::user::CrossTrading`],
       functionArguments: [
         args.linkProof,
         AccountAddress.from(args.assetMetadata),

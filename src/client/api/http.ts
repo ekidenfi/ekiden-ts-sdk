@@ -16,6 +16,10 @@ export class HttpAPIClient {
     return this.api.getMarkets();
   }
 
+  async getMarketInfo(params?: Parameters<HttpClient["getMarketInfo"]>[0]) {
+    return this.api.getMarketInfo(params);
+  }
+
   async getOrders(params: Parameters<HttpClient["getOrders"]>[0]) {
     return this.api.getOrders(params);
   }
