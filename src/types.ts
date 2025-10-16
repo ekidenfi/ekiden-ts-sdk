@@ -466,3 +466,19 @@ export type ChannelMap = {
   [key: OrderbookChannel]: OrderbookEventMessage;
   [key: TradesChannel]: TradesEventMessage;
 };
+
+export interface WithdrawFromTradingParams {
+  addr_from: string;
+  addr_to: string;
+  amount: number;
+  asset_metadata: string;
+  nonce: number;
+  signature: string;
+  timestamp: number;
+  withdraw_available: boolean;
+}
+
+export interface WithdrawFromTradingResponse {
+  success: boolean;
+  message?: string;
+}

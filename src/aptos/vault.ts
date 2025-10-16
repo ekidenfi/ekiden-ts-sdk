@@ -7,6 +7,45 @@ import {
 
 import { parseAbi } from "@/utils";
 
+export interface SubAccountData {
+  types: string[][];
+  owners: string[];
+  subs: string[];
+  pubks: string[][];
+  nonces: string[];
+  metadatas: Array<{ inner: string }>;
+}
+
+export const decodeHexToString = (hex: string): string => {
+  const hexString = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const bytes = new Uint8Array(
+    hexString.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || [],
+  );
+  return new TextDecoder().decode(bytes);
+};
+
+export const parseSubAccountsData = (
+  result: unknown[],
+): SubAccountData => {
+  const [types, owners, subs, pubks, nonces, metadatas] = result as [
+    string[][],
+    string[],
+    string[],
+    string[][],
+    string[],
+    Array<{ inner: string }>,
+  ];
+
+  return {
+    types,
+    owners,
+    subs,
+    pubks,
+    nonces,
+    metadatas,
+  };
+};
+
 export class Vault {
   static requestWithdrawFromUser(args: {
     vaultAddress: string;

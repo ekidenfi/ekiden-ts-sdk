@@ -25,6 +25,8 @@ import type {
   SendIntentWithCommitResponse,
   UserLeverageParams,
   VaultResponse,
+  WithdrawFromTradingParams,
+  WithdrawFromTradingResponse,
 } from "@/types";
 
 export class HttpClient {
@@ -289,6 +291,21 @@ export class HttpClient {
     this.ensureAuth();
     return this.request<PortfolioResponse>(
       "/user/leverage",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
+      { auth: true },
+    );
+  }
+
+  async withdrawFromTrading(
+    params: WithdrawFromTradingParams,
+  ): Promise<WithdrawFromTradingResponse> {
+    this.ensureAuth();
+    return this.request<WithdrawFromTradingResponse>(
+      "/user/vaults/withdraw",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

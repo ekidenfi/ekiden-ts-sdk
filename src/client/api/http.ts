@@ -91,4 +91,10 @@ export class HttpAPIClient {
   async setUserLeverage(params: Parameters<HttpClient["setUserLeverage"]>[0]) {
     return this.api.setUserLeverage(params);
   }
+
+  async withdrawFromTrading(
+    params: Parameters<HttpClient["withdrawFromTrading"]>[0],
+  ) {
+    return this.api.withdrawFromTrading(params);
+  }
 }
