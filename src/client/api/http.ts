@@ -5,7 +5,7 @@ export class HttpAPIClient {
   api: HttpClient;
 
   constructor(readonly config: EkidenClientConfig) {
-    this.api = new HttpClient({ baseURL: config.baseURL });
+    this.api = new HttpClient({ baseURL: config.baseURL, apiPrefix: config.apiPrefix });
   }
 
   async authorize(params: Parameters<HttpClient["authorize"]>[0]) {
@@ -78,6 +78,10 @@ export class HttpAPIClient {
 
   async getUserPortfolio() {
     return this.api.getUserPortfolio();
+  }
+
+  async getUserLeverage(market_addr: string) {
+    return this.api.getUserLeverage(market_addr);
   }
 
   async setUserLeverage(params: Parameters<HttpClient["setUserLeverage"]>[0]) {

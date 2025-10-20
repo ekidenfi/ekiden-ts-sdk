@@ -2,6 +2,7 @@ export type EkidenClientConfig = {
   baseURL: string;
   wsURL?: string;
   privateWSURL?: string;
+  apiPrefix: string;
 };
 
 // export const MAINNET: EkidenClientConfig = {
@@ -13,6 +14,7 @@ export const TESTNET: EkidenClientConfig = {
   baseURL: "https://api.staging.ekiden.fi",
   wsURL: "wss://api.staging.ekiden.fi/ws/public",
   privateWSURL: "wss://api.staging.ekiden.fi/ws/private",
+  apiPrefix: "/api/v1",
 };
 
 export interface VaultOptions {

@@ -35,6 +35,10 @@ export class HttpClient {
     return this.config.baseURL;
   }
 
+  private get apiPrefix() {
+    return this.config.apiPrefix;
+  }
+
   setToken(token: string) {
     this.token = token;
   }
@@ -101,7 +105,7 @@ export class HttpClient {
   }
 
   private buildUrl(path: string, query?: Record<string, any>): string {
-    const url = new URL(`${this.baseURL}${path}`);
+    const url = new URL(`${this.baseURL}${this.apiPrefix}${path}`);
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
@@ -113,7 +117,7 @@ export class HttpClient {
   }
 
   async authorize(params: AuthorizeParams): Promise<AuthorizeResponse> {
-    const data = await this.request<AuthorizeResponse>("/authorize", {
+  const data = await this.request<AuthorizeResponse>("/authorize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -123,7 +127,7 @@ export class HttpClient {
   }
 
   async getMarkets(): Promise<MarketResponse[]> {
-    return this.request<MarketResponse[]>("/market/markets");
+    return this.request<MarketResponse[]>("/market/market_info");
   }
 
   async getOrders(params: ListOrdersParams): Promise<OrderResponse[]> {
@@ -135,7 +139,11 @@ export class HttpClient {
   }
 
   async getFills(params: ListFillsParams): Promise<FillResponse[]> {
-    return this.request<FillResponse[]>("/market/fills", {}, { query: params });
+    return this.request<FillResponse[]>(
+      "/market/fills",
+      {},
+      { query: params },
+    );
   }
 
   async getUserOrders(
@@ -227,7 +235,9 @@ export class HttpClient {
   }
 
   async getFundingEpoch(): Promise<FundingEpochResponse> {
-    return this.request<FundingEpochResponse>("/market/funding_rate/epoch");
+    return this.request<FundingEpochResponse>(
+      "/market/funding_rate/epoch",
+    );
   }
 
   async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
@@ -250,6 +260,15 @@ export class HttpClient {
       "/user/portfolio",
       {},
       { auth: true },
+    );
+  }
+
+  async getUserLeverage(market_addr: string): Promise<{ leverage: number; market_addr: string }> {
+    this.ensureAuth();
+    return this.request<{ leverage: number; market_addr: string }>(
+      "/user/leverage",
+      {},
+      { auth: true, query: { market_addr } },
     );
   }
 

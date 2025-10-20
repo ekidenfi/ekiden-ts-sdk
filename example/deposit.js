@@ -25,7 +25,7 @@ const config = {
 
 async function depositExample() {
   const ekiden = new EkidenClient({
-    baseURL: TESTNET.baseURL,
+    baseURL: `${TESTNET.baseURL}/api/v1`,
   });
   const aptosConfig = new AptosConfig({ network: Network.TESTNET });
   const aptos = new Aptos(aptosConfig);
