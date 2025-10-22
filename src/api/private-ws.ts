@@ -175,9 +175,6 @@ export class PrivateWSClient {
         case "error":
           console.warn("WebSocket error:", message.message);
           break;
-        case "pong":
-          const rtt = Date.now() * 1e6 - (message.client_ts ?? 0);
-          break;
         case "event":
           this.handleEvent(message);
           break;

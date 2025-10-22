@@ -120,7 +120,7 @@ export class HttpClient {
   }
 
   async authorize(params: AuthorizeParams): Promise<AuthorizeResponse> {
-  const data = await this.request<AuthorizeResponse>("/authorize", {
+    const data = await this.request<AuthorizeResponse>("/authorize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -152,11 +152,7 @@ export class HttpClient {
   }
 
   async getFills(params: ListFillsParams): Promise<FillResponse[]> {
-    return this.request<FillResponse[]>(
-      "/market/fills",
-      {},
-      { query: params },
-    );
+    return this.request<FillResponse[]>("/market/fills", {}, { query: params });
   }
 
   async getUserOrders(
@@ -248,9 +244,7 @@ export class HttpClient {
   }
 
   async getFundingEpoch(): Promise<FundingEpochResponse> {
-    return this.request<FundingEpochResponse>(
-      "/market/funding_rate/epoch",
-    );
+    return this.request<FundingEpochResponse>("/market/funding_rate/epoch");
   }
 
   async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
@@ -276,7 +270,9 @@ export class HttpClient {
     );
   }
 
-  async getUserLeverage(market_addr: string): Promise<{ leverage: number; market_addr: string }> {
+  async getUserLeverage(
+    market_addr: string,
+  ): Promise<{ leverage: number; market_addr: string }> {
     this.ensureAuth();
     return this.request<{ leverage: number; market_addr: string }>(
       "/user/leverage",

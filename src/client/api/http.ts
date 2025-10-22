@@ -5,7 +5,10 @@ export class HttpAPIClient {
   api: HttpClient;
 
   constructor(readonly config: EkidenClientConfig) {
-    this.api = new HttpClient({ baseURL: config.baseURL, apiPrefix: config.apiPrefix });
+    this.api = new HttpClient({
+      baseURL: config.baseURL,
+      apiPrefix: config.apiPrefix,
+    });
   }
 
   async authorize(params: Parameters<HttpClient["authorize"]>[0]) {

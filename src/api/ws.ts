@@ -20,10 +20,10 @@ export class WsClient<
   ) {
     if (!this.handlers.has(channel)) {
       this.handlers.set(channel, new Set());
-      this.send({ 
-        op: "subscribe", 
-        args: [channel], 
-        req_id: (this.reqIdCounter++).toString() 
+      this.send({
+        op: "subscribe",
+        args: [channel],
+        req_id: (this.reqIdCounter++).toString(),
       });
     }
     this.handlers.get(channel)!.add(handler as any);
@@ -37,10 +37,10 @@ export class WsClient<
     if (!set) return;
     set.delete(handler as any);
     if (set.size === 0) {
-      this.send({ 
-        op: "unsubscribe", 
-        args: [channel], 
-        req_id: (this.reqIdCounter++).toString() 
+      this.send({
+        op: "unsubscribe",
+        args: [channel],
+        req_id: (this.reqIdCounter++).toString(),
       });
       this.handlers.delete(channel);
     }
@@ -52,9 +52,13 @@ export class WsClient<
       if (msg.op === "event" && this.handlers.has(msg.topic)) {
         this.handlers.get(msg.topic)!.forEach((h) => h(msg));
       } else if (msg.op === "subscribed" && msg.args?.length > 0) {
-        console.log(`[WsClient] Subscribed to: ${msg.args[0]} (req_id: ${msg.req_id})`);
+        console.log(
+          `[WsClient] Subscribed to: ${msg.args[0]} (req_id: ${msg.req_id})`,
+        );
       } else if (msg.op === "unsubscribed" && msg.args?.length > 0) {
-        console.log(`[WsClient] Unsubscribed from: ${msg.args[0]} (req_id: ${msg.req_id})`);
+        console.log(
+          `[WsClient] Unsubscribed from: ${msg.args[0]} (req_id: ${msg.req_id})`,
+        );
       }
     } catch (err) {
       console.warn(`[WsClient] Failed to parse message`, err);

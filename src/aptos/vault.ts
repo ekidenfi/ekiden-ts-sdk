@@ -24,9 +24,7 @@ export const decodeHexToString = (hex: string): string => {
   return new TextDecoder().decode(bytes);
 };
 
-export const parseSubAccountsData = (
-  result: unknown[],
-): SubAccountData => {
+export const parseSubAccountsData = (result: unknown[]): SubAccountData => {
   const [types, owners, subs, pubks, nonces, metadatas] = result as [
     string[][],
     string[],
