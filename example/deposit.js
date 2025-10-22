@@ -25,7 +25,7 @@ const config = {
 
 async function depositExample() {
   const ekiden = new EkidenClient({
-    baseURL: TESTNET.baseURL,
+    baseURL: `${TESTNET.baseURL}/api/v1`,
   });
   const aptosConfig = new AptosConfig({ network: Network.TESTNET });
   const aptos = new Aptos(aptosConfig);
@@ -33,12 +33,9 @@ async function depositExample() {
   const privateKey = new Ed25519PrivateKey(config.privateKey);
   const account = new Ed25519Account({ privateKey });
 
-  console.log(1, account.accountAddress.toString());
-
   const bal = await aptos.getAccountAPTAmount({
     accountAddress: account.accountAddress.toString(),
   });
-  console.log("APT (octas):", bal, "≈ APT:", Number(bal) / 1e8);
 
   const transactionPayload = ekiden.vault.depositIntoUser({
     vaultAddress: config.vaultAddress,

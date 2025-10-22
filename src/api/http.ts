@@ -7,6 +7,7 @@ import type {
   FundingEpochResponse,
   FundingRateResponse,
   GetFundingRateParams,
+  GetMarketInfoParams,
   ListCandlesParams,
   ListFillsParams,
   ListOrdersParams,
@@ -24,15 +25,21 @@ import type {
   SendIntentWithCommitResponse,
   UserLeverageParams,
   VaultResponse,
+  WithdrawFromTradingParams,
+  WithdrawFromTradingResponse,
 } from "@/types";
 
 export class HttpClient {
-  private token?: string;
+  token?: string;
 
   constructor(readonly config: EkidenClientConfig) {}
 
   private get baseURL() {
     return this.config.baseURL;
+  }
+
+  private get apiPrefix() {
+    return this.config.apiPrefix;
   }
 
   setToken(token: string) {
@@ -101,7 +108,7 @@ export class HttpClient {
   }
 
   private buildUrl(path: string, query?: Record<string, any>): string {
-    const url = new URL(`${this.baseURL}${path}`);
+    const url = new URL(`${this.baseURL}${this.apiPrefix}${path}`);
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
@@ -113,7 +120,7 @@ export class HttpClient {
   }
 
   async authorize(params: AuthorizeParams): Promise<AuthorizeResponse> {
-    const data = await this.request<AuthorizeResponse>("/authorize", {
+  const data = await this.request<AuthorizeResponse>("/authorize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -123,7 +130,17 @@ export class HttpClient {
   }
 
   async getMarkets(): Promise<MarketResponse[]> {
-    return this.request<MarketResponse[]>("/market/markets");
+    return this.request<MarketResponse[]>("/market/market_info");
+  }
+
+  async getMarketInfo(
+    params: GetMarketInfoParams = {},
+  ): Promise<MarketResponse[]> {
+    return this.request<MarketResponse[]>(
+      "/market/market_info",
+      {},
+      { query: params },
+    );
   }
 
   async getOrders(params: ListOrdersParams): Promise<OrderResponse[]> {
@@ -135,7 +152,11 @@ export class HttpClient {
   }
 
   async getFills(params: ListFillsParams): Promise<FillResponse[]> {
-    return this.request<FillResponse[]>("/market/fills", {}, { query: params });
+    return this.request<FillResponse[]>(
+      "/market/fills",
+      {},
+      { query: params },
+    );
   }
 
   async getUserOrders(
@@ -227,7 +248,9 @@ export class HttpClient {
   }
 
   async getFundingEpoch(): Promise<FundingEpochResponse> {
-    return this.request<FundingEpochResponse>("/market/funding_rate/epoch");
+    return this.request<FundingEpochResponse>(
+      "/market/funding_rate/epoch",
+    );
   }
 
   async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
@@ -253,12 +276,36 @@ export class HttpClient {
     );
   }
 
+  async getUserLeverage(market_addr: string): Promise<{ leverage: number; market_addr: string }> {
+    this.ensureAuth();
+    return this.request<{ leverage: number; market_addr: string }>(
+      "/user/leverage",
+      {},
+      { auth: true, query: { market_addr } },
+    );
+  }
+
   async setUserLeverage(
     params: UserLeverageParams,
   ): Promise<PortfolioResponse> {
     this.ensureAuth();
     return this.request<PortfolioResponse>(
       "/user/leverage",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
+      { auth: true },
+    );
+  }
+
+  async withdrawFromTrading(
+    params: WithdrawFromTradingParams,
+  ): Promise<WithdrawFromTradingResponse> {
+    this.ensureAuth();
+    return this.request<WithdrawFromTradingResponse>(
+      "/user/vaults/withdraw",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

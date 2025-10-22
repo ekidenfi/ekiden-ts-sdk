@@ -5,7 +5,7 @@ export class HttpAPIClient {
   api: HttpClient;
 
   constructor(readonly config: EkidenClientConfig) {
-    this.api = new HttpClient({ baseURL: config.baseURL });
+    this.api = new HttpClient({ baseURL: config.baseURL, apiPrefix: config.apiPrefix });
   }
 
   async authorize(params: Parameters<HttpClient["authorize"]>[0]) {
@@ -14,6 +14,10 @@ export class HttpAPIClient {
 
   async getMarkets() {
     return this.api.getMarkets();
+  }
+
+  async getMarketInfo(params?: Parameters<HttpClient["getMarketInfo"]>[0]) {
+    return this.api.getMarketInfo(params);
   }
 
   async getOrders(params: Parameters<HttpClient["getOrders"]>[0]) {
@@ -80,7 +84,17 @@ export class HttpAPIClient {
     return this.api.getUserPortfolio();
   }
 
+  async getUserLeverage(market_addr: string) {
+    return this.api.getUserLeverage(market_addr);
+  }
+
   async setUserLeverage(params: Parameters<HttpClient["setUserLeverage"]>[0]) {
     return this.api.setUserLeverage(params);
+  }
+
+  async withdrawFromTrading(
+    params: Parameters<HttpClient["withdrawFromTrading"]>[0],
+  ) {
+    return this.api.withdrawFromTrading(params);
   }
 }

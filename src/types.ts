@@ -28,6 +28,19 @@ export interface MarketResponse {
   epoch: number;
   created_at: string;
   updated_at: string;
+  addr?: string;
+  price_feed_id?: string;
+  max_leverage_isolated?: number;
+  initial_margin_ratio_isolated?: number;
+  maintenance_margin_ratio_isolated?: number;
+  isolated_margin_enabled?: boolean;
+}
+
+export interface GetMarketInfoParams {
+  market_addr?: string;
+  symbol?: string;
+  page?: number;
+  per_page?: number;
 }
 
 export interface OrderResponse {
@@ -84,6 +97,13 @@ export interface PositionResponse {
   user_addr: string;
   seq: number;
   timestamp: number;
+  side?: "buy" | "sell";
+  entry_price?: number;
+  is_cross?: boolean;
+  mark_price?: number;
+  unrealized_pnl?: number;
+  realized_pnl_delta?: number;
+  realized_pnl_cum?: number;
 }
 
 export interface VaultResponse {
@@ -299,6 +319,7 @@ export interface SendIntentParams {
   nonce: number;
   payload: ActionPayload;
   signature: string;
+  user_addr?: string;
 }
 
 export interface SendIntentResponse {
@@ -336,6 +357,7 @@ export interface OrderCreate {
   type: string;
   leverage: number;
   is_cross: boolean;
+  time_in_force: string | undefined;
 }
 
 export interface OrderCancelAction {
@@ -407,8 +429,8 @@ export type OrderbookEvent = OrderbookSnapshot | OrderbookDelta;
 export type OrderbookChannel = `orderbook/${string}`;
 
 export type OrderbookEventMessage = {
-  type: "event";
-  channel: OrderbookChannel;
+  op: "event";
+  topic: OrderbookChannel;
   data: OrderbookEvent;
 };
 
@@ -416,7 +438,7 @@ export type OrderbookEventHandler = (event: OrderbookEventMessage) => void;
 
 // --- WebSocket: trades channel types ---
 
-export type TradesChannel = `trades/${string}`;
+export type TradesChannel = `trade/${string}`;
 
 export type Trade = {
   price: number;
@@ -433,8 +455,8 @@ export type TradesEventData = {
 };
 
 export type TradesEventMessage = {
-  type: "event";
-  channel: TradesChannel;
+  op: "event";
+  topic: TradesChannel;
   data: TradesEventData;
 };
 
@@ -444,3 +466,19 @@ export type ChannelMap = {
   [key: OrderbookChannel]: OrderbookEventMessage;
   [key: TradesChannel]: TradesEventMessage;
 };
+
+export interface WithdrawFromTradingParams {
+  addr_from: string;
+  addr_to: string;
+  amount: number;
+  asset_metadata: string;
+  nonce: number;
+  signature: string;
+  timestamp: number;
+  withdraw_available: boolean;
+}
+
+export interface WithdrawFromTradingResponse {
+  success: boolean;
+  message?: string;
+}
