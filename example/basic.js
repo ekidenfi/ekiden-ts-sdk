@@ -97,7 +97,8 @@ function signAuthorize(account, timestampMs, nonce) {
 // Sign intent payload
 function signIntent(account, actionPayload, nonceNumber) {
   const hex = buildOrderPayload({ payload: actionPayload, nonce: nonceNumber });
-  const sigHex = account.sign(hex).toString();
+  const bytes = hexToBytes(hex);
+  const sigHex = account.sign(bytes).toString();
   return sigHex.startsWith("0x") ? sigHex : "0x" + sigHex;
 }
 
@@ -158,9 +159,9 @@ async function main() {
   console.log("Trading Account:", tradingAcc?.accountAddress.toString() || "(none)");
 
   // Init client
-  const client = new EkidenClient({ 
-    baseURL: TESTNET.baseURL, 
-    wsURL: TESTNET.wsURL, 
+  const client = new EkidenClient({
+    baseURL: TESTNET.baseURL,
+    wsURL: TESTNET.wsURL,
     privateWSURL: TESTNET.privateWSURL,
     apiPrefix: TESTNET.apiPrefix,
   });
@@ -209,13 +210,23 @@ async function main() {
         type: "limit",
         is_cross: CONFIG.IS_CROSS,
         time_in_force: "PostOnly", // alternatives: "GTC", "IOC", "FOK"
+        // Optional: conditional trigger price, reduce-only, link id
+        // trigger_price: price, // example
+        // reduce_only: true,
+        // order_link_id: "example-123",
+        // TP/SL bracket
+        bracket: {
+          mode: "FULL",
+          take_profit: { trigger_price: Math.max(1, CONFIG.PRICE + Math.floor(CONFIG.PRICE * 0.02)), order_type: "MARKET" },
+          stop_loss: { trigger_price: Math.max(1, CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02)), order_type: "LIMIT", limit_price: Math.max(1, CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02)) },
+        },
       },
     ],
   };
   const createSig = signIntent(signingAccount, createPayload, createNonce);
-  const createReq = { 
-    payload: createPayload, 
-    nonce: createNonce, 
+  const createReq = {
+    payload: createPayload,
+    nonce: createNonce,
     signature: createSig,
   };
   console.log("Create request:", JSON.stringify(createReq, null, 2));

@@ -2,6 +2,12 @@ import { Serializer } from "@aptos-labs/ts-sdk";
 
 import { ActionPayload } from "@/types";
 
+// Encode enums the way Rust BCS does (by variant index using ULEB128),
+// matching `TpSlMode` and `TpSlOrderType` order in ekiden-core.
+const encodeTpSlMode = (mode: string): number => (mode === "FULL" ? 0 : 1);
+const encodeTpSlOrderType = (orderType: string): number =>
+  orderType === "MARKET" ? 0 : 1;
+
 export const buildOrderPayload = ({
   payload,
   nonce,
@@ -34,7 +40,81 @@ export const buildOrderPayload = ({
       serializer.serializeStr(order.type);
       serializer.serializeStr(order.market_addr);
       serializer.serializeBool(order.is_cross);
+      // time_in_force (Option<string>)
       serializer.serializeOption<string>(order.time_in_force);
+
+      // trigger_price (skipped if None per #[serde(skip_serializing_if)])
+      if (order.trigger_price !== undefined && order.trigger_price !== null) {
+        // Some(value): write Option tag (1) + value; None is fully omitted (no 0 tag)
+        serializer.serializeU8(1);
+        serializer.serializeU64(BigInt(order.trigger_price));
+      }
+
+      // reduce_only (skipped if None per #[serde(skip_serializing_if)])
+      if (order.reduce_only !== undefined && order.reduce_only !== null) {
+        // Some(value): write Option tag (1) + value; None is fully omitted (no 0 tag)
+        serializer.serializeU8(1);
+        serializer.serializeBool(Boolean(order.reduce_only));
+      }
+
+      // order_link_id (skipped if None per #[serde(skip_serializing_if)])
+      if (order.order_link_id !== undefined && order.order_link_id !== null) {
+        // Some(value): write Option tag (1) + value; None is fully omitted (no 0 tag)
+        serializer.serializeU8(1);
+        serializer.serializeStr(order.order_link_id);
+      }
+
+      // bracket (Option<TpSlBracket>)
+      if (order.bracket) {
+        serializer.serializeU8(1);
+        const bracket = order.bracket;
+        // mode as enum index (ULEB128): FULL=0, PARTIAL=1
+        serializer.serializeU32AsUleb128(encodeTpSlMode(bracket.mode));
+
+        // take_profit: Option<TpSlSpec>
+        if (!bracket.take_profit) {
+          serializer.serializeU8(0);
+        } else {
+          serializer.serializeU8(1);
+          serializer.serializeU64(BigInt(bracket.take_profit.trigger_price));
+          // order_type as enum index (ULEB128): MARKET=0, LIMIT=1
+          serializer.serializeU32AsUleb128(
+            encodeTpSlOrderType(bracket.take_profit.order_type),
+          );
+          if (
+            bracket.take_profit.limit_price === undefined ||
+            bracket.take_profit.limit_price === null
+          ) {
+            serializer.serializeU8(0);
+          } else {
+            serializer.serializeU8(1);
+            serializer.serializeU64(BigInt(bracket.take_profit.limit_price));
+          }
+        }
+
+        // stop_loss: Option<TpSlSpec>
+        if (!bracket.stop_loss) {
+          serializer.serializeU8(0);
+        } else {
+          serializer.serializeU8(1);
+          serializer.serializeU64(BigInt(bracket.stop_loss.trigger_price));
+          // order_type as enum index (ULEB128): MARKET=0, LIMIT=1
+          serializer.serializeU32AsUleb128(
+            encodeTpSlOrderType(bracket.stop_loss.order_type),
+          );
+          if (
+            bracket.stop_loss.limit_price === undefined ||
+            bracket.stop_loss.limit_price === null
+          ) {
+            serializer.serializeU8(0);
+          } else {
+            serializer.serializeU8(1);
+            serializer.serializeU64(BigInt(bracket.stop_loss.limit_price));
+          }
+        }
+      } else {
+        // None: per #[serde(skip_serializing_if)], omit entirely (no 0 tag)
+      }
     }
   } else {
     throw new Error(`Unknown action type: ${(payload as any).type}`);
