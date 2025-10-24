@@ -358,6 +358,30 @@ export interface OrderCreate {
   leverage: number;
   is_cross: boolean;
   time_in_force: string | undefined;
+  // Optional conditional trigger price for the entry order
+  trigger_price?: number;
+  // Optional reduce-only flag
+  reduce_only?: boolean;
+  // Optional client-provided correlation id
+  order_link_id?: string;
+  // Optional TP/SL bracket
+  bracket?: TpSlBracket;
+}
+
+export type TpSlMode = "FULL" | "PARTIAL";
+
+export type TpSlOrderType = "MARKET" | "LIMIT";
+
+export interface TpSlSpec {
+  trigger_price: number;
+  order_type: TpSlOrderType;
+  limit_price?: number;
+}
+
+export interface TpSlBracket {
+  mode: TpSlMode;
+  take_profit?: TpSlSpec | null;
+  stop_loss?: TpSlSpec | null;
 }
 
 export interface OrderCancelAction {

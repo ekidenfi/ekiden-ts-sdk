@@ -97,7 +97,8 @@ function signAuthorize(account, timestampMs, nonce) {
 // Sign intent payload
 function signIntent(account, actionPayload, nonceNumber) {
   const hex = buildOrderPayload({ payload: actionPayload, nonce: nonceNumber });
-  const sigHex = account.sign(hex).toString();
+  const bytes = hexToBytes(hex);
+  const sigHex = account.sign(bytes).toString();
   return sigHex.startsWith("0x") ? sigHex : "0x" + sigHex;
 }
 
