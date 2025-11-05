@@ -358,10 +358,11 @@ export class Vault {
   static createAndLinkSubAccount(args: {
     vaultAddress: string;
     linkProof: Uint8Array;
+    vaultType?: string;
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::user::create_and_link_sub_account`,
-      typeArguments: [`${args.vaultAddress}::vault_types::Cross`],
+      typeArguments: [`${args.vaultAddress}::user::CrossTrading`],
       functionArguments: [args.linkProof],
       abi: parseAbi({
         generic_type_params: [{ constraints: [] }],
