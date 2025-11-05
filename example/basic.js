@@ -164,6 +164,10 @@ async function main() {
     wsURL: TESTNET.wsURL,
     privateWSURL: TESTNET.privateWSURL,
     apiPrefix: TESTNET.apiPrefix,
+    // baseURL: "http://127.0.0.1:3010",
+    // wsURL: "ws://127.0.0.1:3010/ws/public",
+    // privateWSURL: "ws://127.0.0.1:3010/ws/private",
+    // apiPrefix: "/api/v1",
   });
 
   // Authorize
@@ -209,7 +213,7 @@ async function main() {
         leverage: CONFIG.LEVERAGE,
         type: "limit",
         is_cross: CONFIG.IS_CROSS,
-        time_in_force: "PostOnly", // alternatives: "GTC", "IOC", "FOK"
+        time_in_force: "GTC", // alternatives: "GTC", "IOC", "FOK"
         // Optional: conditional trigger price, reduce-only, link id
         // trigger_price: price, // example
         // reduce_only: true,
@@ -237,6 +241,15 @@ async function main() {
   let createdSid = undefined;
   if (created?.output?.type === "order_create" && Array.isArray(created.output.outputs)) {
     createdSid = created.output.outputs[0]?.sid;
+  }
+
+  const orders = await client.httpApi.getOrders({ user_addr: userAddr });
+  console.log("Fetched Orders:", JSON.stringify(orders, null, 2));
+  if (!orders[0].take_profit || !orders[0].stop_loss) {
+    console.error("Order does not have TP/SL:", JSON.stringify(orders[0], null, 2));
+    process.exit(1);
+  } else {
+    console.log("Order has TP/SL:", JSON.stringify(orders[0], null, 2));
   }
 
   if (!createdSid) {
