@@ -104,6 +104,8 @@ export interface PositionResponse {
   unrealized_pnl?: number;
   realized_pnl_delta?: number;
   realized_pnl_cum?: number;
+  liq_price?: number;
+  leverage?: number;
 }
 
 export interface VaultResponse {
@@ -506,3 +508,5 @@ export interface WithdrawFromTradingResponse {
   success: boolean;
   message?: string;
 }
+
+export type VaultType = "Ekiden" | "Insurance" | "Funding" | "Cross" | "Isolated";

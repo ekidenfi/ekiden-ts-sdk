@@ -8,6 +8,7 @@ import {
 import { parseAbi } from "@/utils";
 
 export interface SubAccountData {
+  orderIndexes: string[];
   types: string[][];
   owners: string[];
   subs: string[];
@@ -25,7 +26,8 @@ export const decodeHexToString = (hex: string): string => {
 };
 
 export const parseSubAccountsData = (result: unknown[]): SubAccountData => {
-  const [types, owners, subs, pubks, nonces, metadatas] = result as [
+  const [orderIndexes, types, owners, subs, pubks, nonces, metadatas] = result as [
+    string[],
     string[][],
     string[],
     string[],
@@ -35,6 +37,7 @@ export const parseSubAccountsData = (result: unknown[]): SubAccountData => {
   ];
 
   return {
+    orderIndexes,
     types,
     owners,
     subs,
@@ -133,15 +136,17 @@ export class Vault {
     };
   }
 
-  static depositIntoFundingWithTransferToTrading(args: {
+  static depositIntoFundingWithTransferTo(args: {
     vaultAddress: string;
     fundingSubAddress: string;
     tradingSubAddress: string;
     assetMetadata: string;
     amount: bigint;
+    vaultToType: string;
   }): InputEntryFunctionData {
     return {
-      function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to_cross_trading`,
+      function: `${args.vaultAddress}::vault::deposit_into_funding_with_transfer_to`,
+      typeArguments: [`${args.vaultAddress}::vault_types::${args.vaultToType}`],
       functionArguments: [
         args.fundingSubAddress,
         args.tradingSubAddress,
@@ -149,7 +154,7 @@ export class Vault {
         args.amount,
       ],
       abi: parseAbi({
-        generic_type_params: [],
+        generic_type_params: [{ constraints: [] }],
         params: [
           "&signer",
           "address",
@@ -188,16 +193,14 @@ export class Vault {
 
   static withdrawFromFunding(args: {
     vaultAddress: string;
-    subAccAddress?: string;
+    subAddress: string;
     assetMetadata: string;
     amount: bigint;
   }): InputEntryFunctionData {
-    const subAccOption = args.subAccAddress ? args.subAccAddress : null;
-
     return {
       function: `${args.vaultAddress}::vault::withdraw_from_funding`,
       functionArguments: [
-        subAccOption,
+        args.subAddress,
         AccountAddress.from(args.assetMetadata),
         args.amount,
       ],
@@ -205,7 +208,7 @@ export class Vault {
         generic_type_params: [],
         params: [
           "&signer",
-          "0x1::option::Option<address>",
+          "address",
           "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],
@@ -213,18 +216,37 @@ export class Vault {
     };
   }
 
-  static balanceOf(args: {
+  static vaultBalance(args: {
     vaultAddress: string;
     userAddress: AccountAddressInput;
-    token: string;
+    assetMetadata: string;
+    vaultType: string;
   }): InputViewFunctionData {
     return {
-      function: `${args.vaultAddress}::perpetual_vault::balanceOf`,
-      typeArguments: [
-        `${args.token}::perpetual_vault_type::UserVault`,
-        `${args.token}::perpetual_collateral::PerpetualCollateral`,
+      function: `${args.vaultAddress}::vault::vault_balance`,
+      typeArguments: [`${args.vaultAddress}::vault_types::${args.vaultType}`],
+      functionArguments: [
+        AccountAddress.from(args.userAddress),
+        AccountAddress.from(args.assetMetadata),
       ],
-      functionArguments: [AccountAddress.from(args.userAddress)],
+    };
+  }
+
+  static ekidenVaultBalance(args: {
+    vaultAddress: string;
+  }): InputViewFunctionData {
+    return {
+      function: `${args.vaultAddress}::vault::ekiden_vault_balance`,
+      functionArguments: [],
+    };
+  }
+
+  static insuranceVaultBalance(args: {
+    vaultAddress: string;
+  }): InputViewFunctionData {
+    return {
+      function: `${args.vaultAddress}::vault::insurance_vault_balance`,
+      functionArguments: [],
     };
   }
 
@@ -280,18 +302,19 @@ export class Vault {
     vaultAddress: string;
     vaultFrom?: string;
     vaultTo?: string;
-    assetMetadata: string;
     amount: bigint;
     vaultFromType: string;
     vaultToType: string;
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::transfer`,
-      typeArguments: [args.vaultFromType, args.vaultToType],
+      typeArguments: [
+        `${args.vaultAddress}::vault_types::${args.vaultFromType}`,
+        `${args.vaultAddress}::vault_types::${args.vaultToType}`,
+      ],
       functionArguments: [
         args.vaultFrom || null,
         args.vaultTo || null,
-        AccountAddress.from(args.assetMetadata),
         args.amount,
       ],
       abi: parseAbi({
@@ -300,7 +323,6 @@ export class Vault {
           "&signer",
           "0x1::option::Option<address>",
           "0x1::option::Option<address>",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
           "u64",
         ],
       }),
@@ -349,7 +371,7 @@ export class Vault {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::user::create_and_link_sub_account`,
-      typeArguments: [`${args.vaultAddress}::user::CrossTrading`],
+      typeArguments: [`${args.vaultAddress}::vault_types::Cross`],
       functionArguments: [
         args.linkProof,
         AccountAddress.from(args.assetMetadata),
