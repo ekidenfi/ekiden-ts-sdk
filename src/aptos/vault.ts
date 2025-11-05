@@ -358,22 +358,14 @@ export class Vault {
   static createAndLinkSubAccount(args: {
     vaultAddress: string;
     linkProof: Uint8Array;
-    assetMetadata: string;
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::user::create_and_link_sub_account`,
       typeArguments: [`${args.vaultAddress}::vault_types::Cross`],
-      functionArguments: [
-        args.linkProof,
-        AccountAddress.from(args.assetMetadata),
-      ],
+      functionArguments: [args.linkProof],
       abi: parseAbi({
         generic_type_params: [{ constraints: [] }],
-        params: [
-          "&signer",
-          "vector<u8>",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-        ],
+        params: ["&signer", "vector<u8>"],
       }),
     };
   }
