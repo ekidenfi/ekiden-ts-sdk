@@ -26,15 +26,16 @@ export const decodeHexToString = (hex: string): string => {
 };
 
 export const parseSubAccountsData = (result: unknown[]): SubAccountData => {
-  const [orderIndexes, types, owners, subs, pubks, nonces, metadatas] = result as [
-    string[],
-    string[][],
-    string[],
-    string[],
-    string[][],
-    string[],
-    Array<{ inner: string }>,
-  ];
+  const [orderIndexes, types, owners, subs, pubks, nonces, metadatas] =
+    result as [
+      string[],
+      string[][],
+      string[],
+      string[],
+      string[][],
+      string[],
+      Array<{ inner: string }>,
+    ];
 
   return {
     orderIndexes,
@@ -313,8 +314,8 @@ export class Vault {
         `${args.vaultAddress}::vault_types::${args.vaultToType}`,
       ],
       functionArguments: [
-        args.vaultFrom || null,
-        args.vaultTo || null,
+        args.vaultFrom ? AccountAddress.from(args.vaultFrom) : undefined,
+        args.vaultTo ? AccountAddress.from(args.vaultTo) : undefined,
         args.amount,
       ],
       abi: parseAbi({
@@ -343,23 +344,13 @@ export class Vault {
     vaultAddress: string;
     fundingLinkProof: Uint8Array;
     crossTradingLinkProof: Uint8Array;
-    assetMetadata: string;
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::user::create_ekiden_user`,
-      functionArguments: [
-        args.fundingLinkProof,
-        args.crossTradingLinkProof,
-        AccountAddress.from(args.assetMetadata),
-      ],
+      functionArguments: [args.fundingLinkProof, args.crossTradingLinkProof],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "vector<u8>",
-          "vector<u8>",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-        ],
+        params: ["&signer", "vector<u8>", "vector<u8>"],
       }),
     };
   }
