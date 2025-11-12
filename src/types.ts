@@ -55,6 +55,8 @@ export interface OrderResponse {
   market_addr: string;
   seq: number;
   timestamp: number;
+  stop_loss: number;
+  take_profit: number;
 }
 
 export interface BuildOrderParams {
@@ -75,15 +77,20 @@ export interface FillResponse {
   side: string;
   size: number;
   price: number;
-  value: number;
-  fee: number;
+  maker_fee: number;
+  taker_fee: number;
   taker_order_sid: string;
   taker_addr: string;
   maker_order_sid: string;
   maker_addr: string;
   market_addr: string;
   seq: number;
+  maker_leverage: number;
+  taker_leverage: number;
+  maker_is_cross: boolean;
+  taker_is_cross: boolean;
   timestamp: number;
+  timestamp_ms: number;
 }
 
 export interface PositionResponse {
@@ -106,6 +113,8 @@ export interface PositionResponse {
   realized_pnl_cum?: number;
   liq_price?: number;
   leverage?: number;
+  stop_loss: number;
+  take_profit: number;
 }
 
 export interface VaultResponse {
@@ -509,4 +518,9 @@ export interface WithdrawFromTradingResponse {
   message?: string;
 }
 
-export type VaultType = "Ekiden" | "Insurance" | "Funding" | "Cross" | "Isolated";
+export type VaultType =
+  | "Ekiden"
+  | "Insurance"
+  | "Funding"
+  | "Cross"
+  | "Isolated";

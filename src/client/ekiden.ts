@@ -44,4 +44,32 @@ export class EkidenClient {
     }
     this.privateWS.unsubscribe("order", handler);
   }
+
+  subscribeToPositions(handler: (positions: any[]) => void) {
+    if (!this.privateWS) {
+      throw new Error("Private WebSocket not configured");
+    }
+    this.privateWS.subscribe("position", handler);
+  }
+
+  unsubscribeFromPositions(handler: (positions: any[]) => void) {
+    if (!this.privateWS) {
+      throw new Error("Private WebSocket not configured");
+    }
+    this.privateWS.unsubscribe("position", handler);
+  }
+
+  subscribeToFills(handler: (fills: any[]) => void) {
+    if (!this.privateWS) {
+      throw new Error("Private WebSocket not configured");
+    }
+    this.privateWS.subscribe("fill", handler);
+  }
+
+  unsubscribeFromFills(handler: (fills: any[]) => void) {
+    if (!this.privateWS) {
+      throw new Error("Private WebSocket not configured");
+    }
+    this.privateWS.unsubscribe("fill", handler);
+  }
 }

@@ -93,8 +93,10 @@ export class PrivateWSClient {
   }
 
   async connect(): Promise<void> {
+    console.log("[PrivateWSClient] Connecting to:", this.url);
     return new Promise((resolve, reject) => {
       if (this.ws?.readyState === WebSocket.OPEN) {
+        console.log("[PrivateWSClient] Already connected");
         resolve();
         return;
       }
@@ -102,6 +104,7 @@ export class PrivateWSClient {
       this.ws = new ReconnectingWebSocket(this.url);
 
       this.ws.addEventListener("open", () => {
+        console.log("[PrivateWSClient] WebSocket opened");
         if (this.token) {
           this.authenticate();
         }
@@ -112,16 +115,19 @@ export class PrivateWSClient {
       });
 
       this.ws.addEventListener("error", (error) => {
+        console.error("[PrivateWSClient] WebSocket error:", error);
         reject(error);
       });
 
       const handleAuth = (message: PrivateWSMessage) => {
         if (message.op === "auth") {
           if (message.success) {
+            console.log("[PrivateWSClient] Authentication successful, user_id:", message.user_id);
             this.isAuthenticated = true;
             this.startHeartbeat();
             resolve();
           } else {
+            console.error("[PrivateWSClient] Authentication failed:", message.message);
             reject(new Error(message.message || "Authentication failed"));
           }
         }
@@ -143,6 +149,7 @@ export class PrivateWSClient {
       throw new Error("No token provided");
     }
 
+    console.log("[PrivateWSClient] Sending authentication request");
     const authRequest: AuthRequest = {
       op: "auth",
       bearer: this.token,
@@ -169,13 +176,16 @@ export class PrivateWSClient {
 
       switch (message.op) {
         case "subscribed":
+          console.log("[PrivateWSClient] Subscribed to:", message.args);
           break;
         case "unsubscribed":
+          console.log("[PrivateWSClient] Unsubscribed from:", message.args);
           break;
         case "error":
-          console.warn("WebSocket error:", message.message);
+          console.warn("[PrivateWSClient] WebSocket error:", message.message);
           break;
         case "event":
+          console.log("[PrivateWSClient] Received event for topic:", message.topic, "data length:", message.data?.length);
           this.handleEvent(message);
           break;
       }
@@ -187,14 +197,20 @@ export class PrivateWSClient {
   private handleEvent(event: EventResponse) {
     const handlers = this.handlers.get(event.topic);
     if (handlers) {
+      console.log("[PrivateWSClient] Calling", handlers.size, "handler(s) for topic:", event.topic);
       handlers.forEach((handler) => handler(event.data));
+    } else {
+      console.warn("[PrivateWSClient] No handlers found for topic:", event.topic);
     }
   }
 
   subscribe(topic: string, handler: (data: any) => void) {
     if (!this.isAuthenticated) {
+      console.error("[PrivateWSClient] Cannot subscribe - not authenticated");
       throw new Error("Not authenticated");
     }
+
+    console.log("[PrivateWSClient] Subscribing to topic:", topic);
 
     if (!this.handlers.has(topic)) {
       this.handlers.set(topic, new Set());
@@ -208,16 +224,24 @@ export class PrivateWSClient {
         args: [topic],
         req_id: this.generateReqId(),
       };
+      console.log("[PrivateWSClient] Sending subscribe request for topic:", topic);
       this.send(subscribeRequest);
+    } else {
+      console.log("[PrivateWSClient] Already subscribed to topic:", topic, "- adding handler");
     }
   }
 
   unsubscribe(topic: string, handler: (data: any) => void) {
+    console.log("[PrivateWSClient] Unsubscribing from topic:", topic);
     const handlers = this.handlers.get(topic);
-    if (!handlers) return;
+    if (!handlers) {
+      console.warn("[PrivateWSClient] No handlers found for topic:", topic);
+      return;
+    }
 
     handlers.delete(handler);
     if (handlers.size === 0) {
+      console.log("[PrivateWSClient] No more handlers for topic:", topic, "- sending unsubscribe request");
       this.handlers.delete(topic);
       this.subscriptions.delete(topic);
       const unsubscribeRequest: UnsubscribeRequest = {
@@ -226,12 +250,17 @@ export class PrivateWSClient {
         req_id: this.generateReqId(),
       };
       this.send(unsubscribeRequest);
+    } else {
+      console.log("[PrivateWSClient] Still have", handlers.size, "handler(s) for topic:", topic);
     }
   }
 
   private send(message: any) {
     if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log("[PrivateWSClient] Sending message:", message.op, message);
       this.ws.send(JSON.stringify(message));
+    } else {
+      console.warn("[PrivateWSClient] Cannot send message - WebSocket not open, readyState:", this.ws?.readyState);
     }
   }
 
