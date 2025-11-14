@@ -235,7 +235,8 @@ export class PrivateWSClient {
     if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
       const handlersMap = arg1 as Record<string, (data: any) => void>;
       const topics = Object.keys(handlersMap);
-      if (topics.length === 0) throw new Error("handlers map must not be empty");
+      if (topics.length === 0)
+        throw new Error("handlers map must not be empty");
       console.log("[PrivateWSClient] Subscribing to topics (map):", topics);
       const toSubscribe: string[] = [];
       for (const topic of topics) {
