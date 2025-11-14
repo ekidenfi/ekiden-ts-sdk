@@ -37,7 +37,11 @@ export class EkidenClient {
    * - ws: Bearer used for Private WS auth (can be the root account token to receive all subaccount events)
    * If only one is provided, the other remains unchanged.
    */
-  async setTokens(tokens: { rest?: string; ws?: string; connectPrivateWS?: boolean }) {
+  async setTokens(tokens: {
+    rest?: string;
+    ws?: string;
+    connectPrivateWS?: boolean;
+  }) {
     const { rest, ws, connectPrivateWS = true } = tokens || {};
     if (rest) {
       this.httpApi.api.setToken(rest);
@@ -45,9 +49,7 @@ export class EkidenClient {
     if (this.privateWS && ws) {
       // If WS is already connected with a different token, easiest and safest is to reconnect
       // before any subscriptions are made.
-      try {
-        this.privateWS.close();
-      } catch {}
+      this.privateWS.close();
       this.privateWS.setToken(ws);
       if (connectPrivateWS) {
         await this.privateWS.connect();

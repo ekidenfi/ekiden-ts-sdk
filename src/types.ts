@@ -3,6 +3,8 @@ export interface AuthorizeParams {
   public_key: string;
   timestamp_ms: number;
   nonce: string;
+  /** Optional Aptos Wallet Standard full message (APTOS-prefixed). If provided, backend verifies signature against this string. */
+  full_message?: string;
 }
 
 export interface AuthorizeResponse {

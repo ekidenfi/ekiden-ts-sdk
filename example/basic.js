@@ -87,11 +87,34 @@ function normalizeSecretKey(pkHex) {
   return PrivateKey.formatPrivateKey(with0x, "ed25519");
 }
 
+// Build Aptos Wallet Standard full message (APTOS-prefixed, newline-delimited)
+// input: { message: string, nonce: string, address?: boolean, application?: boolean, chainId?: boolean }
+// ctx: { addressHex?: string, applicationName?: string, chainId?: number }
+function buildAptosFullMessage(input, ctx = {}) {
+  if (!input || !input.message || !input.nonce) return undefined;
+  const lines = ["APTOS", `message: ${input.message}`];
+  if (input.address && ctx.addressHex) lines.push(`address: ${ctx.addressHex}`);
+  if (input.application && ctx.applicationName) lines.push(`application: ${ctx.applicationName}`);
+  if (input.chainId && typeof ctx.chainId === "number") lines.push(`chainId: ${ctx.chainId}`);
+  lines.push(`nonce: ${input.nonce}`);
+  return lines.join("\n");
+}
+
 // Sign AUTHORIZE message (format: AUTHORIZE|{timestamp_ms}|{nonce})
-function signAuthorize(account, timestampMs, nonce) {
-  const msg = `AUTHORIZE|${timestampMs}|${nonce}`;
+function signAuthorize(account, timestampMs, nonce, isFullMessage = false) {
+  let msg = `AUTHORIZE|${timestampMs}|${nonce}`;
+  if (isFullMessage) {
+    const payload = {
+      message: msg,
+      nonce: String(nonce),
+      address: false,
+      application: false,
+      chainId: false,
+    };
+    msg = buildAptosFullMessage(payload);
+  }
   const sigHex = account.sign(new TextEncoder().encode(msg)).toString();
-  return sigHex.startsWith("0x") ? sigHex : "0x" + sigHex;
+  return [sigHex.startsWith("0x") ? sigHex : "0x" + sigHex, msg];
 }
 
 // Sign intent payload
@@ -160,16 +183,20 @@ async function main() {
 
   // Init a single client for both REST and Private WS
   const client = new EkidenClient({
-    baseURL: TESTNET.baseURL,
-    wsURL: TESTNET.wsURL,
-    privateWSURL: TESTNET.privateWSURL,
-    apiPrefix: TESTNET.apiPrefix,
+    // baseURL: TESTNET.baseURL,
+    // wsURL: TESTNET.wsURL,
+    // privateWSURL: TESTNET.privateWSURL,
+    // apiPrefix: TESTNET.apiPrefix,
+    baseURL: "http://127.0.0.1:3010",
+    wsURL: "ws://127.0.0.1:3010/ws/public",
+    privateWSURL: "ws://127.0.0.1:3010/ws/private",
+    apiPrefix: "/api/v1",
   });
 
   // Authorize REST (trading/sub account) and WS (root account if available)
   const authTs = nowMs();
   const authNonce = randomNonce();
-  const authSig = signAuthorize(signingAccount, authTs, authNonce);
+  const [authSig] = signAuthorize(signingAccount, authTs, authNonce);
   const tokenResp = await client.httpApi.authorize({
     public_key: signingAccount.publicKey.toString(),
     timestamp_ms: authTs,
@@ -181,12 +208,13 @@ async function main() {
   if (rootAcc) {
     const authTs2 = nowMs();
     const authNonce2 = randomNonce();
-    const authSig2 = signAuthorize(rootAcc, authTs2, authNonce2);
+    const [authSig2, fullMessage2] = signAuthorize(rootAcc, authTs2, authNonce2, true);
     const tokenResp2 = await client.httpApi.authorize({
       public_key: rootAcc.publicKey.toString(),
       timestamp_ms: authTs2,
       nonce: authNonce2,
       signature: authSig2,
+      full_message: fullMessage2,
     });
     wsToken = tokenResp2.token; // use root token to receive events from all subaccounts
   }
