@@ -21,6 +21,7 @@ export interface MarketResponse {
   max_leverage: number;
   initial_margin_ratio: number;
   maintenance_margin_ratio: number;
+  last_price?: number;
   mark_price: number;
   oracle_price: number;
   open_interest: number;

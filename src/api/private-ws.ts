@@ -91,10 +91,8 @@ export class PrivateWSClient {
   }
 
   async connect(): Promise<void> {
-    console.log("[PrivateWSClient] Connecting to:", this.url);
     return new Promise((resolve, reject) => {
       if (this.ws?.readyState === WebSocket.OPEN) {
-        console.log("[PrivateWSClient] Already connected");
         resolve();
         return;
       }
@@ -102,7 +100,6 @@ export class PrivateWSClient {
       this.ws = new ReconnectingWebSocket(this.url);
 
       this.ws.addEventListener("open", () => {
-        console.log("[PrivateWSClient] WebSocket opened");
         if (this.token) {
           this.authenticate();
         }

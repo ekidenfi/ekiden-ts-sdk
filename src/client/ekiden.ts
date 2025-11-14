@@ -96,4 +96,18 @@ export class EkidenClient {
     }
     this.privateWS.unsubscribe(handlers);
   }
+
+  subscribeToAccountBalance(handler: (balances: any[]) => void) {
+    if (!this.privateWS) {
+      throw new Error("Private WebSocket not configured");
+    }
+    this.privateWS.subscribe("account_balance", handler);
+  }
+
+  unsubscribeFromAccountBalance(handler: (balances: any[]) => void) {
+    if (!this.privateWS) {
+      throw new Error("Private WebSocket not configured");
+    }
+    this.privateWS.unsubscribe("account_balance", handler);
+  }
 }
