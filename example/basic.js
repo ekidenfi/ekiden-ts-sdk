@@ -40,7 +40,7 @@
 // - No deposits or on-chain flows here; use the Ekiden UI to fund and link accounts beforehand.
 
 import "dotenv/config";
-import { Ed25519Account, Ed25519PrivateKey, PrivateKey } from "@aptos-labs/ts-sdk";
+import { Ed25519Account, Ed25519PrivateKey, PrivateKey, sleep } from "@aptos-labs/ts-sdk";
 import { EkidenClient, TESTNET, buildOrderPayload } from "../dist/index.js";
 
 // ========= Config (edit here) =========
@@ -51,7 +51,7 @@ const CONFIG = {
   // Order params
   SIDE: (process.env.SIDE || "buy").toLowerCase(), // "buy" | "sell"
   PRICE: Number(process.env.PRICE || "50000000000"), // integer price (quote units)
-  SIZE: Number(process.env.SIZE || "10"), // integer base size
+  SIZE: Number(process.env.SIZE || "1000"), // integer base size
   LEVERAGE: Number(process.env.LEVERAGE || "1"), // leverage (default 1)
   IS_CROSS: String(process.env.IS_CROSS || "true").toLowerCase() === "true",  // cross by default
 
@@ -158,19 +158,15 @@ async function main() {
   console.log("Root Account:", rootAcc?.accountAddress.toString() || "(none)");
   console.log("Trading Account:", tradingAcc?.accountAddress.toString() || "(none)");
 
-  // Init client
+  // Init a single client for both REST and Private WS
   const client = new EkidenClient({
     baseURL: TESTNET.baseURL,
     wsURL: TESTNET.wsURL,
     privateWSURL: TESTNET.privateWSURL,
     apiPrefix: TESTNET.apiPrefix,
-    // baseURL: "http://127.0.0.1:3010",
-    // wsURL: "ws://127.0.0.1:3010/ws/public",
-    // privateWSURL: "ws://127.0.0.1:3010/ws/private",
-    // apiPrefix: "/api/v1",
   });
 
-  // Authorize
+  // Authorize REST (trading/sub account) and WS (root account if available)
   const authTs = nowMs();
   const authNonce = randomNonce();
   const authSig = signAuthorize(signingAccount, authTs, authNonce);
@@ -180,16 +176,44 @@ async function main() {
     nonce: authNonce,
     signature: authSig,
   });
-  await client.setToken(tokenResp.token);
-  console.log("Authorized as:", signingAccount.accountAddress.toString());
-  // console.log("Bearer token:", tokenResp.token);
 
-  // Optional private WS: prints any order updates pushed to your authenticated channel
+  let wsToken = tokenResp.token; // default to trading token
+  if (rootAcc) {
+    const authTs2 = nowMs();
+    const authNonce2 = randomNonce();
+    const authSig2 = signAuthorize(rootAcc, authTs2, authNonce2);
+    const tokenResp2 = await client.httpApi.authorize({
+      public_key: rootAcc.publicKey.toString(),
+      timestamp_ms: authTs2,
+      nonce: authNonce2,
+      signature: authSig2,
+    });
+    wsToken = tokenResp2.token; // use root token to receive events from all subaccounts
+  }
+
+  // Set tokens on the single client (REST + Private WS) and connect WS
+  await client.setTokens({ rest: tokenResp.token, ws: wsToken });
+  console.log("Authorized as:", signingAccount.accountAddress.toString());
+  // console.log("REST Bearer token:", tokenResp.token);
+
+  // Optional private WS: subscribe with per-topic handlers
   if (CONFIG.ENABLE_PRIVATE_WS) {
     try {
-      client.subscribeToOrders((orders) => {
-        console.log("[private-ws] orders:", JSON.stringify(orders, null, 2));
-      });
+      const handlers = {
+        order: (orders) => {
+          console.log("[private-ws] order:", JSON.stringify(orders, null, 2));
+        },
+        position: (positions) => {
+          console.log("[private-ws] position:", JSON.stringify(positions, null, 2));
+        },
+        fill: (fills) => {
+          console.log("[private-ws] fill:", JSON.stringify(fills, null, 2));
+        },
+        account_balance: (balances) => {
+          console.log("[private-ws] account_balance:", JSON.stringify(balances, null, 2));
+        },
+      };
+      client.subscribeHandlers(handlers);
     } catch (e) {
       console.warn("Private WS unavailable:", e?.message || e);
     }
@@ -251,6 +275,8 @@ async function main() {
   } else {
     console.log("Order has TP/SL:", JSON.stringify(orders[0], null, 2));
   }
+
+  await sleep(2000);
 
   if (!createdSid) {
     console.warn("No order SID returned; skipping cancel.");

@@ -31,45 +31,67 @@ export class EkidenClient {
     }
   }
 
-  subscribeToOrders(handler: (orders: any[]) => void) {
-    if (!this.privateWS) {
-      throw new Error("Private WebSocket not configured");
+  /**
+   * Set tokens for REST and Private WS independently.
+   * - rest: Bearer used for HTTP API calls (typically the trading sub-account token)
+   * - ws: Bearer used for Private WS auth (can be the root account token to receive all subaccount events)
+   * If only one is provided, the other remains unchanged.
+   */
+  async setTokens(tokens: { rest?: string; ws?: string; connectPrivateWS?: boolean }) {
+    const { rest, ws, connectPrivateWS = true } = tokens || {};
+    if (rest) {
+      this.httpApi.api.setToken(rest);
     }
-    this.privateWS.subscribe("order", handler);
+    if (this.privateWS && ws) {
+      // If WS is already connected with a different token, easiest and safest is to reconnect
+      // before any subscriptions are made.
+      try {
+        this.privateWS.close();
+      } catch {}
+      this.privateWS.setToken(ws);
+      if (connectPrivateWS) {
+        await this.privateWS.connect();
+      }
+    }
   }
 
-  unsubscribeFromOrders(handler: (orders: any[]) => void) {
+  /**
+   * Subscribe to topics with a single handler for all.
+   */
+  subscribeTo(topics: string[], handler: (data: any) => void) {
     if (!this.privateWS) {
       throw new Error("Private WebSocket not configured");
     }
-    this.privateWS.unsubscribe("order", handler);
+    this.privateWS.subscribe(topics, handler);
   }
 
-  subscribeToPositions(handler: (positions: any[]) => void) {
+  /**
+   * Unsubscribe from topics with a single handler for all.
+   */
+  unsubscribeFrom(topics: string[], handler: (data: any) => void) {
     if (!this.privateWS) {
       throw new Error("Private WebSocket not configured");
     }
-    this.privateWS.subscribe("position", handler);
+    this.privateWS.unsubscribe(topics, handler);
   }
 
-  unsubscribeFromPositions(handler: (positions: any[]) => void) {
+  /**
+   * Subscribe with a map of topic -> handler. Each topic gets its own handler.
+   */
+  subscribeHandlers(handlers: Record<string, (data: any) => void>) {
     if (!this.privateWS) {
       throw new Error("Private WebSocket not configured");
     }
-    this.privateWS.unsubscribe("position", handler);
+    this.privateWS.subscribe(handlers);
   }
 
-  subscribeToFills(handler: (fills: any[]) => void) {
+  /**
+   * Unsubscribe with a map of topic -> handler.
+   */
+  unsubscribeHandlers(handlers: Record<string, (data: any) => void>) {
     if (!this.privateWS) {
       throw new Error("Private WebSocket not configured");
     }
-    this.privateWS.subscribe("fill", handler);
-  }
-
-  unsubscribeFromFills(handler: (fills: any[]) => void) {
-    if (!this.privateWS) {
-      throw new Error("Private WebSocket not configured");
-    }
-    this.privateWS.unsubscribe("fill", handler);
+    this.privateWS.unsubscribe(handlers);
   }
 }

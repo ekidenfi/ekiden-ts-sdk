@@ -1,7 +1,5 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
 
-import type { OrderResponse } from "@/types";
-
 export interface AuthRequest {
   op: "auth";
   bearer: string;
@@ -62,7 +60,7 @@ export interface ErrorResponse {
 export interface EventResponse {
   op: "event";
   topic: string;
-  data: OrderResponse[];
+  data: any;
 }
 
 type PrivateWSMessage =
@@ -207,7 +205,7 @@ export class PrivateWSClient {
 
   private handleEvent(event: EventResponse) {
     const handlers = this.handlers.get(event.topic);
-    if (handlers) {
+    if (handlers && handlers.size > 0) {
       console.log(
         "[PrivateWSClient] Calling",
         handlers.size,
@@ -223,70 +221,174 @@ export class PrivateWSClient {
     }
   }
 
-  subscribe(topic: string, handler: (data: any) => void) {
+  // Overloads
+  subscribe(topics: string[], handler: (data: any) => void): void;
+  subscribe(handlers: Record<string, (data: any) => void>): void;
+
+  subscribe(arg1: any, arg2?: (data: any) => void) {
     if (!this.isAuthenticated) {
       console.error("[PrivateWSClient] Cannot subscribe - not authenticated");
       throw new Error("Not authenticated");
     }
 
-    console.log("[PrivateWSClient] Subscribing to topic:", topic);
-
-    if (!this.handlers.has(topic)) {
-      this.handlers.set(topic, new Set());
+    // Case 1: mapping object of topic -> handler
+    if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
+      const handlersMap = arg1 as Record<string, (data: any) => void>;
+      const topics = Object.keys(handlersMap);
+      if (topics.length === 0) throw new Error("handlers map must not be empty");
+      console.log("[PrivateWSClient] Subscribing to topics (map):", topics);
+      const toSubscribe: string[] = [];
+      for (const topic of topics) {
+        const handler = handlersMap[topic];
+        if (typeof handler !== "function") continue;
+        if (!this.handlers.has(topic)) {
+          this.handlers.set(topic, new Set());
+        }
+        this.handlers.get(topic)!.add(handler);
+        if (!this.subscriptions.has(topic)) {
+          this.subscriptions.add(topic);
+          toSubscribe.push(topic);
+        }
+      }
+      if (toSubscribe.length > 0) {
+        const subscribeRequest: SubscribeRequest = {
+          op: "subscribe",
+          args: toSubscribe,
+          req_id: this.generateReqId(),
+        };
+        console.log(
+          "[PrivateWSClient] Sending subscribe request for topics:",
+          toSubscribe,
+        );
+        this.send(subscribeRequest);
+      } else {
+        console.log(
+          "[PrivateWSClient] Already subscribed to all provided topics - added handler(s) only",
+        );
+      }
+      return;
     }
-    this.handlers.get(topic)!.add(handler);
 
-    if (!this.subscriptions.has(topic)) {
-      this.subscriptions.add(topic);
+    // Case 2: array of topics + single handler
+    const topics = arg1 as string[];
+    const handler = arg2 as (data: any) => void;
+    if (!Array.isArray(topics) || topics.length === 0) {
+      throw new Error("topics must be a non-empty string[]");
+    }
+    if (typeof handler !== "function") {
+      throw new Error("handler must be a function");
+    }
+    console.log("[PrivateWSClient] Subscribing to topics:", topics);
+    const toSubscribe: string[] = [];
+    for (const topic of topics) {
+      if (!this.handlers.has(topic)) {
+        this.handlers.set(topic, new Set());
+      }
+      this.handlers.get(topic)!.add(handler);
+      if (!this.subscriptions.has(topic)) {
+        this.subscriptions.add(topic);
+        toSubscribe.push(topic);
+      }
+    }
+    if (toSubscribe.length > 0) {
       const subscribeRequest: SubscribeRequest = {
         op: "subscribe",
-        args: [topic],
+        args: toSubscribe,
         req_id: this.generateReqId(),
       };
       console.log(
-        "[PrivateWSClient] Sending subscribe request for topic:",
-        topic,
+        "[PrivateWSClient] Sending subscribe request for topics:",
+        toSubscribe,
       );
       this.send(subscribeRequest);
     } else {
       console.log(
-        "[PrivateWSClient] Already subscribed to topic:",
-        topic,
-        "- adding handler",
+        "[PrivateWSClient] Already subscribed to all provided topics - added handler only",
       );
     }
   }
 
-  unsubscribe(topic: string, handler: (data: any) => void) {
-    console.log("[PrivateWSClient] Unsubscribing from topic:", topic);
-    const handlers = this.handlers.get(topic);
-    if (!handlers) {
-      console.warn("[PrivateWSClient] No handlers found for topic:", topic);
+  // Overloads
+  unsubscribe(topics: string[], handler: (data: any) => void): void;
+  unsubscribe(handlers: Record<string, (data: any) => void>): void;
+
+  unsubscribe(arg1: any, arg2?: (data: any) => void) {
+    // Case 1: mapping object topic -> handler
+    if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
+      const handlersMap = arg1 as Record<string, (data: any) => void>;
+      const topics = Object.keys(handlersMap);
+      if (topics.length === 0) return;
+      console.log("[PrivateWSClient] Unsubscribing (map) from topics:", topics);
+      const toUnsubscribe: string[] = [];
+      for (const topic of topics) {
+        const handler = handlersMap[topic];
+        const handlers = this.handlers.get(topic);
+        if (!handlers || typeof handler !== "function") {
+          console.warn("[PrivateWSClient] No handlers found for topic:", topic);
+          continue;
+        }
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          this.handlers.delete(topic);
+          this.subscriptions.delete(topic);
+          toUnsubscribe.push(topic);
+        }
+      }
+      if (toUnsubscribe.length > 0) {
+        const unsubscribeRequest: UnsubscribeRequest = {
+          op: "unsubscribe",
+          args: toUnsubscribe,
+          req_id: this.generateReqId(),
+        };
+        this.send(unsubscribeRequest);
+      }
       return;
     }
 
-    handlers.delete(handler);
-    if (handlers.size === 0) {
-      console.log(
-        "[PrivateWSClient] No more handlers for topic:",
-        topic,
-        "- sending unsubscribe request",
-      );
-      this.handlers.delete(topic);
-      this.subscriptions.delete(topic);
+    // Case 2: array + single handler
+    const topics = arg1 as string[];
+    const handler = arg2 as (data: any) => void;
+    if (!Array.isArray(topics) || topics.length === 0) {
+      throw new Error("topics must be a non-empty string[]");
+    }
+
+    console.log("[PrivateWSClient] Unsubscribing from topics:", topics);
+    const toUnsubscribe: string[] = [];
+
+    for (const topic of topics) {
+      const handlers = this.handlers.get(topic);
+      if (!handlers) {
+        console.warn("[PrivateWSClient] No handlers found for topic:", topic);
+        continue;
+      }
+
+      handlers.delete(handler);
+      if (handlers.size === 0) {
+        console.log(
+          "[PrivateWSClient] No more handlers for topic:",
+          topic,
+          "- scheduling unsubscribe",
+        );
+        this.handlers.delete(topic);
+        this.subscriptions.delete(topic);
+        toUnsubscribe.push(topic);
+      } else {
+        console.log(
+          "[PrivateWSClient] Still have",
+          handlers.size,
+          "handler(s) for topic:",
+          topic,
+        );
+      }
+    }
+
+    if (toUnsubscribe.length > 0) {
       const unsubscribeRequest: UnsubscribeRequest = {
         op: "unsubscribe",
-        args: [topic],
+        args: toUnsubscribe,
         req_id: this.generateReqId(),
       };
       this.send(unsubscribeRequest);
-    } else {
-      console.log(
-        "[PrivateWSClient] Still have",
-        handlers.size,
-        "handler(s) for topic:",
-        topic,
-      );
     }
   }
 
