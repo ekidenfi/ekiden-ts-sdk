@@ -183,14 +183,14 @@ async function main() {
 
   // Init a single client for both REST and Private WS
   const client = new EkidenClient({
-    // baseURL: TESTNET.baseURL,
-    // wsURL: TESTNET.wsURL,
-    // privateWSURL: TESTNET.privateWSURL,
-    // apiPrefix: TESTNET.apiPrefix,
-    baseURL: "http://127.0.0.1:3010",
-    wsURL: "ws://127.0.0.1:3010/ws/public",
-    privateWSURL: "ws://127.0.0.1:3010/ws/private",
-    apiPrefix: "/api/v1",
+    baseURL: TESTNET.baseURL,
+    wsURL: TESTNET.wsURL,
+    privateWSURL: TESTNET.privateWSURL,
+    apiPrefix: TESTNET.apiPrefix,
+    // baseURL: "http://127.0.0.1:3010",
+    // wsURL: "ws://127.0.0.1:3010/ws/public",
+    // privateWSURL: "ws://127.0.0.1:3010/ws/private",
+    // apiPrefix: "/api/v1",
   });
 
   // Authorize REST (trading/sub account) and WS (root account if available)
