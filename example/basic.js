@@ -39,9 +39,16 @@
 //   format as the app.
 // - No deposits or on-chain flows here; use the Ekiden UI to fund and link accounts beforehand.
 
+import {
+  Ed25519Account,
+  Ed25519PrivateKey,
+  PrivateKey,
+  sleep,
+} from "@aptos-labs/ts-sdk";
+
 import "dotenv/config";
-import { Ed25519Account, Ed25519PrivateKey, PrivateKey, sleep } from "@aptos-labs/ts-sdk";
-import { EkidenClient, TESTNET, buildOrderPayload } from "../dist/index.js";
+
+import { buildOrderPayload, EkidenClient, TESTNET } from "../dist/index.js";
 
 // ========= Config (edit here) =========
 const CONFIG = {
@@ -53,15 +60,17 @@ const CONFIG = {
   PRICE: Number(process.env.PRICE || "50000000000"), // integer price (quote units)
   SIZE: Number(process.env.SIZE || "1000"), // integer base size
   LEVERAGE: Number(process.env.LEVERAGE || "1"), // leverage (default 1)
-  IS_CROSS: String(process.env.IS_CROSS || "true").toLowerCase() === "true",  // cross by default
+  IS_CROSS: String(process.env.IS_CROSS || "true").toLowerCase() === "true", // cross by default
 
   // Derivation from owner key (if PK provided)
   TRADING_NONCE: process.env.TRADING_NONCE || "0", // which trading sub-account (default 0)
   // AIP-21 style canonical derivation message
-  derivationMessage: (rootAddr, nonce) => `APTOS\nmessage: Ekiden Trading\nnonce: ${rootAddr.toLowerCase()}Tradingv2${nonce}`,
+  derivationMessage: (rootAddr, nonce) =>
+    `APTOS\nmessage: Ekiden Trading\nnonce: ${rootAddr.toLowerCase()}Tradingv2${nonce}`,
 
   // Whether to open private WS for order updates
-  ENABLE_PRIVATE_WS: String(process.env.ENABLE_PRIVATE_WS || "true").toLowerCase() === "true",
+  ENABLE_PRIVATE_WS:
+    String(process.env.ENABLE_PRIVATE_WS || "true").toLowerCase() === "true",
 };
 
 // Small helpers
@@ -70,10 +79,12 @@ const hexToBytes = (hex) => {
   const clean = hexWithout0x(hex);
   if (clean.length % 2 !== 0) throw new Error("Invalid hex");
   const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < out.length; i++)
+    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
   return out;
 };
-const bytesToHex = (bytes) => "0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+const bytesToHex = (bytes) =>
+  "0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 const nowMs = () => Date.now();
 const randomNonce = () => Math.random().toString(36).slice(2);
 
@@ -148,7 +159,9 @@ async function resolveMarket(client) {
   }
   let chosen = markets[0];
   if (SYMBOL) {
-    const bySymbol = markets.find((m) => String(m.symbol || "").toLowerCase() === SYMBOL.toLowerCase());
+    const bySymbol = markets.find(
+      (m) => String(m.symbol || "").toLowerCase() === SYMBOL.toLowerCase(),
+    );
     if (bySymbol) chosen = bySymbol;
   }
   const addr = chosen.addr || chosen.address || chosen.market_addr;
@@ -168,18 +181,31 @@ async function main() {
   }
 
   // Build accounts
-  const rootAcc = PK ? new Ed25519Account({ privateKey: new Ed25519PrivateKey(normalizeSecretKey(PK)) }) : null;
+  const rootAcc = PK
+    ? new Ed25519Account({
+        privateKey: new Ed25519PrivateKey(normalizeSecretKey(PK)),
+      })
+    : null;
   const tradingAcc = TRADING_PK
-    ? new Ed25519Account({ privateKey: new Ed25519PrivateKey(normalizeSecretKey(TRADING_PK)) })
+    ? new Ed25519Account({
+        privateKey: new Ed25519PrivateKey(normalizeSecretKey(TRADING_PK)),
+      })
     : rootAcc
-      ? deriveTradingAccount(rootAcc, rootAcc.accountAddress.toString(), CONFIG.TRADING_NONCE)
+      ? deriveTradingAccount(
+          rootAcc,
+          rootAcc.accountAddress.toString(),
+          CONFIG.TRADING_NONCE,
+        )
       : null;
   const signingAccount = tradingAcc || rootAcc;
   if (!signingAccount) throw new Error("Failed to resolve signing account");
 
   const userAddr = tradingAcc?.accountAddress.toString();
   console.log("Root Account:", rootAcc?.accountAddress.toString() || "(none)");
-  console.log("Trading Account:", tradingAcc?.accountAddress.toString() || "(none)");
+  console.log(
+    "Trading Account:",
+    tradingAcc?.accountAddress.toString() || "(none)",
+  );
 
   // Init a single client for both REST and Private WS
   const client = new EkidenClient({
@@ -232,13 +258,19 @@ async function main() {
           console.log("[private-ws] order:", JSON.stringify(orders, null, 2));
         },
         position: (positions) => {
-          console.log("[private-ws] position:", JSON.stringify(positions, null, 2));
+          console.log(
+            "[private-ws] position:",
+            JSON.stringify(positions, null, 2),
+          );
         },
         fill: (fills) => {
           console.log("[private-ws] fill:", JSON.stringify(fills, null, 2));
         },
         account_balance: (balances) => {
-          console.log("[private-ws] account_balance:", JSON.stringify(balances, null, 2));
+          console.log(
+            "[private-ws] account_balance:",
+            JSON.stringify(balances, null, 2),
+          );
         },
       };
       client.subscribeHandlers(handlers);
@@ -273,8 +305,24 @@ async function main() {
         // TP/SL bracket
         bracket: {
           mode: "FULL",
-          take_profit: { trigger_price: Math.max(1, CONFIG.PRICE + Math.floor(CONFIG.PRICE * 0.02)), order_type: "MARKET" },
-          stop_loss: { trigger_price: Math.max(1, CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02)), order_type: "LIMIT", limit_price: Math.max(1, CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02)) },
+          take_profit: {
+            trigger_price: Math.max(
+              1,
+              CONFIG.PRICE + Math.floor(CONFIG.PRICE * 0.02),
+            ),
+            order_type: "MARKET",
+          },
+          stop_loss: {
+            trigger_price: Math.max(
+              1,
+              CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02),
+            ),
+            order_type: "LIMIT",
+            limit_price: Math.max(
+              1,
+              CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02),
+            ),
+          },
         },
       },
     ],
@@ -291,14 +339,20 @@ async function main() {
 
   // Extract SID
   let createdSid = undefined;
-  if (created?.output?.type === "order_create" && Array.isArray(created.output.outputs)) {
+  if (
+    created?.output?.type === "order_create" &&
+    Array.isArray(created.output.outputs)
+  ) {
     createdSid = created.output.outputs[0]?.sid;
   }
 
   const orders = await client.httpApi.getOrders({ user_addr: userAddr });
   console.log("Fetched Orders:", JSON.stringify(orders, null, 2));
   if (!orders[0].take_profit || !orders[0].stop_loss) {
-    console.error("Order does not have TP/SL:", JSON.stringify(orders[0], null, 2));
+    console.error(
+      "Order does not have TP/SL:",
+      JSON.stringify(orders[0], null, 2),
+    );
     process.exit(1);
   } else {
     console.log("Order has TP/SL:", JSON.stringify(orders[0], null, 2));
@@ -310,9 +364,17 @@ async function main() {
     console.warn("No order SID returned; skipping cancel.");
   } else {
     const cancelNonce = Date.now();
-    const cancelPayload = { type: "order_cancel", cancels: [{ sid: createdSid }] };
+    const cancelPayload = {
+      type: "order_cancel",
+      cancels: [{ sid: createdSid }],
+    };
     const cancelSig = signIntent(signingAccount, cancelPayload, cancelNonce);
-    const cancelReq = { payload: cancelPayload, nonce: cancelNonce, signature: cancelSig, ...(userAddr ? { user_addr: userAddr } : {}) };
+    const cancelReq = {
+      payload: cancelPayload,
+      nonce: cancelNonce,
+      signature: cancelSig,
+      ...(userAddr ? { user_addr: userAddr } : {}),
+    };
     console.log("Cancel request:", JSON.stringify(cancelReq, null, 2));
     const cancelled = await client.httpApi.sendIntentWithCommit(cancelReq);
     console.log("Cancel response:", JSON.stringify(cancelled, null, 2));
@@ -320,12 +382,15 @@ async function main() {
 
   // Flush WS events (optional) and exit
   await new Promise((r) => setTimeout(r, 1000));
-  try { client.privateWS?.close(); } catch { }
-  try { client.wsApi?.close(); } catch { }
+  try {
+    client.privateWS?.close();
+  } catch {}
+  try {
+    client.wsApi?.close();
+  } catch {}
 }
 
 main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
