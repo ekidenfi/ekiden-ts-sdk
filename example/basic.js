@@ -105,8 +105,10 @@ function buildAptosFullMessage(input, ctx = {}) {
   if (!input || !input.message || !input.nonce) return undefined;
   const lines = ["APTOS", `message: ${input.message}`];
   if (input.address && ctx.addressHex) lines.push(`address: ${ctx.addressHex}`);
-  if (input.application && ctx.applicationName) lines.push(`application: ${ctx.applicationName}`);
-  if (input.chainId && typeof ctx.chainId === "number") lines.push(`chainId: ${ctx.chainId}`);
+  if (input.application && ctx.applicationName)
+    lines.push(`application: ${ctx.applicationName}`);
+  if (input.chainId && typeof ctx.chainId === "number")
+    lines.push(`chainId: ${ctx.chainId}`);
   lines.push(`nonce: ${input.nonce}`);
   return lines.join("\n");
 }
@@ -234,7 +236,12 @@ async function main() {
   if (rootAcc) {
     const authTs2 = nowMs();
     const authNonce2 = randomNonce();
-    const [authSig2, fullMessage2] = signAuthorize(rootAcc, authTs2, authNonce2, true);
+    const [authSig2, fullMessage2] = signAuthorize(
+      rootAcc,
+      authTs2,
+      authNonce2,
+      true,
+    );
     const tokenResp2 = await client.httpApi.authorize({
       public_key: rootAcc.publicKey.toString(),
       timestamp_ms: authTs2,
