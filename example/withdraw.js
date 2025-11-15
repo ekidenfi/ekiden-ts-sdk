@@ -74,8 +74,6 @@ async function withdrawExample() {
     senderAuthenticator: auth,
   });
   await aptos.waitForTransaction({ transactionHash: submitted.hash });
-
-  console.log(`Withdraw request transaction submitted: ${submitted.hash}`);
 }
 
 withdrawExample();

@@ -75,8 +75,6 @@ async function depositExample() {
     senderAuthenticator: auth,
   });
   await aptos.waitForTransaction({ transactionHash: submitted.hash });
-
-  console.log(`Deposit transaction submitted: ${submitted.hash}`);
 }
 
 depositExample();

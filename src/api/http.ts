@@ -290,6 +290,15 @@ export class HttpClient {
     );
   }
 
+  async getAllLeverages(): Promise<
+    Array<{ leverage: number; market_addr: string; user_addr: string }>
+  > {
+    this.ensureAuth();
+    return this.request<
+      Array<{ leverage: number; market_addr: string; user_addr: string }>
+    >("/user/leverage/all", {}, { auth: true });
+  }
+
   async setUserLeverage(
     params: UserLeverageParams,
   ): Promise<PortfolioResponse> {

@@ -207,18 +207,6 @@ export class WsClient<
       const msg = JSON.parse(event.data);
       if (msg.op === "event" && this.handlers.has(msg.topic)) {
         this.handlers.get(msg.topic)!.forEach((h) => h(msg));
-      } else if (msg.op === "subscribed" && Array.isArray(msg.args)) {
-        console.log(
-          `[WsClient] Subscribed to: ${msg.args.join(
-            ", ",
-          )} (req_id: ${msg.req_id})`,
-        );
-      } else if (msg.op === "unsubscribed" && Array.isArray(msg.args)) {
-        console.log(
-          `[WsClient] Unsubscribed from: ${msg.args.join(
-            ", ",
-          )} (req_id: ${msg.req_id})`,
-        );
       }
     } catch (err) {
       console.warn(`[WsClient] Failed to parse message`, err);

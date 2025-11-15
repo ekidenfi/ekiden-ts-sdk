@@ -117,10 +117,6 @@ export class PrivateWSClient {
       const handleAuth = (message: PrivateWSMessage) => {
         if (message.op === "auth") {
           if (message.success) {
-            console.log(
-              "[PrivateWSClient] Authentication successful, user_id:",
-              message.user_id,
-            );
             this.isAuthenticated = true;
             this.startHeartbeat();
             resolve();
@@ -150,7 +146,6 @@ export class PrivateWSClient {
       throw new Error("No token provided");
     }
 
-    console.log("[PrivateWSClient] Sending authentication request");
     const authRequest: AuthRequest = {
       op: "auth",
       bearer: this.token,
@@ -176,22 +171,10 @@ export class PrivateWSClient {
       const message = JSON.parse(event.data) as PrivateWSMessage;
 
       switch (message.op) {
-        case "subscribed":
-          console.log("[PrivateWSClient] Subscribed to:", message.args);
-          break;
-        case "unsubscribed":
-          console.log("[PrivateWSClient] Unsubscribed from:", message.args);
-          break;
         case "error":
           console.warn("[PrivateWSClient] WebSocket error:", message.message);
           break;
         case "event":
-          console.log(
-            "[PrivateWSClient] Received event for topic:",
-            message.topic,
-            "data length:",
-            message.data?.length,
-          );
           this.handleEvent(message);
           break;
       }
@@ -203,12 +186,6 @@ export class PrivateWSClient {
   private handleEvent(event: EventResponse) {
     const handlers = this.handlers.get(event.topic);
     if (handlers && handlers.size > 0) {
-      console.log(
-        "[PrivateWSClient] Calling",
-        handlers.size,
-        "handler(s) for topic:",
-        event.topic,
-      );
       handlers.forEach((handler) => handler(event.data));
     } else {
       console.warn(
@@ -234,7 +211,6 @@ export class PrivateWSClient {
       const topics = Object.keys(handlersMap);
       if (topics.length === 0)
         throw new Error("handlers map must not be empty");
-      console.log("[PrivateWSClient] Subscribing to topics (map):", topics);
       const toSubscribe: string[] = [];
       for (const topic of topics) {
         const handler = handlersMap[topic];
@@ -254,15 +230,7 @@ export class PrivateWSClient {
           args: toSubscribe,
           req_id: this.generateReqId(),
         };
-        console.log(
-          "[PrivateWSClient] Sending subscribe request for topics:",
-          toSubscribe,
-        );
         this.send(subscribeRequest);
-      } else {
-        console.log(
-          "[PrivateWSClient] Already subscribed to all provided topics - added handler(s) only",
-        );
       }
       return;
     }
@@ -276,7 +244,6 @@ export class PrivateWSClient {
     if (typeof handler !== "function") {
       throw new Error("handler must be a function");
     }
-    console.log("[PrivateWSClient] Subscribing to topics:", topics);
     const toSubscribe: string[] = [];
     for (const topic of topics) {
       if (!this.handlers.has(topic)) {
@@ -294,15 +261,7 @@ export class PrivateWSClient {
         args: toSubscribe,
         req_id: this.generateReqId(),
       };
-      console.log(
-        "[PrivateWSClient] Sending subscribe request for topics:",
-        toSubscribe,
-      );
       this.send(subscribeRequest);
-    } else {
-      console.log(
-        "[PrivateWSClient] Already subscribed to all provided topics - added handler only",
-      );
     }
   }
 
@@ -316,7 +275,6 @@ export class PrivateWSClient {
       const handlersMap = arg1 as Record<string, (data: any) => void>;
       const topics = Object.keys(handlersMap);
       if (topics.length === 0) return;
-      console.log("[PrivateWSClient] Unsubscribing (map) from topics:", topics);
       const toUnsubscribe: string[] = [];
       for (const topic of topics) {
         const handler = handlersMap[topic];
@@ -350,7 +308,6 @@ export class PrivateWSClient {
       throw new Error("topics must be a non-empty string[]");
     }
 
-    console.log("[PrivateWSClient] Unsubscribing from topics:", topics);
     const toUnsubscribe: string[] = [];
 
     for (const topic of topics) {
@@ -362,21 +319,9 @@ export class PrivateWSClient {
 
       handlers.delete(handler);
       if (handlers.size === 0) {
-        console.log(
-          "[PrivateWSClient] No more handlers for topic:",
-          topic,
-          "- scheduling unsubscribe",
-        );
         this.handlers.delete(topic);
         this.subscriptions.delete(topic);
         toUnsubscribe.push(topic);
-      } else {
-        console.log(
-          "[PrivateWSClient] Still have",
-          handlers.size,
-          "handler(s) for topic:",
-          topic,
-        );
       }
     }
 
@@ -392,7 +337,6 @@ export class PrivateWSClient {
 
   private send(message: any) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log("[PrivateWSClient] Sending message:", message.op, message);
       this.ws.send(JSON.stringify(message));
     } else {
       console.warn(
