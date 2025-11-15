@@ -57,9 +57,9 @@ const CONFIG = {
 
   // Order params
   SIDE: (process.env.SIDE || "buy").toLowerCase(), // "buy" | "sell"
-  PRICE: Number(process.env.PRICE || "50000000000"), // integer price (quote units)
+  PRICE: Number(process.env.PRICE || "10399000000000"), // integer price (quote units)
   SIZE: Number(process.env.SIZE || "1000"), // integer base size
-  LEVERAGE: Number(process.env.LEVERAGE || "1"), // leverage (default 1)
+  LEVERAGE: Number(process.env.LEVERAGE || "20"), // leverage (default 1)
   IS_CROSS: String(process.env.IS_CROSS || "true").toLowerCase() === "true", // cross by default
 
   // Derivation from owner key (if PK provided)
@@ -289,6 +289,23 @@ async function main() {
   // Resolve market address
   const { addr: marketAddr } = await resolveMarket(client);
 
+  // Optional public WS: subscribe to orderbook, trades, and ticker in a single call
+  let unsubscribePublic = null;
+  try {
+    if (client.wsApi && marketAddr) {
+      const obTopic = `orderbook/${marketAddr}`;
+      const trTopic = `trade/${marketAddr}`;
+      const tkTopic = `ticker/${marketAddr}`;
+      unsubscribePublic = client.wsApi.subscribeHandlers({
+        [obTopic]: (msg) => console.log("[public-ws] orderbook:", JSON.stringify(msg?.data)),
+        [trTopic]: (msg) => console.log("[public-ws] trades:", JSON.stringify(msg?.data)),
+        [tkTopic]: (msg) => console.log("[public-ws] ticker:", JSON.stringify(msg?.data)),
+      });
+    }
+  } catch (e) {
+    console.warn("Public WS unavailable:", e?.message || e);
+  }
+
   // Build order_create
   // Tip: Ensure your trading account has sufficient asset balance in the vault; otherwise the
   // order may be rejected or not placed. Fund via the Ekiden UI before running this example.
@@ -310,27 +327,11 @@ async function main() {
         // reduce_only: true,
         // order_link_id: "example-123",
         // TP/SL bracket
-        bracket: {
-          mode: "FULL",
-          take_profit: {
-            trigger_price: Math.max(
-              1,
-              CONFIG.PRICE + Math.floor(CONFIG.PRICE * 0.02),
-            ),
-            order_type: "MARKET",
-          },
-          stop_loss: {
-            trigger_price: Math.max(
-              1,
-              CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02),
-            ),
-            order_type: "LIMIT",
-            limit_price: Math.max(
-              1,
-              CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02),
-            ),
-          },
-        },
+        // bracket: {
+        //   mode: "FULL",
+        //   take_profit: { trigger_price: Math.max(1, CONFIG.PRICE + Math.floor(CONFIG.PRICE * 0.02)), order_type: "MARKET" },
+        //   stop_loss: { trigger_price: Math.max(1, CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02)), order_type: "LIMIT", limit_price: Math.max(1, CONFIG.PRICE - Math.floor(CONFIG.PRICE * 0.02)) },
+        // },
       },
     ],
   };
@@ -353,17 +354,14 @@ async function main() {
     createdSid = created.output.outputs[0]?.sid;
   }
 
-  const orders = await client.httpApi.getOrders({ user_addr: userAddr });
-  console.log("Fetched Orders:", JSON.stringify(orders, null, 2));
-  if (!orders[0].take_profit || !orders[0].stop_loss) {
-    console.error(
-      "Order does not have TP/SL:",
-      JSON.stringify(orders[0], null, 2),
-    );
-    process.exit(1);
-  } else {
-    console.log("Order has TP/SL:", JSON.stringify(orders[0], null, 2));
-  }
+  // const orders = await client.httpApi.getOrders({ user_addr: userAddr });
+  // console.log("Fetched Orders:", JSON.stringify(orders, null, 2));
+  // if (!orders[0].take_profit || !orders[0].stop_loss) {
+  //   console.error("Order does not have TP/SL:", JSON.stringify(orders[0], null, 2));
+  //   process.exit(1);
+  // } else {
+  //   console.log("Order has TP/SL:", JSON.stringify(orders[0], null, 2));
+  // }
 
   await sleep(2000);
 
@@ -390,6 +388,9 @@ async function main() {
   // Flush WS events (optional) and exit
   await new Promise((r) => setTimeout(r, 1000));
   try {
+    if (typeof unsubscribePublic === "function") {
+      unsubscribePublic();
+    }
     client.privateWS?.close();
   } catch {}
   try {

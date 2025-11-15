@@ -1,6 +1,6 @@
 import { WsClient } from "@/api/ws";
 import type { EkidenClientConfig } from "@/config";
-import { ChannelMap, OrderbookEventHandler, TradesEventHandler } from "@/types";
+import { ChannelMap } from "@/types";
 
 export class WsAPIClient {
   ws: WsClient<string, ChannelMap>;
@@ -12,16 +12,34 @@ export class WsAPIClient {
     this.ws = new WsClient(config.wsURL);
   }
 
-  subscribeOrderbook(marketAddr: string, handler: OrderbookEventHandler) {
-    const channel = `orderbook/${marketAddr}` as const;
-    this.ws.subscribe(channel, handler);
-    return () => this.ws.unsubscribe(channel, handler);
+  /**
+   * Subscribe to multiple raw topics with a single handler
+   */
+  subscribeTopics(topics: string[], handler: (event: unknown) => void) {
+    this.ws.subscribe(topics as any, handler as any);
+    return () => this.ws.unsubscribe(topics as any, handler as any);
   }
 
-  subscribeTrades(marketAddr: string, handler: TradesEventHandler) {
-    const channel = `trade/${marketAddr}` as const;
-    this.ws.subscribe(channel, handler);
-    return () => this.ws.unsubscribe(channel, handler);
+  /**
+   * Subscribe with a map of topic -> handler
+   */
+  subscribeHandlers(handlers: Record<string, (event: unknown) => void>) {
+    this.ws.subscribe(handlers as any);
+    return () => this.ws.unsubscribe(handlers as any);
+  }
+
+  /**
+   * Unsubscribe helper for multiple topics + single handler
+   */
+  unsubscribeTopics(topics: string[], handler: (event: unknown) => void) {
+    this.ws.unsubscribe(topics as any, handler as any);
+  }
+
+  /**
+   * Unsubscribe helper for map of topic -> handler
+   */
+  unsubscribeHandlers(handlers: Record<string, (event: unknown) => void>) {
+    this.ws.unsubscribe(handlers as any);
   }
 
   close() {
