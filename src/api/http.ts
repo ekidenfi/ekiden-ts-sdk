@@ -270,6 +270,15 @@ export class HttpClient {
     );
   }
 
+  async getAllPortfolios(): Promise<PortfolioResponse[]> {
+    this.ensureAuth();
+    return this.request<PortfolioResponse[]>(
+      "/user/portfolio/all",
+      {},
+      { auth: true },
+    );
+  }
+
   async getUserLeverage(
     market_addr: string,
   ): Promise<{ leverage: number; market_addr: string }> {
