@@ -267,6 +267,7 @@ export interface MarketStatsResponse {
   volume_24h: number;
   /** Number of trades in 24h */
   trades_24h: number;
+  turnover_24h: number;
 }
 
 export interface PortfolioResponse {
