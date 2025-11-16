@@ -514,6 +514,7 @@ export type TickerSnapshot = {
   open_interest: number;
   open_interest_value: number;
   funding_rate: number;
+  funding_rate_percentage: number;
   next_funding_time: number;
   volume_24h: number;
   turnover_24h: number;
