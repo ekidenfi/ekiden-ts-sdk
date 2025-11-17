@@ -36,6 +36,10 @@ export interface MarketResponse {
   initial_margin_ratio_isolated?: number;
   maintenance_margin_ratio_isolated?: number;
   isolated_margin_enabled?: boolean;
+  /** Maker fee rate scaled by 1e6 (1_000_000 = 100%) */
+  maker_fee_rate?: number;
+  /** Taker fee rate scaled by 1e6 (1_000_000 = 100%) */
+  taker_fee_rate?: number;
 }
 
 export interface GetMarketInfoParams {
