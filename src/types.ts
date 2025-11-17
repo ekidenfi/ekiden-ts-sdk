@@ -326,6 +326,14 @@ export interface PortfolioSummary {
   total_margin_used: number;
   /** Total available balance across all vaults */
   total_available_balance: number;
+  /** Total notional value of open positions (in quote units) */
+  collateral_notional?: number;
+  /** Maintenance margin required to keep positions open */
+  maintenance_margin_required?: number;
+  /** Aggregated unrealized PnL across all positions (can be negative) */
+  unrealized_pnl_total?: number;
+  /** Aggregated unrealized funding across all positions (can be negative) */
+  unrealized_funding_total?: number;
 }
 
 export interface UserLeverageParams {
