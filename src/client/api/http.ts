@@ -100,4 +100,16 @@ export class HttpAPIClient {
   ) {
     return this.api.withdrawFromTrading(params);
   }
+
+  async getLeaderboardMy(
+    params: Parameters<HttpClient["getLeaderboardMy"]>[0],
+  ) {
+    return this.api.getLeaderboardMy(params);
+  }
+
+  async getLeaderboardAll(
+    params: Parameters<HttpClient["getLeaderboardAll"]>[0],
+  ) {
+    return this.api.getLeaderboardAll(params);
+  }
 }

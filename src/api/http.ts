@@ -8,6 +8,8 @@ import type {
   FundingRateResponse,
   GetFundingRateParams,
   GetMarketInfoParams,
+  LeaderboardDataResponse,
+  LeaderboardParams,
   ListCandlesParams,
   ListFillsParams,
   ListOrdersParams,
@@ -23,6 +25,7 @@ import type {
   SendIntentParams,
   SendIntentResponse,
   SendIntentWithCommitResponse,
+  UserLeaderboardParams,
   UserLeverageParams,
   VaultResponse,
   WithdrawFromTradingParams,
@@ -326,6 +329,27 @@ export class HttpClient {
         body: JSON.stringify(params),
       },
       { auth: true },
+    );
+  }
+
+  async getLeaderboardMy(
+    params: UserLeaderboardParams,
+  ): Promise<LeaderboardDataResponse> {
+    this.ensureAuth();
+    return this.request<LeaderboardDataResponse>(
+      "/user/leaderboard/my",
+      {},
+      { auth: true, query: params as any },
+    );
+  }
+
+  async getLeaderboardAll(
+    params: LeaderboardParams,
+  ): Promise<LeaderboardDataResponse[]> {
+    return this.request<LeaderboardDataResponse[]>(
+      "/user/leaderboard/all",
+      {},
+      { query: params as any },
     );
   }
 }
