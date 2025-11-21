@@ -28,6 +28,8 @@ export const buildOrderPayload = ({
     for (const cancel of cancels) {
       serializer.serializeStr(cancel.sid);
     }
+  } else if (payload.type === "order_cancel_all") {
+    // No additional fields to serialize for cancel_all
   } else if (payload.type === "order_create") {
     const orders = payload.orders;
     serializer.serializeU32AsUleb128(orders.length);
