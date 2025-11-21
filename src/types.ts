@@ -368,6 +368,7 @@ export interface SendIntentWithCommitResponse {
 export type ActionPayload =
   | OrderCreateAction
   | OrderCancelAction
+  | OrderCancelAllAction
   | LeverageAssignAction;
 
 export interface OrderCreateAction {
@@ -417,6 +418,10 @@ export interface OrderCancelAction {
 
 export interface OrderCancel {
   sid: string;
+}
+
+export interface OrderCancelAllAction {
+  type: "order_cancel_all";
 }
 
 export interface LeverageAssignAction {
