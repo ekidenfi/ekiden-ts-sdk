@@ -1,3 +1,5 @@
+import { ADDRESS_HEX_LENGTH } from "@/core/constants";
+
 export const addressToBytes = (address: any): Uint8Array => {
   if (address instanceof Uint8Array) {
     return address;
@@ -5,8 +7,8 @@ export const addressToBytes = (address: any): Uint8Array => {
 
   if (typeof address === "string") {
     let hex = address.startsWith("0x") ? address.slice(2) : address;
-    if (hex.length < 64) {
-      hex = hex.padStart(64, "0");
+    if (hex.length < ADDRESS_HEX_LENGTH) {
+      hex = hex.padStart(ADDRESS_HEX_LENGTH, "0");
     }
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < bytes.length; i++) {

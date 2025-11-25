@@ -1,4 +1,5 @@
 import { EkidenClientConfig } from "@/core/config";
+import { APIError, AuthenticationError } from "@/core/errors";
 
 export class BaseHttpClient {
   protected token?: string;
@@ -26,7 +27,9 @@ export class BaseHttpClient {
   }
 
   protected ensureAuth(): void {
-    if (!this.token) throw new Error("Not authenticated");
+    if (!this.token) {
+      throw new AuthenticationError();
+    }
   }
 
   protected async request<T>(
@@ -50,7 +53,6 @@ export class BaseHttpClient {
 
     if (!response.ok) {
       const method = options.method || "GET";
-      const errorMessage = `${method} ${path} failed with status ${response.status}`;
       let errorResponseContent = "";
 
       let rawText = "";
@@ -74,7 +76,11 @@ export class BaseHttpClient {
         // Ignore error parsing failures
       }
 
-      throw new Error(`${errorMessage}: ${errorResponseContent}`);
+      throw new APIError(
+        errorResponseContent || `${method} ${path} failed`,
+        response.status,
+        path,
+      );
     }
 
     return response.json();

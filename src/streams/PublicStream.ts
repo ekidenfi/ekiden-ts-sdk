@@ -1,5 +1,6 @@
 import { BaseWebSocketClient } from "@/core/base";
 import { EkidenClientConfig } from "@/core/config";
+import { ConfigurationError } from "@/core/errors";
 import { ChannelMap } from "@/types/websocket";
 
 export class PublicStream {
@@ -7,7 +8,7 @@ export class PublicStream {
 
   constructor(config: EkidenClientConfig) {
     if (!config.wsURL) {
-      throw new Error("WebSocket URL is not configured");
+      throw new ConfigurationError("WebSocket URL is not configured");
     }
     this.ws = new BaseWebSocketClient(config.wsURL);
   }

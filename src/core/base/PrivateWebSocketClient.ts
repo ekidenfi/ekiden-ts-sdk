@@ -1,5 +1,8 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
 
+import { HEARTBEAT_INTERVAL_MS } from "@/core/constants";
+import { AuthenticationError, WebSocketError } from "@/core/errors";
+
 export interface AuthRequest {
   op: "auth";
   bearer: string;
@@ -146,7 +149,7 @@ export class PrivateWebSocketClient {
 
   private authenticate(): void {
     if (!this.token) {
-      throw new Error("No token provided");
+      throw new AuthenticationError("No token provided");
     }
 
     const authRequest: AuthRequest = {
@@ -166,7 +169,7 @@ export class PrivateWebSocketClient {
         req_id: this.generateReqId(),
       };
       this.send(pingRequest);
-    }, 20000);
+    }, HEARTBEAT_INTERVAL_MS);
   }
 
   private handleMessage(event: MessageEvent): void {
@@ -208,14 +211,14 @@ export class PrivateWebSocketClient {
       console.error(
         "[PrivateWebSocketClient] Cannot subscribe - not authenticated",
       );
-      throw new Error("Not authenticated");
+      throw new AuthenticationError("Cannot subscribe - not authenticated");
     }
 
     if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
       const handlersMap = arg1 as Record<string, (data: any) => void>;
       const topics = Object.keys(handlersMap);
       if (topics.length === 0)
-        throw new Error("handlers map must not be empty");
+        throw new WebSocketError("handlers map must not be empty");
       const toSubscribe: string[] = [];
       for (const topic of topics) {
         const handler = handlersMap[topic];
@@ -243,10 +246,10 @@ export class PrivateWebSocketClient {
     const topics = arg1 as string[];
     const handler = arg2 as (data: any) => void;
     if (!Array.isArray(topics) || topics.length === 0) {
-      throw new Error("topics must be a non-empty string[]");
+      throw new WebSocketError("topics must be a non-empty string[]");
     }
     if (typeof handler !== "function") {
-      throw new Error("handler must be a function");
+      throw new WebSocketError("handler must be a function");
     }
     const toSubscribe: string[] = [];
     for (const topic of topics) {
@@ -308,7 +311,7 @@ export class PrivateWebSocketClient {
     const topics = arg1 as string[];
     const handler = arg2 as (data: any) => void;
     if (!Array.isArray(topics) || topics.length === 0) {
-      throw new Error("topics must be a non-empty string[]");
+      throw new WebSocketError("topics must be a non-empty string[]");
     }
 
     const toUnsubscribe: string[] = [];

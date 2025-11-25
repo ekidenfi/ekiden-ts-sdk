@@ -155,7 +155,7 @@ async function resolveMarket(client) {
   }
 
   const SYMBOL = process.env.SYMBOL?.trim();
-  const markets = await client.httpApi.getMarkets();
+  const markets = await client.market.getMarkets();
   if (!Array.isArray(markets) || markets.length === 0) {
     throw new Error("No markets available on staging");
   }
@@ -225,7 +225,7 @@ async function main() {
   const authTs = nowMs();
   const authNonce = randomNonce();
   const [authSig] = signAuthorize(signingAccount, authTs, authNonce);
-  const tokenResp = await client.httpApi.authorize({
+  const tokenResp = await client.user.authorize({
     public_key: signingAccount.publicKey.toString(),
     timestamp_ms: authTs,
     nonce: authNonce,
@@ -242,7 +242,7 @@ async function main() {
       authNonce2,
       true,
     );
-    const tokenResp2 = await client.httpApi.authorize({
+    const tokenResp2 = await client.user.authorize({
       public_key: rootAcc.publicKey.toString(),
       timestamp_ms: authTs2,
       nonce: authNonce2,
@@ -292,11 +292,11 @@ async function main() {
   // Optional public WS: subscribe to orderbook, trades, and ticker in a single call
   let unsubscribePublic = null;
   try {
-    if (client.wsApi && marketAddr) {
+    if (client.publicStream && marketAddr) {
       const obTopic = `orderbook/${marketAddr}`;
       const trTopic = `trade/${marketAddr}`;
       const tkTopic = `ticker/${marketAddr}`;
-      unsubscribePublic = client.wsApi.subscribeHandlers({
+      unsubscribePublic = client.publicStream.subscribeHandlers({
         [obTopic]: (msg) => console.log("[public-ws] orderbook:", JSON.stringify(msg?.data)),
         [trTopic]: (msg) => console.log("[public-ws] trades:", JSON.stringify(msg?.data)),
         [tkTopic]: (msg) => console.log("[public-ws] ticker:", JSON.stringify(msg?.data)),
@@ -342,7 +342,7 @@ async function main() {
     signature: createSig,
   };
   console.log("Create request:", JSON.stringify(createReq, null, 2));
-  const created = await client.httpApi.sendIntentWithCommit(createReq);
+  const created = await client.order.sendIntentWithCommit(createReq);
   console.log("Create response:", JSON.stringify(created, null, 2));
 
   // Extract SID
@@ -354,7 +354,7 @@ async function main() {
     createdSid = created.output.outputs[0]?.sid;
   }
 
-  // const orders = await client.httpApi.getOrders({ user_addr: userAddr });
+  // const orders = await client.order.getUserOrders();
   // console.log("Fetched Orders:", JSON.stringify(orders, null, 2));
   // if (!orders[0].take_profit || !orders[0].stop_loss) {
   //   console.error("Order does not have TP/SL:", JSON.stringify(orders[0], null, 2));
@@ -381,7 +381,7 @@ async function main() {
       ...(userAddr ? { user_addr: userAddr } : {}),
     };
     console.log("Cancel request:", JSON.stringify(cancelReq, null, 2));
-    const cancelled = await client.httpApi.sendIntentWithCommit(cancelReq);
+    const cancelled = await client.order.sendIntentWithCommit(cancelReq);
     console.log("Cancel response:", JSON.stringify(cancelled, null, 2));
   }
 
@@ -391,10 +391,10 @@ async function main() {
     if (typeof unsubscribePublic === "function") {
       unsubscribePublic();
     }
-    client.privateWS?.close();
+    client.privateStream?.close();
   } catch {}
   try {
-    client.wsApi?.close();
+    client.publicStream?.close();
   } catch {}
 }
 

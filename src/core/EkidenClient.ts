@@ -1,4 +1,5 @@
 import { EkidenClientConfig } from "./config";
+import { ConfigurationError } from "./errors";
 
 import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";
@@ -9,6 +10,21 @@ import { UserClient } from "@/modules/user";
 import { VaultClient, VaultOnChain } from "@/modules/vault";
 import { PrivateStream, PublicStream } from "@/streams";
 
+/**
+ * Main Ekiden SDK client
+ * @example
+ * ```typescript
+ * import { EkidenClient, TESTNET } from "@ekidenfi/ts-sdk";
+ *
+ * const ekiden = new EkidenClient(TESTNET);
+ *
+ * const { token } = await ekiden.user.authorize({...});
+ * await ekiden.setToken(token);
+ *
+ * const markets = await ekiden.market.getMarkets();
+ * const orders = await ekiden.order.getUserOrders();
+ * ```
+ */
 export class EkidenClient {
   public readonly market: MarketClient;
   public readonly order: OrderClient;
@@ -40,6 +56,14 @@ export class EkidenClient {
     }
   }
 
+  /**
+   * Set authentication token for all clients
+   * @param token - JWT token from authorize()
+   * @example
+   * ```typescript
+   * await ekiden.setToken(token);
+   * ```
+   */
   async setToken(token: string): Promise<void> {
     this.user.setToken(token);
     this.order.setToken(token);
@@ -53,6 +77,17 @@ export class EkidenClient {
     }
   }
 
+  /**
+   * Set different tokens for REST API and WebSocket
+   * @param tokens - Separate tokens for REST and WS
+   * @example
+   * ```typescript
+   * await ekiden.setTokens({
+   *   rest: tradingAccountToken,
+   *   ws: rootAccountToken,
+   * });
+   * ```
+   */
   async setTokens(tokens: {
     rest?: string;
     ws?: string;
@@ -79,28 +114,28 @@ export class EkidenClient {
 
   subscribeTo(topics: string[], handler: (data: any) => void): void {
     if (!this.privateStream) {
-      throw new Error("Private WebSocket not configured");
+      throw new ConfigurationError("Private WebSocket not configured");
     }
     this.privateStream.subscribe(topics, handler);
   }
 
   unsubscribeFrom(topics: string[], handler: (data: any) => void): void {
     if (!this.privateStream) {
-      throw new Error("Private WebSocket not configured");
+      throw new ConfigurationError("Private WebSocket not configured");
     }
     this.privateStream.unsubscribe(topics, handler);
   }
 
   subscribeHandlers(handlers: Record<string, (data: any) => void>): void {
     if (!this.privateStream) {
-      throw new Error("Private WebSocket not configured");
+      throw new ConfigurationError("Private WebSocket not configured");
     }
     this.privateStream.subscribe(handlers);
   }
 
   unsubscribeHandlers(handlers: Record<string, (data: any) => void>): void {
     if (!this.privateStream) {
-      throw new Error("Private WebSocket not configured");
+      throw new ConfigurationError("Private WebSocket not configured");
     }
     this.privateStream.unsubscribe(handlers);
   }

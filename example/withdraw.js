@@ -25,7 +25,8 @@ const config = {
 
 async function withdrawExample() {
   const ekiden = new EkidenClient({
-    baseURL: `${TESTNET.baseURL}/api/v1`,
+    baseURL: TESTNET.baseURL,
+    apiPrefix: TESTNET.apiPrefix,
   });
   const aptosConfig = new AptosConfig({ network: Network.TESTNET });
   const aptos = new Aptos(aptosConfig);

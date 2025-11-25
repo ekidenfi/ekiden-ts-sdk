@@ -1,10 +1,12 @@
 import { Serializer } from "@aptos-labs/ts-sdk";
 
+import { INTENT_SEED, TPSL_MODE, TPSL_ORDER_TYPE } from "@/core/constants";
 import { ActionPayload } from "@/modules/order";
 
-const encodeTpSlMode = (mode: string): number => (mode === "FULL" ? 0 : 1);
+const encodeTpSlMode = (mode: string): number =>
+  mode === "FULL" ? TPSL_MODE.FULL : TPSL_MODE.PARTIAL;
 const encodeTpSlOrderType = (orderType: string): number =>
-  orderType === "MARKET" ? 0 : 1;
+  orderType === "MARKET" ? TPSL_ORDER_TYPE.MARKET : TPSL_ORDER_TYPE.LIMIT;
 
 export const buildOrderPayload = ({
   payload,
@@ -120,11 +122,6 @@ const composeHexPayload = ({
   payload: Uint8Array;
   nonce: number;
 }) => {
-  const SEED = Uint8Array.from([
-    226, 172, 78, 86, 136, 217, 100, 39, 10, 216, 118, 215, 96, 194, 235, 178,
-    213, 79, 178, 109, 147, 81, 44, 121, 0, 73, 182, 88, 55, 48, 208, 111,
-  ]);
-
   const serializeNonce = (nonce: number) => {
     const serializer = new Serializer();
     serializer.serializeU64(nonce);
@@ -133,12 +130,12 @@ const composeHexPayload = ({
 
   const nonceBytes = serializeNonce(nonce);
 
-  const totalLength = SEED.length + payload.length + nonceBytes.length;
+  const totalLength = INTENT_SEED.length + payload.length + nonceBytes.length;
   const result = new Uint8Array(totalLength);
 
-  result.set(SEED, 0);
-  result.set(payload, SEED.length);
-  result.set(nonceBytes, SEED.length + payload.length);
+  result.set(INTENT_SEED, 0);
+  result.set(payload, INTENT_SEED.length);
+  result.set(nonceBytes, INTENT_SEED.length + payload.length);
 
   return Array.from(result)
     .map((byte) => byte.toString(16).padStart(2, "0"))

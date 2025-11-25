@@ -275,6 +275,83 @@ if (ekiden.privateStream) {
 
 ## Utility Functions
 
+### Account Creation Utilities
+
+Functions for creating and managing sub-accounts (Funding and Trading).
+
+```typescript
+import {
+  createAccountMessage,
+  createSubAccountFromSignature,
+  createSubAccountDeterministic,
+  createSubAccounts,
+  createSubAccountsDeterministic,
+  buildLinkProof,
+} from "@ekidenfi/ts-sdk";
+
+// 1. Create message for wallet signing
+const fundingMessage = createAccountMessage(rootAddress, "Funding");
+const tradingMessage = createAccountMessage(rootAddress, "Trading");
+
+// 2a. For standard wallets - create from signature
+const fundingSignature = await wallet.signMessage(fundingMessage);
+const tradingSignature = await wallet.signMessage(tradingMessage);
+
+const fundingAccount = createSubAccountFromSignature({
+  rootAddress,
+  type: "Funding",
+  signature: fundingSignature.signature,
+});
+
+const tradingAccount = createSubAccountFromSignature({
+  rootAddress,
+  type: "Trading",
+  signature: tradingSignature.signature,
+});
+
+// Or create both at once
+const { funding, trading } = createSubAccounts(
+  rootAddress,
+  fundingSignature.signature,
+  tradingSignature.signature,
+);
+
+// 2b. For keyless wallets (Google, Apple) - create deterministically
+const fundingAccount = await createSubAccountDeterministic({
+  rootAddress,
+  type: "Funding",
+});
+
+// Or create both at once
+const { funding, trading } = await createSubAccountsDeterministic(rootAddress);
+
+// 3. Build link proof for blockchain registration
+const linkProof = buildLinkProof(
+  account.publicKey.toUint8Array(),
+  rootAddress,
+  account.sign(rootAddress).toUint8Array(),
+);
+
+// 4. Register on blockchain
+const payload = ekiden.vaultOnChain.createEkidenUser({
+  vaultAddress: VAULT_ADDRESS,
+  fundingLinkProof: fundingLinkProof,
+  crossTradingLinkProof: tradingLinkProof,
+});
+```
+
+#### SubAccount Type
+
+```typescript
+interface SubAccount {
+  address: string;
+  privateKey: string;
+  publicKey: string;
+  type: "funding" | "trading";
+  nonce: string;
+}
+```
+
 ### buildOrderPayload
 
 Build payload for order intents.

@@ -9,6 +9,7 @@ export { VaultClient, VaultOnChain } from "./modules/vault";
 export {
   decodeHexToString,
   parseSubAccountsData,
+  SubAccountData,
 } from "./modules/vault/VaultOnChain";
 export * from "./streams";
 export * from "./types";
