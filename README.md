@@ -1,225 +1,417 @@
-# ekiden-ts-sdk
+# Ekiden TypeScript SDK
 
-TypeScript SDK for interacting with the Ekiden Gateway and Aptos DeFi protocol.
-
----
+Professional TypeScript SDK for interacting with Ekiden Gateway and Aptos DeFi protocol.
 
 ## Installation
 
-```sh
-# pnpm
-pnpm add @ekiden/ts-sdk
-
-# npm
-npm install @ekiden/ts-sdk
-
-# yarn
-yarn add @ekiden/ts-sdk
-
-# bun
-bun add @ekiden/ts-sdk
+```bash
+npm install @ekidenfi/ts-sdk
+pnpm add @ekidenfi/ts-sdk
+yarn add @ekidenfi/ts-sdk
+bun add @ekidenfi/ts-sdk
 ```
 
+## Architecture
 
----
+The SDK follows a modular, object-oriented architecture with clear separation of concerns:
 
-## Example: Basic flow (staging)
-
-End-to-end example that authenticates with your Ed25519 private key, creates a limit order via intent, then cancels it, and (optionally) listens for private order updates over WebSocket.
-
-- File: `example/basic.js`
-- Network: Staging (host root: `https://api.staging.ekiden.fi`)
-
-Prerequisites
-
-- Provide one of the following as an environment variable (or in a `.env` file):
-  - `PK=0x<root_owner_ed25519_private_key_hex>`
-  - or `TRADING_PK=0x<trading_sub_ed25519_private_key_hex>`
-- The example uses the trading sub-account for both authorization and intent signing. If only `PK` is provided, the script deterministically derives the trading sub-account using AIP-21-style message format.
-- Important: Use the Ekiden web UI to create/restore your root account and trading sub-account, link accounts if prompted, and deposit funds into the appropriate vault for the asset you want to trade. The examples do not perform deposits or on-chain account setup.
-
-Setup and run:
-
-```sh
-# from ts-sdk/
-npm run build
-
-# set env vars (or create a .env file)
-export PK=0x<your_ed25519_private_key_hex>
-# Alternatively, use a dedicated trading sub-account private key
-# export TRADING_PK=0x<your_trading_ed25519_private_key_hex>
-# Optional: provide a specific market or let the script fetch markets and pick one
-# export MARKET_ADDR=0x<market_address_on_staging>
-# Optional: select a market by symbol when MARKET_ADDR is not provided
-# export SYMBOL=BTC-WUSDC
-export SIDE=buy                 # buy | sell
-export PRICE=50000000000        # integer scaled quote price
-export SIZE=1000                # integer base size (scaled)
-export LEVERAGE=1               # integer leverage
-export IS_CROSS=true            # true=cross, false=isolated
-
-node example/basic.js
+```
+EkidenClient
+├── market          - Market data, candles, statistics
+├── order           - Order management, fills, intents
+├── user            - User authentication, portfolio, leverage
+├── position        - Position management
+├── vault           - Vault operations (REST API)
+├── vaultOnChain    - Aptos on-chain vault operations
+├── funding         - Funding rates and epochs
+├── leaderboard     - Leaderboard data
+├── publicStream    - Public WebSocket streams
+└── privateStream   - Private WebSocket streams
 ```
 
-What it does:
+### Core Principles
 
-- Signs and calls `authorize` to receive a JWT
-- Optionally connects to the private WS and subscribes to order events
-- Builds and signs an `order_create` intent, sends it with commit
-- Extracts the new order `sid` and sends a signed `order_cancel` intent
-- Prints responses and any private order events
-
----
+- **Modular Design**: Each domain has its own client (MarketClient, OrderClient, etc.)
+- **Type Safety**: Full TypeScript support with comprehensive type definitions
+- **OOP Approach**: Proper object-oriented design with class instances
+- **Clean Separation**: Business logic separated by domain
 
 ## Quick Start
 
-```ts
+```typescript
+import { EkidenClient, TESTNET } from "@ekidenfi/ts-sdk";
 import { Ed25519Account, Ed25519PrivateKey, PrivateKey } from "@aptos-labs/ts-sdk";
-import { EkidenClient, TESTNET } from "@ekiden/ts-sdk";
 
-// Initialize client for staging
 const ekiden = new EkidenClient(TESTNET);
 
-// Prepare an Aptos account
 const formatted = PrivateKey.formatPrivateKey(process.env.PRIVATE_KEY!, "ed25519");
 const privateKey = new Ed25519PrivateKey(formatted);
 const account = new Ed25519Account({ privateKey });
 
-// Authorize (get JWT) — sign AUTHORIZE|{timestamp_ms}|{nonce}
 const timestamp_ms = Date.now();
 const nonce = Math.random().toString(36).slice(2);
 const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
 const signature = account.sign(new TextEncoder().encode(message)).toString();
 
-const { token } = await ekiden.httpApi.authorize({
+const { token } = await ekiden.user.authorize({
   public_key: account.publicKey.toString(),
   timestamp_ms,
   nonce,
   signature,
 });
+
 await ekiden.setToken(token);
 
-// Fetch user orders
-const orders = await ekiden.httpApi.getUserOrders({ market_addr: "0x..." });
-
-// Fetch user vaults
-const vaults = await ekiden.httpApi.getUserVaults();
-
-// Fetch user positions
-const positions = await ekiden.httpApi.getUserPositions();
+const markets = await ekiden.market.getMarkets();
+const portfolio = await ekiden.user.getUserPortfolio();
+const positions = await ekiden.position.getUserPositions();
 ```
 
----
+## Module Documentation
 
-## Architecture
+### MarketClient
 
-- **EkidenClient** — main entry point, aggregates REST, payload utilities, and Aptos helpers.
-- **EkidenAPIClient** — low-level REST client with JWT support.
-- **Types** — all types are centralized in `src/types.ts`.
-- **Vault** — Aptos vault helpers (imported as `ekiden.vault`).
+Access market data, OHLCV candles, and statistics.
 
----
+```typescript
+const markets = await ekiden.market.getMarkets();
 
-## Main Methods
+const marketInfo = await ekiden.market.getMarketInfo({
+  symbol: "BTC-WUSDC",
+});
 
-- `httpApi.authorize(params)` — user authorization, get JWT
-- `setToken(token)` — set JWT for private methods
-- Public market data:
-  - `httpApi.getMarkets()` — markets
-  - `httpApi.getOrders(params)` — public orders
-  - `httpApi.getFills(params)` — public fills
-  - `httpApi.getCandles(params)` — OHLCV
-  - `httpApi.getFundingRates(params)` / `httpApi.getFundingRateByMarket(market)`
-- Private user data (JWT required):
-  - `httpApi.getUserOrders(params)` — user orders
-  - `httpApi.getUserFills(params)` — user fills
-  - `httpApi.getUserVaults(params)` — user vaults
-  - `httpApi.getUserPositions(params)` — user positions
-  - `httpApi.getUserLeverage(market_addr)` / `httpApi.setUserLeverage(params)`
-- Intents (JWT required):
-  - `httpApi.sendIntent(params)` — send intent
-  - `httpApi.sendIntentWithCommit(params)` — send intent and wait for commit
-  - `buildOrderPayload({ payload, nonce })` — build bytes to sign for intents
- - Vault helpers: `vault.*` (see `src/aptos/vault.ts`)
+const candles = await ekiden.market.getCandles({
+  market_addr: "0x...",
+  timeframe: "1h",
+  start_time: Date.now() - 86400000,
+});
 
----
+const stats = await ekiden.market.getMarketStats("0x...");
+```
 
-## Example: Create Order Intent
+### OrderClient
 
-```ts
-import { buildOrderPayload } from "@ekiden/ts-sdk";
+Manage orders, fills, and intents.
+
+```typescript
+const orders = await ekiden.order.getOrders({
+  market_addr: "0x...",
+  page: 1,
+  per_page: 50,
+});
+
+const userOrders = await ekiden.order.getUserOrders({
+  market_addr: "0x...",
+});
+
+const fills = await ekiden.order.getUserFills();
+
+import { buildOrderPayload } from "@ekidenfi/ts-sdk";
 
 const payload = {
   type: "order_create",
-  orders: [
-    {
-      market_addr: "0x...",
-      side: "buy",
-      size: 100,
-      price: 123_450_000, // integer scaled price
-      type: "limit",
-      leverage: 1,
-      is_cross: true,
-      time_in_force: "PostOnly",
-    },
-  ],
+  orders: [{
+    market_addr: "0x...",
+    side: "buy",
+    size: 100,
+    price: 50000000000,
+    type: "limit",
+    leverage: 1,
+    is_cross: true,
+    time_in_force: "PostOnly",
+  }],
 };
 
 const nonce = Date.now();
 const toSign = buildOrderPayload({ payload, nonce });
 const sig = account.sign(toSign).toString();
 
-const resp = await ekiden.httpApi.sendIntentWithCommit({
+const response = await ekiden.order.sendIntentWithCommit({
   payload,
   nonce,
   signature: sig.startsWith("0x") ? sig : `0x${sig}`,
 });
 ```
 
----
+### UserClient
 
-## Example: Vault Usage
+User authentication, portfolio, and leverage management.
 
-For detailed examples of how to work with vault deposits and withdrawals, see the `example/` folder:
+```typescript
+const portfolio = await ekiden.user.getUserPortfolio();
 
-- **`example/deposit.js`** — complete example of depositing assets into a vault
-- **`example/withdraw.js`** — complete example of withdrawing assets from a vault
+const leverage = await ekiden.user.getUserLeverage("0x...");
 
-Both examples show the full flow including:
-- Setting up Aptos client and account
-- Creating transaction payloads using `ekiden.vault` utilities
-- Gas estimation and transaction submission
-- Waiting for transaction confirmation
-
-```ts
-// Basic vault operations
-const depositPayload = ekiden.vault.depositIntoUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000)
+await ekiden.user.setUserLeverage({
+  market_addr: "0x...",
+  leverage: 5,
 });
 
-const withdrawPayload = ekiden.vault.requestWithdrawFromUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000)
+const allPortfolios = await ekiden.user.getAllPortfolios();
+```
+
+### PositionClient
+
+Position management and queries.
+
+```typescript
+const positions = await ekiden.position.getUserPositions();
+
+const marketPositions = await ekiden.position.getUserPositions({
+  market_addr: "0x...",
 });
 ```
 
----
+### VaultClient
 
-## Base URLs and API versioning
+Vault operations via REST API.
 
-- The SDK automatically prepends an API prefix (e.g., `/api/v1`) from the network config when building request URLs.
-- TESTNET is pre-configured with `apiPrefix: "/api/v1"`, so set `baseURL` to the host root (e.g., `https://api.staging.ekiden.fi`), and the SDK will target versioned routes for you.
-- WebSocket endpoints are separate: the client uses `wsURL` and `privateWSURL` to connect to `/ws/public` and `/ws/private`.
+```typescript
+const vaults = await ekiden.vault.getUserVaults();
 
+await ekiden.vault.withdrawFromTrading({
+  addr_from: "0x...",
+  addr_to: "0x...",
+  amount: 1000000,
+  asset_metadata: "0x...",
+  nonce: Date.now(),
+  signature: "0x...",
+  timestamp: Date.now(),
+  withdraw_available: true,
+});
+```
 
+### VaultOnChain
 
----
+Aptos on-chain vault operations.
 
-## Documentation & Support
+```typescript
+const depositPayload = ekiden.vaultOnChain.depositIntoUser({
+  vaultAddress: "0x...",
+  assetMetadata: "0x...",
+  amount: BigInt(1000000),
+});
 
-- [API Reference](https://github.com/ekidenfi/ekiden-ts-sdk)
-- [Ekiden Gateway Docs](https://docs.ekiden.fi)
-- Questions & issues: open a GitHub issue
+const withdrawPayload = ekiden.vaultOnChain.requestWithdrawFromUser({
+  vaultAddress: "0x...",
+  assetMetadata: "0x...",
+  amount: BigInt(1000000),
+});
+
+const balance = ekiden.vaultOnChain.vaultBalance({
+  vaultAddress: "0x...",
+  userAddress: "0x...",
+  assetMetadata: "0x...",
+  vaultType: "Cross",
+});
+```
+
+### FundingClient
+
+Funding rates and epochs.
+
+```typescript
+const fundingRates = await ekiden.funding.getFundingRates();
+
+const fundingRate = await ekiden.funding.getFundingRateByMarket("0x...");
+
+const epoch = await ekiden.funding.getFundingEpoch();
+```
+
+### LeaderboardClient
+
+Leaderboard data and rankings.
+
+```typescript
+const leaderboard = await ekiden.leaderboard.getLeaderboardAll({
+  time_frame: "24h",
+  page: 1,
+  per_page: 50,
+});
+
+const myRank = await ekiden.leaderboard.getLeaderboardMy({
+  time_frame: "24h",
+});
+```
+
+### PublicStream
+
+Public WebSocket streams for market data.
+
+```typescript
+if (ekiden.publicStream) {
+  ekiden.publicStream.subscribeHandlers({
+    "orderbook/0x...": (event) => {
+      console.log("Orderbook update:", event.data);
+    },
+    "trade/0x...": (event) => {
+      console.log("Trade:", event.data);
+    },
+    "ticker/0x...": (event) => {
+      console.log("Ticker:", event.data);
+    },
+  });
+}
+```
+
+### PrivateStream
+
+Private WebSocket streams for user events.
+
+```typescript
+if (ekiden.privateStream) {
+  await ekiden.privateStream.connect();
+
+  ekiden.privateStream.subscribe(["orders", "positions", "fills"], (data) => {
+    console.log("User event:", data);
+  });
+
+  ekiden.privateStream.subscribe({
+    "orders": (data) => console.log("Order update:", data),
+    "positions": (data) => console.log("Position update:", data),
+  });
+}
+```
+
+## Utility Functions
+
+### buildOrderPayload
+
+Build payload for order intents.
+
+```typescript
+import { buildOrderPayload } from "@ekidenfi/ts-sdk";
+
+const hexPayload = buildOrderPayload({
+  payload: {
+    type: "order_create",
+    orders: [...],
+  },
+  nonce: Date.now(),
+});
+```
+
+### BN (BigNumber)
+
+Enhanced BigNumber class for precise calculations.
+
+```typescript
+import { BN } from "@ekidenfi/ts-sdk";
+
+const amount = new BN("1.5");
+const scaled = BN.parseUnits(amount, 8);
+const formatted = BN.formatUnits(scaled, 8);
+```
+
+### addressToBytes
+
+Convert addresses to byte arrays.
+
+```typescript
+import { addressToBytes } from "@ekidenfi/ts-sdk";
+
+const bytes = addressToBytes("0x1234...");
+```
+
+## Configuration
+
+```typescript
+import { EkidenClientConfig, TESTNET } from "@ekidenfi/ts-sdk";
+
+const TESTNET: EkidenClientConfig = {
+  baseURL: "https://api.staging.ekiden.fi",
+  wsURL: "wss://api.staging.ekiden.fi/ws/public",
+  privateWSURL: "wss://api.staging.ekiden.fi/ws/private",
+  apiPrefix: "/api/v1",
+};
+
+const ekiden = new EkidenClient(TESTNET);
+
+const CUSTOM: EkidenClientConfig = {
+  baseURL: "https://your-api.example.com",
+  apiPrefix: "/api/v2",
+};
+
+const customClient = new EkidenClient(CUSTOM);
+```
+
+## Advanced Usage
+
+### Token Management
+
+```typescript
+await ekiden.setToken(token);
+
+await ekiden.setTokens({
+  rest: restToken,
+  ws: wsToken,
+  connectPrivateWS: true,
+});
+```
+
+### Helper Methods for Private Streams
+
+```typescript
+ekiden.subscribeTo(["orders", "positions"], handler);
+ekiden.unsubscribeFrom(["orders"], handler);
+
+ekiden.subscribeHandlers({
+  "orders": orderHandler,
+  "positions": positionHandler,
+});
+ekiden.unsubscribeHandlers({ "orders": orderHandler });
+```
+
+## Backward Compatibility
+
+The SDK maintains backward compatibility with the previous API:
+
+```typescript
+import { Vault } from "@ekidenfi/ts-sdk";
+
+const payload = Vault.depositIntoUser({
+  vaultAddress: "0x...",
+  assetMetadata: "0x...",
+  amount: BigInt(1000000),
+});
+```
+
+## Type Exports
+
+All types are exported for external use:
+
+```typescript
+import type {
+  MarketResponse,
+  OrderResponse,
+  PositionResponse,
+  FillResponse,
+  VaultResponse,
+  ActionPayload,
+  SendIntentParams,
+  PaginationParams,
+} from "@ekidenfi/ts-sdk";
+```
+
+## Error Handling
+
+```typescript
+try {
+  const orders = await ekiden.order.getUserOrders();
+} catch (error) {
+  if (error.message.includes("Not authenticated")) {
+    console.error("Please authenticate first");
+  }
+  console.error("Error:", error);
+}
+```
+
+## Links
+
+- [GitHub Repository](https://github.com/ekidenfi/ekiden-ts-sdk)
+- [Ekiden Documentation](https://docs.ekiden.fi)
+- [API Reference](https://api.ekiden.fi/docs)
+
+## License
+
+ISC
