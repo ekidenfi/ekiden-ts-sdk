@@ -277,3 +277,83 @@ export const createSubAccountsDeterministic = async (
 
   return { funding, trading };
 };
+
+export interface MasterSignaturePayload {
+  message: string;
+  nonce: string;
+}
+
+export interface DeriveFromMasterSignatureOptions {
+  masterSignature: string | Uint8Array;
+  type: "Funding" | "Trading";
+  nonce?: string;
+}
+
+export const createMasterSignaturePayload = (
+  rootAddress: string,
+  version: number = 1,
+): MasterSignaturePayload => ({
+  message: "Ekiden Account Derivation",
+  nonce: `${rootAddress}:${version}`,
+});
+
+export const deriveSubAccountFromMasterSignature = async (
+  options: DeriveFromMasterSignatureOptions,
+): Promise<SubAccount> => {
+  const { masterSignature, type, nonce = "0" } = options;
+
+  const signatureBytes = extractPrivateKeyFromSignature(masterSignature);
+
+  const encoder = new TextEncoder();
+  const typeBytes = encoder.encode(type);
+  const nonceBytes = encoder.encode(nonce);
+
+  const combinedData = new Uint8Array([
+    ...signatureBytes,
+    ...typeBytes,
+    ...nonceBytes,
+  ]);
+
+  const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
+  const privateKeyBytes = new Uint8Array(hashBuffer);
+
+  const privateKey = new Ed25519PrivateKey(privateKeyBytes);
+  const account = Account.fromPrivateKey({ privateKey });
+
+  return {
+    address: account.accountAddress.toString(),
+    privateKey: privateKey.toString(),
+    publicKey: account.publicKey.toString(),
+    type: type.toLowerCase() as "funding" | "trading",
+    nonce,
+  };
+};
+
+export const deriveSubAccountsFromMasterSignature = async (
+  masterSignature: string | Uint8Array,
+): Promise<{ funding: SubAccount; trading: SubAccount }> => {
+  const funding = await deriveSubAccountFromMasterSignature({
+    masterSignature,
+    type: "Funding",
+    nonce: "0",
+  });
+
+  const trading = await deriveSubAccountFromMasterSignature({
+    masterSignature,
+    type: "Trading",
+    nonce: "0",
+  });
+
+  return { funding, trading };
+};
+
+export const deriveTradingAccountFromMasterSignature = async (
+  masterSignature: string | Uint8Array,
+  nonce: string,
+): Promise<SubAccount> => {
+  return deriveSubAccountFromMasterSignature({
+    masterSignature,
+    type: "Trading",
+    nonce,
+  });
+};
