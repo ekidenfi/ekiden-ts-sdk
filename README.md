@@ -484,10 +484,7 @@ try {
 ```
 
 ## Links
-
-- [GitHub Repository](https://github.com/ekidenfi/ekiden-ts-sdk)
 - [Ekiden Documentation](https://docs.ekiden.fi)
-- [API Reference](https://api.ekiden.fi/docs)
 
 ## License
 
