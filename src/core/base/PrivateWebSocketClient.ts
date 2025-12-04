@@ -358,10 +358,14 @@ export class PrivateWebSocketClient {
   public close(): void {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = undefined;
     }
     this.isAuthenticated = false;
     this.subscriptions.clear();
     this.handlers.clear();
-    this.ws?.close();
+    if (this.ws) {
+      this.ws.close();
+      this.ws = undefined;
+    }
   }
 }
