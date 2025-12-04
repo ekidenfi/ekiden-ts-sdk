@@ -1,4 +1,4 @@
-import { EkidenClientConfig } from "@/core/config";
+import type { EkidenClientConfig } from "@/core/config";
 import { APIError, AuthenticationError } from "@/core/errors";
 
 export class BaseHttpClient {
@@ -38,7 +38,7 @@ export class BaseHttpClient {
     config: {
       auth?: boolean;
       query?: Record<string, any>;
-    } = {},
+    } = {}
   ): Promise<T> {
     const { auth = false, query } = config;
 
@@ -72,15 +72,11 @@ export class BaseHttpClient {
             errorResponseContent = rawText;
           }
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignore error parsing failures
       }
 
-      throw new APIError(
-        errorResponseContent || `${method} ${path} failed`,
-        response.status,
-        path,
-      );
+      throw new APIError(errorResponseContent || `${method} ${path} failed`, response.status, path);
     }
 
     return response.json();

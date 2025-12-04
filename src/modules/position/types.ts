@@ -1,4 +1,4 @@
-import { PaginationParams } from "@/types/common";
+import type { PaginationParams } from "@/types/common";
 
 export interface PositionResponse {
   sid: string;

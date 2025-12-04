@@ -1,4 +1,4 @@
-import {
+import type {
   FillResponse,
   ListFillsParams,
   ListOrdersParams,
@@ -11,17 +11,12 @@ import {
 } from "./types";
 
 import { BaseHttpClient } from "@/core/base";
-import { EkidenClientConfig } from "@/core/config";
 import { Validator } from "@/core/validation";
 
 /**
  * Client for order and fill operations
  */
 export class OrderClient extends BaseHttpClient {
-  constructor(config: EkidenClientConfig) {
-    super(config);
-  }
-
   /**
    * Get public orders for a market
    * @param params - Order query parameters
@@ -35,11 +30,7 @@ export class OrderClient extends BaseHttpClient {
    * ```
    */
   async getOrders(params: ListOrdersParams): Promise<OrderResponse[]> {
-    return this.request<OrderResponse[]>(
-      "/market/orders",
-      {},
-      { query: params },
-    );
+    return this.request<OrderResponse[]>("/market/orders", {}, { query: params });
   }
 
   /**
@@ -65,15 +56,9 @@ export class OrderClient extends BaseHttpClient {
    * const myOrders = await client.order.getUserOrders({ market_addr: "0x..." });
    * ```
    */
-  async getUserOrders(
-    params: ListUserOrdersParams = {},
-  ): Promise<OrderResponse[]> {
+  async getUserOrders(params: ListUserOrdersParams = {}): Promise<OrderResponse[]> {
     this.ensureAuth();
-    return this.request<OrderResponse[]>(
-      "/user/orders",
-      {},
-      { auth: true, query: params },
-    );
+    return this.request<OrderResponse[]>("/user/orders", {}, { auth: true, query: params });
   }
 
   /**
@@ -86,15 +71,9 @@ export class OrderClient extends BaseHttpClient {
    * const myFills = await client.order.getUserFills();
    * ```
    */
-  async getUserFills(
-    params: ListUserFillsParams = {},
-  ): Promise<FillResponse[]> {
+  async getUserFills(params: ListUserFillsParams = {}): Promise<FillResponse[]> {
     this.ensureAuth();
-    return this.request<FillResponse[]>(
-      "/user/fills",
-      {},
-      { auth: true, query: params },
-    );
+    return this.request<FillResponse[]>("/user/fills", {}, { auth: true, query: params });
   }
 
   /**
@@ -122,7 +101,7 @@ export class OrderClient extends BaseHttpClient {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params),
       },
-      { auth: true },
+      { auth: true }
     );
   }
 
@@ -142,9 +121,7 @@ export class OrderClient extends BaseHttpClient {
    * console.log(response.sid);
    * ```
    */
-  async sendIntentWithCommit(
-    params: SendIntentParams,
-  ): Promise<SendIntentWithCommitResponse> {
+  async sendIntentWithCommit(params: SendIntentParams): Promise<SendIntentWithCommitResponse> {
     this.ensureAuth();
     Validator.validateIntentParams(params);
     return this.request<SendIntentWithCommitResponse>(
@@ -154,7 +131,7 @@ export class OrderClient extends BaseHttpClient {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params),
       },
-      { auth: true },
+      { auth: true }
     );
   }
 }

@@ -1,4 +1,4 @@
-import { EkidenClientConfig } from "./config";
+import type { EkidenClientConfig } from "./config";
 import { ConfigurationError } from "./errors";
 
 import { FundingClient } from "@/modules/funding";

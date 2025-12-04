@@ -124,10 +124,7 @@ export class PrivateWebSocketClient {
             this.startHeartbeat();
             resolve();
           } else {
-            console.error(
-              "[PrivateWebSocketClient] Authentication failed:",
-              message.message,
-            );
+            console.error("[PrivateWebSocketClient] Authentication failed:", message.message);
             reject(new Error(message.message || "Authentication failed"));
           }
         }
@@ -138,10 +135,7 @@ export class PrivateWebSocketClient {
           const message = JSON.parse(event.data) as PrivateWSMessage;
           handleAuth(message);
         } catch (err) {
-          console.warn(
-            "[PrivateWebSocketClient] Failed to parse auth message",
-            err,
-          );
+          console.warn("[PrivateWebSocketClient] Failed to parse auth message", err);
         }
       });
     });
@@ -178,10 +172,7 @@ export class PrivateWebSocketClient {
 
       switch (message.op) {
         case "error":
-          console.warn(
-            "[PrivateWebSocketClient] WebSocket error:",
-            message.message,
-          );
+          console.warn("[PrivateWebSocketClient] WebSocket error:", message.message);
           break;
         case "event":
           this.handleEvent(message);
@@ -197,10 +188,7 @@ export class PrivateWebSocketClient {
     if (handlers && handlers.size > 0) {
       handlers.forEach((handler) => handler(event.data));
     } else {
-      console.warn(
-        "[PrivateWebSocketClient] No handlers found for topic:",
-        event.topic,
-      );
+      console.warn("[PrivateWebSocketClient] No handlers found for topic:", event.topic);
     }
   }
 
@@ -208,17 +196,14 @@ export class PrivateWebSocketClient {
   subscribe(handlers: Record<string, (data: any) => void>): void;
   subscribe(arg1: any, arg2?: (data: any) => void): void {
     if (!this.isAuthenticated) {
-      console.error(
-        "[PrivateWebSocketClient] Cannot subscribe - not authenticated",
-      );
+      console.error("[PrivateWebSocketClient] Cannot subscribe - not authenticated");
       throw new AuthenticationError("Cannot subscribe - not authenticated");
     }
 
     if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
       const handlersMap = arg1 as Record<string, (data: any) => void>;
       const topics = Object.keys(handlersMap);
-      if (topics.length === 0)
-        throw new WebSocketError("handlers map must not be empty");
+      if (topics.length === 0) throw new WebSocketError("handlers map must not be empty");
       const toSubscribe: string[] = [];
       for (const topic of topics) {
         const handler = handlersMap[topic];
@@ -284,10 +269,7 @@ export class PrivateWebSocketClient {
         const handler = handlersMap[topic];
         const handlers = this.handlers.get(topic);
         if (!handlers || typeof handler !== "function") {
-          console.warn(
-            "[PrivateWebSocketClient] No handlers found for topic:",
-            topic,
-          );
+          console.warn("[PrivateWebSocketClient] No handlers found for topic:", topic);
           continue;
         }
         handlers.delete(handler);
@@ -319,10 +301,7 @@ export class PrivateWebSocketClient {
     for (const topic of topics) {
       const handlers = this.handlers.get(topic);
       if (!handlers) {
-        console.warn(
-          "[PrivateWebSocketClient] No handlers found for topic:",
-          topic,
-        );
+        console.warn("[PrivateWebSocketClient] No handlers found for topic:", topic);
         continue;
       }
 
@@ -350,7 +329,7 @@ export class PrivateWebSocketClient {
     } else {
       console.warn(
         "[PrivateWebSocketClient] Cannot send message - WebSocket not open, readyState:",
-        this.ws?.readyState,
+        this.ws?.readyState
       );
     }
   }

@@ -1,7 +1,7 @@
 import { Serializer } from "@aptos-labs/ts-sdk";
 
 import { INTENT_SEED, TPSL_MODE, TPSL_ORDER_TYPE } from "@/core/constants";
-import { ActionPayload } from "@/modules/order";
+import type { ActionPayload } from "@/modules/order";
 
 const encodeTpSlMode = (mode: string): number =>
   mode === "FULL" ? TPSL_MODE.FULL : TPSL_MODE.PARTIAL;
@@ -69,9 +69,7 @@ export const buildOrderPayload = ({
         } else {
           serializer.serializeU8(1);
           serializer.serializeU64(BigInt(bracket.take_profit.trigger_price));
-          serializer.serializeU32AsUleb128(
-            encodeTpSlOrderType(bracket.take_profit.order_type),
-          );
+          serializer.serializeU32AsUleb128(encodeTpSlOrderType(bracket.take_profit.order_type));
           if (
             bracket.take_profit.limit_price === undefined ||
             bracket.take_profit.limit_price === null
@@ -88,9 +86,7 @@ export const buildOrderPayload = ({
         } else {
           serializer.serializeU8(1);
           serializer.serializeU64(BigInt(bracket.stop_loss.trigger_price));
-          serializer.serializeU32AsUleb128(
-            encodeTpSlOrderType(bracket.stop_loss.order_type),
-          );
+          serializer.serializeU32AsUleb128(encodeTpSlOrderType(bracket.stop_loss.order_type));
           if (
             bracket.stop_loss.limit_price === undefined ||
             bracket.stop_loss.limit_price === null

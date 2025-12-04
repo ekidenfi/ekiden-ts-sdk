@@ -2,7 +2,7 @@ import {
   AccountAddress,
   type AccountAddressInput,
   type InputEntryFunctionData,
-  InputViewFunctionData,
+  type InputViewFunctionData,
 } from "@aptos-labs/ts-sdk";
 
 import { parseAbi } from "@/utils/abi";
@@ -20,22 +20,21 @@ export interface SubAccountData {
 export const decodeHexToString = (hex: string): string => {
   const hexString = hex.startsWith("0x") ? hex.slice(2) : hex;
   const bytes = new Uint8Array(
-    hexString.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || [],
+    hexString.match(/.{1,2}/g)?.map((byte) => Number.parseInt(byte, 16)) || []
   );
   return new TextDecoder().decode(bytes);
 };
 
 export const parseSubAccountsData = (result: unknown[]): SubAccountData => {
-  const [orderIndexes, types, owners, subs, pubks, nonces, metadatas] =
-    result as [
-      string[],
-      string[][],
-      string[],
-      string[],
-      string[][],
-      string[],
-      Array<{ inner: string }>,
-    ];
+  const [orderIndexes, types, owners, subs, pubks, nonces, metadatas] = result as [
+    string[],
+    string[][],
+    string[],
+    string[],
+    string[][],
+    string[],
+    Array<{ inner: string }>,
+  ];
 
   return {
     orderIndexes,
@@ -59,11 +58,7 @@ export class VaultOnChain {
       functionArguments: [AccountAddress.from(args.assetMetadata), args.amount],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-          "u64",
-        ],
+        params: ["&signer", "0x1::object::Object<0x1::fungible_asset::Metadata>", "u64"],
       }),
     };
   }
@@ -83,12 +78,7 @@ export class VaultOnChain {
       ],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "address",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-          "u64",
-        ],
+        params: ["&signer", "address", "0x1::object::Object<0x1::fungible_asset::Metadata>", "u64"],
       }),
     };
   }
@@ -103,11 +93,7 @@ export class VaultOnChain {
       functionArguments: [AccountAddress.from(args.assetMetadata), args.amount],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-          "u64",
-        ],
+        params: ["&signer", "0x1::object::Object<0x1::fungible_asset::Metadata>", "u64"],
       }),
     };
   }
@@ -120,19 +106,10 @@ export class VaultOnChain {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::deposit_into_funding`,
-      functionArguments: [
-        args.subAddress,
-        AccountAddress.from(args.assetMetadata),
-        args.amount,
-      ],
+      functionArguments: [args.subAddress, AccountAddress.from(args.assetMetadata), args.amount],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "address",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-          "u64",
-        ],
+        params: ["&signer", "address", "0x1::object::Object<0x1::fungible_asset::Metadata>", "u64"],
       }),
     };
   }
@@ -182,12 +159,7 @@ export class VaultOnChain {
       ],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "address",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-          "u64",
-        ],
+        params: ["&signer", "address", "0x1::object::Object<0x1::fungible_asset::Metadata>", "u64"],
       }),
     };
   }
@@ -200,19 +172,10 @@ export class VaultOnChain {
   }): InputEntryFunctionData {
     return {
       function: `${args.vaultAddress}::vault::withdraw_from_funding`,
-      functionArguments: [
-        args.subAddress,
-        AccountAddress.from(args.assetMetadata),
-        args.amount,
-      ],
+      functionArguments: [args.subAddress, AccountAddress.from(args.assetMetadata), args.amount],
       abi: parseAbi({
         generic_type_params: [],
-        params: [
-          "&signer",
-          "address",
-          "0x1::object::Object<0x1::fungible_asset::Metadata>",
-          "u64",
-        ],
+        params: ["&signer", "address", "0x1::object::Object<0x1::fungible_asset::Metadata>", "u64"],
       }),
     };
   }
@@ -316,12 +279,7 @@ export class VaultOnChain {
       ],
       abi: parseAbi({
         generic_type_params: [{ constraints: [] }, { constraints: [] }],
-        params: [
-          "&signer",
-          "0x1::option::Option<address>",
-          "0x1::option::Option<address>",
-          "u64",
-        ],
+        params: ["&signer", "0x1::option::Option<address>", "0x1::option::Option<address>", "u64"],
       }),
     };
   }

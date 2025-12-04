@@ -39,16 +39,11 @@
 //   format as the app.
 // - No deposits or on-chain flows here; use the Ekiden UI to fund and link accounts beforehand.
 
-import {
-  Ed25519Account,
-  Ed25519PrivateKey,
-  PrivateKey,
-  sleep,
-} from "@aptos-labs/ts-sdk";
+import { Ed25519Account, Ed25519PrivateKey, PrivateKey, sleep } from "@aptos-labs/ts-sdk";
 
 import "dotenv/config";
 
-import { buildOrderPayload, EkidenClient, TESTNET } from "../dist/index.js";
+import { EkidenClient, TESTNET, buildOrderPayload } from "../dist/index.js";
 
 // ========= Config (edit here) =========
 const CONFIG = {
@@ -69,8 +64,7 @@ const CONFIG = {
     `APTOS\nmessage: Ekiden Trading\nnonce: ${rootAddr.toLowerCase()}Tradingv2${nonce}`,
 
   // Whether to open private WS for order updates
-  ENABLE_PRIVATE_WS:
-    String(process.env.ENABLE_PRIVATE_WS || "true").toLowerCase() === "true",
+  ENABLE_PRIVATE_WS: String(process.env.ENABLE_PRIVATE_WS || "true").toLowerCase() === "true",
 };
 
 // Small helpers
@@ -79,12 +73,11 @@ const hexToBytes = (hex) => {
   const clean = hexWithout0x(hex);
   if (clean.length % 2 !== 0) throw new Error("Invalid hex");
   const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < out.length; i++)
-    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < out.length; i++) out[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
   return out;
 };
 const bytesToHex = (bytes) =>
-  "0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 const nowMs = () => Date.now();
 const randomNonce = () => Math.random().toString(36).slice(2);
 
@@ -93,7 +86,7 @@ function normalizeSecretKey(pkHex) {
   if (!pkHex) throw new Error("Missing private key");
   const raw = hexWithout0x(String(pkHex).trim());
   const hex64 = raw.length === 128 ? raw.slice(0, 64) : raw;
-  const with0x = "0x" + hex64;
+  const with0x = `0x${hex64}`;
   // Ensure AIP-80 compliant formatting
   return PrivateKey.formatPrivateKey(with0x, "ed25519");
 }
@@ -105,10 +98,8 @@ function buildAptosFullMessage(input, ctx = {}) {
   if (!input || !input.message || !input.nonce) return undefined;
   const lines = ["APTOS", `message: ${input.message}`];
   if (input.address && ctx.addressHex) lines.push(`address: ${ctx.addressHex}`);
-  if (input.application && ctx.applicationName)
-    lines.push(`application: ${ctx.applicationName}`);
-  if (input.chainId && typeof ctx.chainId === "number")
-    lines.push(`chainId: ${ctx.chainId}`);
+  if (input.application && ctx.applicationName) lines.push(`application: ${ctx.applicationName}`);
+  if (input.chainId && typeof ctx.chainId === "number") lines.push(`chainId: ${ctx.chainId}`);
   lines.push(`nonce: ${input.nonce}`);
   return lines.join("\n");
 }
@@ -127,7 +118,7 @@ function signAuthorize(account, timestampMs, nonce, isFullMessage = false) {
     msg = buildAptosFullMessage(payload);
   }
   const sigHex = account.sign(new TextEncoder().encode(msg)).toString();
-  return [sigHex.startsWith("0x") ? sigHex : "0x" + sigHex, msg];
+  return [sigHex.startsWith("0x") ? sigHex : `0x${sigHex}`, msg];
 }
 
 // Sign intent payload
@@ -135,7 +126,7 @@ function signIntent(account, actionPayload, nonceNumber) {
   const hex = buildOrderPayload({ payload: actionPayload, nonce: nonceNumber });
   const bytes = hexToBytes(hex);
   const sigHex = account.sign(bytes).toString();
-  return sigHex.startsWith("0x") ? sigHex : "0x" + sigHex;
+  return sigHex.startsWith("0x") ? sigHex : `0x${sigHex}`;
 }
 
 // Derive trading sub-account from owner account (same AIP-21-like message format used by the app)
@@ -162,7 +153,7 @@ async function resolveMarket(client) {
   let chosen = markets[0];
   if (SYMBOL) {
     const bySymbol = markets.find(
-      (m) => String(m.symbol || "").toLowerCase() === SYMBOL.toLowerCase(),
+      (m) => String(m.symbol || "").toLowerCase() === SYMBOL.toLowerCase()
     );
     if (bySymbol) chosen = bySymbol;
   }
@@ -193,21 +184,14 @@ async function main() {
         privateKey: new Ed25519PrivateKey(normalizeSecretKey(TRADING_PK)),
       })
     : rootAcc
-      ? deriveTradingAccount(
-          rootAcc,
-          rootAcc.accountAddress.toString(),
-          CONFIG.TRADING_NONCE,
-        )
+      ? deriveTradingAccount(rootAcc, rootAcc.accountAddress.toString(), CONFIG.TRADING_NONCE)
       : null;
   const signingAccount = tradingAcc || rootAcc;
   if (!signingAccount) throw new Error("Failed to resolve signing account");
 
   const userAddr = tradingAcc?.accountAddress.toString();
   console.log("Root Account:", rootAcc?.accountAddress.toString() || "(none)");
-  console.log(
-    "Trading Account:",
-    tradingAcc?.accountAddress.toString() || "(none)",
-  );
+  console.log("Trading Account:", tradingAcc?.accountAddress.toString() || "(none)");
 
   // Init a single client for both REST and Private WS
   const client = new EkidenClient({
@@ -236,12 +220,7 @@ async function main() {
   if (rootAcc) {
     const authTs2 = nowMs();
     const authNonce2 = randomNonce();
-    const [authSig2, fullMessage2] = signAuthorize(
-      rootAcc,
-      authTs2,
-      authNonce2,
-      true,
-    );
+    const [authSig2, fullMessage2] = signAuthorize(rootAcc, authTs2, authNonce2, true);
     const tokenResp2 = await client.user.authorize({
       public_key: rootAcc.publicKey.toString(),
       timestamp_ms: authTs2,
@@ -265,19 +244,13 @@ async function main() {
           console.log("[private-ws] order:", JSON.stringify(orders, null, 2));
         },
         position: (positions) => {
-          console.log(
-            "[private-ws] position:",
-            JSON.stringify(positions, null, 2),
-          );
+          console.log("[private-ws] position:", JSON.stringify(positions, null, 2));
         },
         fill: (fills) => {
           console.log("[private-ws] fill:", JSON.stringify(fills, null, 2));
         },
         account_balance: (balances) => {
-          console.log(
-            "[private-ws] account_balance:",
-            JSON.stringify(balances, null, 2),
-          );
+          console.log("[private-ws] account_balance:", JSON.stringify(balances, null, 2));
         },
       };
       client.subscribeHandlers(handlers);
@@ -347,10 +320,7 @@ async function main() {
 
   // Extract SID
   let createdSid = undefined;
-  if (
-    created?.output?.type === "order_create" &&
-    Array.isArray(created.output.outputs)
-  ) {
+  if (created?.output?.type === "order_create" && Array.isArray(created.output.outputs)) {
     createdSid = created.output.outputs[0]?.sid;
   }
 

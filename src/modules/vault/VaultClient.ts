@@ -1,4 +1,4 @@
-import {
+import type {
   ListVaultsParams,
   VaultResponse,
   WithdrawFromTradingParams,
@@ -6,24 +6,15 @@ import {
 } from "./types";
 
 import { BaseHttpClient } from "@/core/base";
-import { EkidenClientConfig } from "@/core/config";
 
 export class VaultClient extends BaseHttpClient {
-  constructor(config: EkidenClientConfig) {
-    super(config);
-  }
-
   async getUserVaults(params: ListVaultsParams = {}): Promise<VaultResponse[]> {
     this.ensureAuth();
-    return this.request<VaultResponse[]>(
-      "/user/vaults",
-      {},
-      { auth: true, query: params },
-    );
+    return this.request<VaultResponse[]>("/user/vaults", {}, { auth: true, query: params });
   }
 
   async withdrawFromTrading(
-    params: WithdrawFromTradingParams,
+    params: WithdrawFromTradingParams
   ): Promise<WithdrawFromTradingResponse> {
     this.ensureAuth();
     return this.request<WithdrawFromTradingResponse>(
@@ -33,7 +24,7 @@ export class VaultClient extends BaseHttpClient {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params),
       },
-      { auth: true },
+      { auth: true }
     );
   }
 }
