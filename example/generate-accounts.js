@@ -7,11 +7,7 @@
 // and output their addresses, public keys, and private keys to the console.
 // No blockchain interaction - purely local key derivation.
 
-import {
-  Ed25519Account,
-  Ed25519PrivateKey,
-  PrivateKey,
-} from "@aptos-labs/ts-sdk";
+import { Ed25519Account, Ed25519PrivateKey, PrivateKey } from "@aptos-labs/ts-sdk";
 
 import "dotenv/config";
 
@@ -24,19 +20,18 @@ const hexToBytes = (hex) => {
   const clean = hexWithout0x(hex);
   if (clean.length % 2 !== 0) throw new Error("Invalid hex");
   const out = new Uint8Array(clean.length / 2);
-  for (let i = 0; i < out.length; i++)
-    out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+  for (let i = 0; i < out.length; i++) out[i] = Number.parseInt(clean.slice(i * 2, i * 2 + 2), 16);
   return out;
 };
 const bytesToHex = (bytes) =>
-  "0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 
 // Normalize private key to AIP-80 ed25519 format
 function normalizeSecretKey(pkHex) {
   if (!pkHex) throw new Error("Missing private key");
   const raw = hexWithout0x(String(pkHex).trim());
   const hex64 = raw.length === 128 ? raw.slice(0, 64) : raw;
-  const with0x = "0x" + hex64;
+  const with0x = `0x${hex64}`;
   return PrivateKey.formatPrivateKey(with0x, "ed25519");
 }
 
@@ -113,7 +108,7 @@ async function main() {
   }
 
   // Generate Trading Accounts
-  console.log("\n" + "=".repeat(80));
+  console.log(`\n${"=".repeat(80)}`);
   console.log(`TRADING ACCOUNTS (${NUM_ACCOUNTS} accounts)`);
   console.log("=".repeat(80));
 
@@ -135,7 +130,7 @@ async function main() {
   }
 
   // Summary
-  console.log("\n" + "=".repeat(80));
+  console.log(`\n${"=".repeat(80)}`);
   console.log("SUMMARY");
   console.log("=".repeat(80));
   console.log(`Total Funding Accounts: ${fundingAccounts.length}`);
@@ -146,14 +141,20 @@ async function main() {
   console.log("=".repeat(80));
   console.log("JSON OUTPUT (for easy copying)");
   console.log("=".repeat(80));
-  console.log(JSON.stringify({
-    rootAccount: {
-      address: rootAddress,
-      publicKey: rootAcc.publicKey.toString(),
-    },
-    fundingAccounts,
-    tradingAccounts,
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        rootAccount: {
+          address: rootAddress,
+          publicKey: rootAcc.publicKey.toString(),
+        },
+        fundingAccounts,
+        tradingAccounts,
+      },
+      null,
+      2
+    )
+  );
 }
 
 main().catch((err) => {

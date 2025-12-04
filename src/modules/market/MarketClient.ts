@@ -1,4 +1,4 @@
-import {
+import type {
   CandleResponse,
   GetMarketInfoParams,
   ListCandlesParams,
@@ -7,16 +7,11 @@ import {
 } from "./types";
 
 import { BaseHttpClient } from "@/core/base";
-import { EkidenClientConfig } from "@/core/config";
 
 /**
  * Client for market data operations
  */
 export class MarketClient extends BaseHttpClient {
-  constructor(config: EkidenClientConfig) {
-    super(config);
-  }
-
   /**
    * Get all available markets
    * @returns List of all markets with their configuration
@@ -38,14 +33,8 @@ export class MarketClient extends BaseHttpClient {
    * const btcMarket = await client.market.getMarketInfo({ symbol: "BTC-WUSDC" });
    * ```
    */
-  async getMarketInfo(
-    params: GetMarketInfoParams = {},
-  ): Promise<MarketResponse[]> {
-    return this.request<MarketResponse[]>(
-      "/market/market_info",
-      {},
-      { query: params },
-    );
+  async getMarketInfo(params: GetMarketInfoParams = {}): Promise<MarketResponse[]> {
+    return this.request<MarketResponse[]>("/market/market_info", {}, { query: params });
   }
 
   /**
@@ -62,11 +51,7 @@ export class MarketClient extends BaseHttpClient {
    * ```
    */
   async getCandles(params: ListCandlesParams): Promise<CandleResponse[]> {
-    return this.request<CandleResponse[]>(
-      "/market/candles",
-      {},
-      { query: params },
-    );
+    return this.request<CandleResponse[]>("/market/candles", {}, { query: params });
   }
 
   /**
@@ -80,8 +65,6 @@ export class MarketClient extends BaseHttpClient {
    * ```
    */
   async getMarketStats(marketAddr: string): Promise<MarketStatsResponse> {
-    return this.request<MarketStatsResponse>(
-      `/market/candles/stats/${marketAddr}`,
-    );
+    return this.request<MarketStatsResponse>(`/market/candles/stats/${marketAddr}`);
   }
 }

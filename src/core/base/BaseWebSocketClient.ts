@@ -5,8 +5,7 @@ export class BaseWebSocketClient<
   EventMap extends Record<Channel, any> = Record<string, any>,
 > {
   private ws: ReconnectingWebSocket;
-  private handlers: Map<Channel, Set<(event: EventMap[Channel]) => void>> =
-    new Map();
+  private handlers: Map<Channel, Set<(event: EventMap[Channel]) => void>> = new Map();
   private reqIdCounter = 101001;
   private subscriptions = new Set<Channel>();
 
@@ -25,23 +24,17 @@ export class BaseWebSocketClient<
     this.ws.addEventListener("message", (event) => this.handleMessage(event));
   }
 
-  subscribe<C extends Channel = Channel>(
-    channel: C,
-    handler: (event: EventMap[C]) => void,
-  ): void;
+  subscribe<C extends Channel = Channel>(channel: C, handler: (event: EventMap[C]) => void): void;
   subscribe<C extends Channel = Channel>(
     channels: C[],
-    handler: (event: EventMap[C]) => void,
+    handler: (event: EventMap[C]) => void
   ): void;
   subscribe<C extends Channel = Channel>(
-    handlers: Partial<Record<C, (event: EventMap[C]) => void>>,
+    handlers: Partial<Record<C, (event: EventMap[C]) => void>>
   ): void;
   subscribe(arg1: any, arg2?: any): void {
     if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
-      const handlersMap = arg1 as Record<
-        Channel,
-        (event: EventMap[Channel]) => void
-      >;
+      const handlersMap = arg1 as Record<Channel, (event: EventMap[Channel]) => void>;
       const topics = Object.keys(handlersMap) as Channel[];
       if (topics.length === 0) return;
       const toSubscribe: Channel[] = [];
@@ -108,23 +101,17 @@ export class BaseWebSocketClient<
     }
   }
 
-  unsubscribe<C extends Channel = Channel>(
-    channel: C,
-    handler: (event: EventMap[C]) => void,
-  ): void;
+  unsubscribe<C extends Channel = Channel>(channel: C, handler: (event: EventMap[C]) => void): void;
   unsubscribe<C extends Channel = Channel>(
     channels: C[],
-    handler: (event: EventMap[C]) => void,
+    handler: (event: EventMap[C]) => void
   ): void;
   unsubscribe<C extends Channel = Channel>(
-    handlers: Partial<Record<C, (event: EventMap[C]) => void>>,
+    handlers: Partial<Record<C, (event: EventMap[C]) => void>>
   ): void;
   unsubscribe(arg1: any, arg2?: any): void {
     if (!Array.isArray(arg1) && typeof arg1 === "object" && arg1) {
-      const handlersMap = arg1 as Record<
-        Channel,
-        (event: EventMap[Channel]) => void
-      >;
+      const handlersMap = arg1 as Record<Channel, (event: EventMap[Channel]) => void>;
       const topics = Object.keys(handlersMap) as Channel[];
       if (topics.length === 0) return;
       const toUnsubscribe: Channel[] = [];
@@ -200,7 +187,7 @@ export class BaseWebSocketClient<
         this.handlers.get(msg.topic)!.forEach((h) => h(msg));
       }
     } catch (err) {
-      console.warn(`[BaseWebSocketClient] Failed to parse message`, err);
+      console.warn("[BaseWebSocketClient] Failed to parse message", err);
     }
   }
 

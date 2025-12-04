@@ -1,18 +1,13 @@
-import { PortfolioResponse, UserLeverageParams } from "./types";
+import type { PortfolioResponse, UserLeverageParams } from "./types";
 
 import { BaseHttpClient } from "@/core/base";
-import { EkidenClientConfig } from "@/core/config";
 import { Validator } from "@/core/validation";
-import { AuthorizeParams, AuthorizeResponse } from "@/types/common";
+import type { AuthorizeParams, AuthorizeResponse } from "@/types/common";
 
 /**
  * Client for user authentication and portfolio operations
  */
 export class UserClient extends BaseHttpClient {
-  constructor(config: EkidenClientConfig) {
-    super(config);
-  }
-
   /**
    * Authorize user and get JWT token
    * @param params - Authorization parameters (signature, public key, etc.)
@@ -50,11 +45,7 @@ export class UserClient extends BaseHttpClient {
    */
   async getUserPortfolio(): Promise<PortfolioResponse> {
     this.ensureAuth();
-    return this.request<PortfolioResponse>(
-      "/user/portfolio",
-      {},
-      { auth: true },
-    );
+    return this.request<PortfolioResponse>("/user/portfolio", {}, { auth: true });
   }
 
   /**
@@ -64,11 +55,7 @@ export class UserClient extends BaseHttpClient {
    */
   async getAllPortfolios(): Promise<PortfolioResponse[]> {
     this.ensureAuth();
-    return this.request<PortfolioResponse[]>(
-      "/user/portfolio/all",
-      {},
-      { auth: true },
-    );
+    return this.request<PortfolioResponse[]>("/user/portfolio/all", {}, { auth: true });
   }
 
   /**
@@ -81,15 +68,13 @@ export class UserClient extends BaseHttpClient {
    * const { leverage } = await client.user.getUserLeverage("0x...");
    * ```
    */
-  async getUserLeverage(
-    market_addr: string,
-  ): Promise<{ leverage: number; market_addr: string }> {
+  async getUserLeverage(market_addr: string): Promise<{ leverage: number; market_addr: string }> {
     this.ensureAuth();
     Validator.validateMarketAddress(market_addr);
     return this.request<{ leverage: number; market_addr: string }>(
       "/user/leverage",
       {},
-      { auth: true, query: { market_addr } },
+      { auth: true, query: { market_addr } }
     );
   }
 
@@ -102,9 +87,11 @@ export class UserClient extends BaseHttpClient {
     Array<{ leverage: number; market_addr: string; user_addr: string }>
   > {
     this.ensureAuth();
-    return this.request<
-      Array<{ leverage: number; market_addr: string; user_addr: string }>
-    >("/user/leverage/all", {}, { auth: true });
+    return this.request<Array<{ leverage: number; market_addr: string; user_addr: string }>>(
+      "/user/leverage/all",
+      {},
+      { auth: true }
+    );
   }
 
   /**
@@ -121,9 +108,7 @@ export class UserClient extends BaseHttpClient {
    * });
    * ```
    */
-  async setUserLeverage(
-    params: UserLeverageParams,
-  ): Promise<PortfolioResponse> {
+  async setUserLeverage(params: UserLeverageParams): Promise<PortfolioResponse> {
     this.ensureAuth();
     Validator.validateMarketAddress(params.market_addr);
     Validator.validateLeverage(params.leverage);
@@ -134,7 +119,7 @@ export class UserClient extends BaseHttpClient {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(params),
       },
-      { auth: true },
+      { auth: true }
     );
   }
 }

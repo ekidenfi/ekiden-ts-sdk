@@ -1,10 +1,4 @@
-import {
-  Account,
-  Aptos,
-  AptosConfig,
-  Ed25519PrivateKey,
-  Network,
-} from "@aptos-labs/ts-sdk";
+import { Account, Aptos, AptosConfig, Ed25519PrivateKey, Network } from "@aptos-labs/ts-sdk";
 import { beforeAll, describe, expect, jest, test } from "@jest/globals";
 
 import "dotenv/config";
@@ -22,7 +16,7 @@ const subPrivateKey = process.env.APTOS_E2E_SUB_PRIVATE_KEY;
 
 if (!privateKeyHex || !assetMetadata || !vaultAddress || !subPrivateKey) {
   throw new Error(
-    "APTOS_E2E_PRIVATE_KEY, APTOS_E2E_ASSET_METADATA, APTOS_E2E_VAULT_ADDRESS, APTOS_E2E_SUB_PRIVATE_KEY are not set",
+    "APTOS_E2E_PRIVATE_KEY, APTOS_E2E_ASSET_METADATA, APTOS_E2E_VAULT_ADDRESS, APTOS_E2E_SUB_PRIVATE_KEY are not set"
   );
 }
 
@@ -139,9 +133,9 @@ describe("Aptos testnet live vault operations", () => {
       console.log(`- User has funding vault: ${isFundingVault}`);
 
       if (isTradingVault) {
-        console.log(`- Type: TRADING VAULT`);
+        console.log("- Type: TRADING VAULT");
       } else {
-        console.log(`- Type: UNKNOWN (not a trading vault)`);
+        console.log("- Type: UNKNOWN (not a trading vault)");
       }
 
       // Verify that at least one vault type exists
@@ -164,9 +158,7 @@ describe("Aptos testnet live vault operations", () => {
     // Generate an ephemeral sub account and build link proof: pubkey(32) || root_addr(32) || sig(64)
     const subAddress = subAccount.publicKey.toUint8Array();
     const rootAddress = addressToBytes(sender.accountAddress);
-    const signature = subAccount
-      .sign(sender.accountAddress.toString())
-      .toUint8Array();
+    const signature = subAccount.sign(sender.accountAddress.toString()).toUint8Array();
 
     // Generate sub account address from the public key
     const subAccountAddress = subAccount.accountAddress.toString();

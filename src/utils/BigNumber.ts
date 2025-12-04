@@ -15,7 +15,7 @@ BigNumber.config({
 type Value = BN | BigNumber.Value;
 
 const bignumberify = (n: any): string | number => {
-  if (n && n.toString) {
+  if (n?.toString) {
     const primitive = n.toString();
 
     if (typeof primitive !== "object") {
@@ -79,7 +79,7 @@ export class BN extends BigNumber {
 
   toDecimalPlaces = (
     decimalPlaces: number,
-    roundingMode: BigNumber.RoundingMode = BigNumber.ROUND_DOWN,
+    roundingMode: BigNumber.RoundingMode = BigNumber.ROUND_DOWN
   ): BN => {
     return new BN(super.dp(decimalPlaces, roundingMode));
   };
@@ -87,24 +87,21 @@ export class BN extends BigNumber {
   toSignificant = (
     significantDigits: number,
     roundingMode: BigNumber.RoundingMode = BigNumber.ROUND_DOWN,
-    formatOption?: BigNumber.Format,
+    formatOption?: BigNumber.Format
   ): string => {
     const isAboveOneOrZeroDigits = this.gte(1) || significantDigits === 0;
 
     if (isAboveOneOrZeroDigits) {
-      return this.toFormat(
-        significantDigits,
-        roundingMode,
-        formatOption,
-      ).replace(/(\.[0-9]*[1-9])0+$|\.0+$/, "$1");
-    } else {
-      const preciseNumber = super.precision(significantDigits, roundingMode);
-      if (formatOption) {
-        return preciseNumber.toFormat(formatOption);
-      } else {
-        return preciseNumber.toString();
-      }
+      return this.toFormat(significantDigits, roundingMode, formatOption).replace(
+        /(\.[0-9]*[1-9])0+$|\.0+$/,
+        "$1"
+      );
     }
+    const preciseNumber = super.precision(significantDigits, roundingMode);
+    if (formatOption) {
+      return preciseNumber.toFormat(formatOption);
+    }
+    return preciseNumber.toString();
   };
 
   clamp = (min: Value, max: Value): BN => {

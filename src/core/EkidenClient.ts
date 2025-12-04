@@ -1,4 +1,4 @@
-import { EkidenClientConfig } from "./config";
+import type { EkidenClientConfig } from "./config";
 import { ConfigurationError } from "./errors";
 
 import { FundingClient } from "@/modules/funding";
@@ -64,17 +64,12 @@ export class EkidenClient {
    * await ekiden.setToken(token);
    * ```
    */
-  async setToken(token: string): Promise<void> {
+  setToken(token: string): void {
     this.user.setToken(token);
     this.order.setToken(token);
     this.position.setToken(token);
     this.vault.setToken(token);
     this.leaderboard.setToken(token);
-
-    if (this.privateStream) {
-      this.privateStream.setToken(token);
-      await this.privateStream.connect();
-    }
   }
 
   /**
@@ -104,7 +99,6 @@ export class EkidenClient {
     }
 
     if (this.privateStream && ws) {
-      this.privateStream.close();
       this.privateStream.setToken(ws);
       if (connectPrivateWS) {
         await this.privateStream.connect();

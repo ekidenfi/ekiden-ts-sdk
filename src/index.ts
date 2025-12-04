@@ -20,37 +20,24 @@ import { VaultOnChain } from "./modules/vault/VaultOnChain";
 const vaultOnChainInstance = new VaultOnChain();
 
 export const Vault = {
-  requestWithdrawFromUser:
-    vaultOnChainInstance.requestWithdrawFromUser.bind(vaultOnChainInstance),
+  requestWithdrawFromUser: vaultOnChainInstance.requestWithdrawFromUser.bind(vaultOnChainInstance),
   requestWithdrawFromUserSub:
     vaultOnChainInstance.requestWithdrawFromUserSub.bind(vaultOnChainInstance),
-  depositIntoUser:
-    vaultOnChainInstance.depositIntoUser.bind(vaultOnChainInstance),
-  depositIntoFunding:
-    vaultOnChainInstance.depositIntoFunding.bind(vaultOnChainInstance),
+  depositIntoUser: vaultOnChainInstance.depositIntoUser.bind(vaultOnChainInstance),
+  depositIntoFunding: vaultOnChainInstance.depositIntoFunding.bind(vaultOnChainInstance),
   depositIntoFundingWithTransferTo:
-    vaultOnChainInstance.depositIntoFundingWithTransferTo.bind(
-      vaultOnChainInstance,
-    ),
-  withdrawFromUserSub:
-    vaultOnChainInstance.withdrawFromUserSub.bind(vaultOnChainInstance),
-  withdrawFromFunding:
-    vaultOnChainInstance.withdrawFromFunding.bind(vaultOnChainInstance),
+    vaultOnChainInstance.depositIntoFundingWithTransferTo.bind(vaultOnChainInstance),
+  withdrawFromUserSub: vaultOnChainInstance.withdrawFromUserSub.bind(vaultOnChainInstance),
+  withdrawFromFunding: vaultOnChainInstance.withdrawFromFunding.bind(vaultOnChainInstance),
   vaultBalance: vaultOnChainInstance.vaultBalance.bind(vaultOnChainInstance),
-  ekidenVaultBalance:
-    vaultOnChainInstance.ekidenVaultBalance.bind(vaultOnChainInstance),
-  insuranceVaultBalance:
-    vaultOnChainInstance.insuranceVaultBalance.bind(vaultOnChainInstance),
+  ekidenVaultBalance: vaultOnChainInstance.ekidenVaultBalance.bind(vaultOnChainInstance),
+  insuranceVaultBalance: vaultOnChainInstance.insuranceVaultBalance.bind(vaultOnChainInstance),
   ownedSubAccs: vaultOnChainInstance.ownedSubAccs.bind(vaultOnChainInstance),
   isEkidenUser: vaultOnChainInstance.isEkidenUser.bind(vaultOnChainInstance),
-  isFundingVaultExists:
-    vaultOnChainInstance.isFundingVaultExists.bind(vaultOnChainInstance),
-  isTradingVaultExists:
-    vaultOnChainInstance.isTradingVaultExists.bind(vaultOnChainInstance),
+  isFundingVaultExists: vaultOnChainInstance.isFundingVaultExists.bind(vaultOnChainInstance),
+  isTradingVaultExists: vaultOnChainInstance.isTradingVaultExists.bind(vaultOnChainInstance),
   transfer: vaultOnChainInstance.transfer.bind(vaultOnChainInstance),
   getSubAccs: vaultOnChainInstance.getSubAccs.bind(vaultOnChainInstance),
-  createEkidenUser:
-    vaultOnChainInstance.createEkidenUser.bind(vaultOnChainInstance),
-  createAndLinkSubAccount:
-    vaultOnChainInstance.createAndLinkSubAccount.bind(vaultOnChainInstance),
+  createEkidenUser: vaultOnChainInstance.createEkidenUser.bind(vaultOnChainInstance),
+  createAndLinkSubAccount: vaultOnChainInstance.createAndLinkSubAccount.bind(vaultOnChainInstance),
 };

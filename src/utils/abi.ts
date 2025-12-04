@@ -1,9 +1,9 @@
 import {
-  EntryFunctionABI,
+  type EntryFunctionABI,
+  type MoveFunction,
+  type TypeTag,
   findFirstNonSignerArg,
-  MoveFunction,
   parseTypeTag,
-  TypeTag,
 } from "@aptos-labs/ts-sdk";
 
 type FunctionAbi = Pick<MoveFunction, "generic_type_params" | "params">;

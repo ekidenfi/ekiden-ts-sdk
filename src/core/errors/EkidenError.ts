@@ -26,7 +26,7 @@ export class APIError extends EkidenSDKError {
   constructor(
     message: string,
     public statusCode?: number,
-    public endpoint?: string,
+    public endpoint?: string
   ) {
     super(message);
     this.name = "APIError";
@@ -37,7 +37,7 @@ export class APIError extends EkidenSDKError {
 export class ValidationError extends EkidenSDKError {
   constructor(
     message: string,
-    public field?: string,
+    public field?: string
   ) {
     super(message);
     this.name = "ValidationError";

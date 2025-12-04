@@ -34,16 +34,14 @@ export interface CreateSubAccountOptions {
 /**
  * Options for creating sub-account from signature
  */
-export interface CreateSubAccountFromSignatureOptions
-  extends CreateSubAccountOptions {
+export interface CreateSubAccountFromSignatureOptions extends CreateSubAccountOptions {
   signature: string | Uint8Array;
 }
 
 /**
  * Options for creating sub-account deterministically (for keyless wallets)
  */
-export interface CreateSubAccountDeterministicOptions
-  extends CreateSubAccountOptions {}
+export interface CreateSubAccountDeterministicOptions extends CreateSubAccountOptions {}
 
 /**
  * Create a message for wallet signing to derive sub-account keys
@@ -62,8 +60,8 @@ export interface CreateSubAccountDeterministicOptions
 export const createAccountMessage = (
   rootAddress: string,
   type: "Funding" | "Trading",
-  version: string = "v2",
-  nonce: string = "0",
+  version = "v2",
+  nonce = "0"
 ): AccountMessageInput => ({
   message: `Ekiden ${type}`,
   nonce: `${rootAddress}${type}${version}${nonce}`,
@@ -94,7 +92,7 @@ export const createAccountMessage = (
 export const buildLinkProof = (
   publicKey: Uint8Array,
   rootAddress: string,
-  signature: Uint8Array,
+  signature: Uint8Array
 ): Uint8Array => {
   const rootAddressBytes = addressToBytes(rootAddress);
   return new Uint8Array([...publicKey, ...rootAddressBytes, ...signature]);
@@ -107,7 +105,7 @@ export const buildLinkProof = (
  * @returns 32-byte private key as Uint8Array
  */
 export const extractPrivateKeyFromSignature = (
-  signature: string | Uint8Array | { data: Uint8Array },
+  signature: string | Uint8Array | { data: Uint8Array }
 ): Uint8Array => {
   let bytes: Uint8Array;
 
@@ -117,7 +115,7 @@ export const extractPrivateKeyFromSignature = (
     const hex = signature.startsWith("0x") ? signature.slice(2) : signature;
     bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     }
   } else if (signature && typeof signature === "object" && "data" in signature) {
     bytes = signature.data;
@@ -149,7 +147,7 @@ export const extractPrivateKeyFromSignature = (
  * ```
  */
 export const createSubAccountFromSignature = (
-  options: CreateSubAccountFromSignatureOptions,
+  options: CreateSubAccountFromSignatureOptions
 ): SubAccount => {
   const { rootAddress, type, version = "v2", nonce = "0", signature } = options;
 
@@ -184,7 +182,7 @@ export const createSubAccountFromSignature = (
  * ```
  */
 export const createSubAccountDeterministic = async (
-  options: CreateSubAccountDeterministicOptions,
+  options: CreateSubAccountDeterministicOptions
 ): Promise<SubAccount> => {
   const { rootAddress, type, version = "v2", nonce = "0" } = options;
 
@@ -232,7 +230,7 @@ export const createSubAccountDeterministic = async (
 export const createSubAccounts = (
   rootAddress: string,
   fundingSignature: string | Uint8Array,
-  tradingSignature: string | Uint8Array,
+  tradingSignature: string | Uint8Array
 ): { funding: SubAccount; trading: SubAccount } => {
   const funding = createSubAccountFromSignature({
     rootAddress,
@@ -263,7 +261,7 @@ export const createSubAccounts = (
  * ```
  */
 export const createSubAccountsDeterministic = async (
-  rootAddress: string,
+  rootAddress: string
 ): Promise<{ funding: SubAccount; trading: SubAccount }> => {
   const funding = await createSubAccountDeterministic({
     rootAddress,
@@ -291,14 +289,14 @@ export interface DeriveFromMasterSignatureOptions {
 
 export const createMasterSignaturePayload = (
   rootAddress: string,
-  version: number = 1,
+  version = 1
 ): MasterSignaturePayload => ({
   message: "Ekiden Account Derivation",
   nonce: `${rootAddress}:${version}`,
 });
 
 export const deriveSubAccountFromMasterSignature = async (
-  options: DeriveFromMasterSignatureOptions,
+  options: DeriveFromMasterSignatureOptions
 ): Promise<SubAccount> => {
   const { masterSignature, type, nonce = "0" } = options;
 
@@ -308,11 +306,7 @@ export const deriveSubAccountFromMasterSignature = async (
   const typeBytes = encoder.encode(type);
   const nonceBytes = encoder.encode(nonce);
 
-  const combinedData = new Uint8Array([
-    ...signatureBytes,
-    ...typeBytes,
-    ...nonceBytes,
-  ]);
+  const combinedData = new Uint8Array([...signatureBytes, ...typeBytes, ...nonceBytes]);
 
   const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
   const privateKeyBytes = new Uint8Array(hashBuffer);
@@ -330,7 +324,7 @@ export const deriveSubAccountFromMasterSignature = async (
 };
 
 export const deriveSubAccountsFromMasterSignature = async (
-  masterSignature: string | Uint8Array,
+  masterSignature: string | Uint8Array
 ): Promise<{ funding: SubAccount; trading: SubAccount }> => {
   const funding = await deriveSubAccountFromMasterSignature({
     masterSignature,
@@ -349,7 +343,7 @@ export const deriveSubAccountsFromMasterSignature = async (
 
 export const deriveTradingAccountFromMasterSignature = async (
   masterSignature: string | Uint8Array,
-  nonce: string,
+  nonce: string
 ): Promise<SubAccount> => {
   return deriveSubAccountFromMasterSignature({
     masterSignature,
