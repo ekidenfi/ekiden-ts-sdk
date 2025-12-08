@@ -1,6 +1,6 @@
 {
   "name": "@ekidenfi/ts-sdk",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -34,7 +34,9 @@
     "format": "biome format --write .",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "prepare": "husky"
+    "prepare": "husky",
+    "publish:dry": "bun publish --dry-run",
+    "release": "bun run build && bun publish"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^5.1.0",
