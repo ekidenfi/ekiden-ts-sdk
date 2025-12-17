@@ -55,7 +55,7 @@ export type TradesEventHandler = (event: TradesEventMessage) => void;
 
 export type TickerChannel = `ticker/${string}`;
 
-export type TickerSnapshot = {
+export type WSTickerSnapshot = {
   type: "ticker";
   symbol: string;
   market_addr: string;
@@ -75,7 +75,7 @@ export type TickerSnapshot = {
 export type TickerEventMessage = {
   op: "event";
   topic: TickerChannel;
-  data: TickerSnapshot;
+  data: WSTickerSnapshot;
 };
 
 export type TickerEventHandler = (event: TickerEventMessage) => void;

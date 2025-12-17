@@ -12,11 +12,9 @@ export const TESTNET: EkidenClientConfig = {
   apiPrefix: "/api/v1",
 };
 
-export interface VaultOptions {
-  wallet?: string;
-}
-
-export type VaultResource = {
-  type: string;
-  data: object;
+export const MAINNET: EkidenClientConfig = {
+  baseURL: "https://api.ekiden.fi",
+  wsURL: "wss://api.ekiden.fi/ws/public",
+  privateWSURL: "wss://api.ekiden.fi/ws/private",
+  apiPrefix: "/api/v1",
 };
