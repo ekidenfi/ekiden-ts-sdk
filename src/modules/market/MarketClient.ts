@@ -68,4 +68,26 @@ export class MarketClient extends BaseHttpClient {
   async getRiskLimit(params: GetRiskLimitParams = {}): Promise<GetRiskLimitResponse> {
     return this.request<GetRiskLimitResponse>("/market/risk-limit", {}, { query: params });
   }
+
+  async getMarketStats(symbol: SymbolName): Promise<{
+    turnover_24h: number;
+    price_change_24h: number;
+    high_24h: number;
+    low_24h: number;
+  }> {
+    const response = await this.getTickers({ symbol });
+    const ticker = response.list[0];
+    if (!ticker) {
+      return { turnover_24h: 0, price_change_24h: 0, high_24h: 0, low_24h: 0 };
+    }
+    const lastPrice = Number(ticker.last_price) || 0;
+    const prevPrice = Number(ticker.prev_price_24h) || 0;
+    const priceChange = prevPrice !== 0 ? ((lastPrice - prevPrice) / prevPrice) * 100 : 0;
+    return {
+      turnover_24h: Number(ticker.turnover_24h) || 0,
+      price_change_24h: priceChange,
+      high_24h: Number(ticker.high_price_24h) || 0,
+      low_24h: Number(ticker.low_price_24h) || 0,
+    };
+  }
 }

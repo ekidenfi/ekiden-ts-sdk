@@ -2,6 +2,39 @@ import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 
 import { addressToBytes } from "./address";
 
+export interface SubAccountData {
+  types: string[][];
+  subs: string[];
+  nonces: string[];
+  orderIndexes: string[];
+}
+
+export const decodeHexToString = (hex: string): string => {
+  const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const bytes = new Uint8Array(cleanHex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return new TextDecoder().decode(bytes);
+};
+
+export const parseSubAccountsData = (data: any[]): SubAccountData => {
+  if (data.length >= 4) {
+    return {
+      types: data[0] || [],
+      subs: data[1] || [],
+      nonces: data[2] || [],
+      orderIndexes: data[3] || [],
+    };
+  }
+  return {
+    types: [],
+    subs: [],
+    nonces: [],
+    orderIndexes: [],
+  };
+};
+
 /**
  * Message input for wallet signing
  */

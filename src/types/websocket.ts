@@ -85,3 +85,53 @@ export type ChannelMap = {
   [key: TradesChannel]: TradesEventMessage;
   [key: TickerChannel]: TickerEventMessage;
 };
+
+export interface OrderResponse {
+  order_id: string;
+  symbol: string;
+  side: "Buy" | "Sell";
+  order_type: string;
+  price: string;
+  qty: string;
+  order_status: string;
+  leverage: string;
+  created_time: string;
+  updated_time: string;
+  user_id: string;
+  tpsl?: any;
+}
+
+export interface FillResponse {
+  exec_id: string;
+  symbol: string;
+  order_id: string;
+  side: "Buy" | "Sell";
+  exec_price: string;
+  exec_qty: string;
+  exec_time: string;
+  fee_rate: string;
+  user_id: string;
+  seq?: number;
+}
+
+export interface PositionResponse {
+  symbol: string;
+  user_id: string;
+  side: "Buy" | "Sell";
+  size: string;
+  avg_price: string;
+  position_value: string;
+  margin_mode: string;
+  position_balance: string;
+  position_status: string;
+  leverage: string;
+  mark_price: string;
+  liq_price: string;
+  unrealized_pnl: string;
+  realized_pnl_cum: string;
+  created_time: string;
+  updated_time: string;
+  seq?: number;
+  take_profit?: string | null;
+  stop_loss?: string | null;
+}
