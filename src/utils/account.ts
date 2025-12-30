@@ -384,3 +384,25 @@ export const deriveTradingAccountFromMasterSignature = async (
     nonce,
   });
 };
+
+/**
+ * Generate a nonce and message for authorization
+ */
+export const generateAuthorizePayload = (): {
+  timestamp_ms: number;
+  nonce: string;
+  message: string;
+  full_message: string;
+} => {
+  const timestamp_ms = Date.now();
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  const raw = Array.from(bytes)
+    .map((b) => String.fromCharCode(b))
+    .join("");
+  const nonce = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+  const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
+  const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
+
+  return { timestamp_ms, nonce, message, full_message };
+};

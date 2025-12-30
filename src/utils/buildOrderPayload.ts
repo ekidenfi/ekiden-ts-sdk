@@ -5,8 +5,7 @@ import type { ActionPayload } from "@/types";
 // Encode enums the way Rust BCS does (by variant index using ULEB128),
 // matching `TpSlMode` and `TpSlOrderType` order in ekiden-core.
 const encodeTpSlMode = (mode: string): number => (mode === "FULL" ? 0 : 1);
-const encodeTpSlOrderType = (orderType: string): number =>
-  orderType === "MARKET" ? 0 : 1;
+const encodeTpSlOrderType = (orderType: string): number => (orderType === "MARKET" ? 0 : 1);
 
 export const buildOrderPayload = ({
   payload,
@@ -80,9 +79,7 @@ export const buildOrderPayload = ({
           serializer.serializeU8(1);
           serializer.serializeU64(BigInt(bracket.take_profit.trigger_price));
           // order_type as enum index (ULEB128): MARKET=0, LIMIT=1
-          serializer.serializeU32AsUleb128(
-            encodeTpSlOrderType(bracket.take_profit.order_type),
-          );
+          serializer.serializeU32AsUleb128(encodeTpSlOrderType(bracket.take_profit.order_type));
           if (
             bracket.take_profit.limit_price === undefined ||
             bracket.take_profit.limit_price === null
@@ -101,9 +98,7 @@ export const buildOrderPayload = ({
           serializer.serializeU8(1);
           serializer.serializeU64(BigInt(bracket.stop_loss.trigger_price));
           // order_type as enum index (ULEB128): MARKET=0, LIMIT=1
-          serializer.serializeU32AsUleb128(
-            encodeTpSlOrderType(bracket.stop_loss.order_type),
-          );
+          serializer.serializeU32AsUleb128(encodeTpSlOrderType(bracket.stop_loss.order_type));
           if (
             bracket.stop_loss.limit_price === undefined ||
             bracket.stop_loss.limit_price === null
@@ -136,8 +131,8 @@ const composeHexPayload = ({
   nonce: number;
 }) => {
   const SEED = Uint8Array.from([
-    226, 172, 78, 86, 136, 217, 100, 39, 10, 216, 118, 215, 96, 194, 235, 178,
-    213, 79, 178, 109, 147, 81, 44, 121, 0, 73, 182, 88, 55, 48, 208, 111,
+    226, 172, 78, 86, 136, 217, 100, 39, 10, 216, 118, 215, 96, 194, 235, 178, 213, 79, 178, 109,
+    147, 81, 44, 121, 0, 73, 182, 88, 55, 48, 208, 111,
   ]);
 
   const serializeNonce = (nonce: number) => {

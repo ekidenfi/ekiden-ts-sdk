@@ -14,6 +14,10 @@ export class FundingClient extends BaseHttpClient {
   }
 
   async getFundingRateByMarket(marketAddr: string): Promise<FundingRateInfo> {
-    return this.request<FundingRateInfo>("/funding/rate", {}, { query: { market_addr: marketAddr } });
+    return this.request<FundingRateInfo>(
+      "/funding/rate",
+      {},
+      { query: { market_addr: marketAddr } }
+    );
   }
 }

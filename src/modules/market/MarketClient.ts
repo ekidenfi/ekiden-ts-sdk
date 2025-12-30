@@ -18,6 +18,7 @@ import type {
   GetTickersResponse,
   OrderPriceLimit,
   SymbolName,
+  TickerSnapshot,
 } from "@/types/api";
 
 import { BaseHttpClient } from "@/core/base";
@@ -25,6 +26,15 @@ import { BaseHttpClient } from "@/core/base";
 export class MarketClient extends BaseHttpClient {
   async getTickers(params: GetTickersParams = {}): Promise<GetTickersResponse> {
     return this.request<GetTickersResponse>("/market/tickers", {}, { query: params });
+  }
+
+  async getMarkets(params: GetTickersParams = {}): Promise<TickerSnapshot[]> {
+    const response = await this.getTickers(params);
+    return response.list;
+  }
+
+  async getMarketInfo(params: GetTickersParams = {}): Promise<TickerSnapshot[]> {
+    return this.getMarkets(params);
   }
 
   async getOrderbook(params: GetOrderBookParams): Promise<GetOrderBookResponse> {

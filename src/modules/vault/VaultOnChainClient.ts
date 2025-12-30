@@ -39,7 +39,12 @@ export class VaultOnChainClient {
     return {
       function: `${params.vaultAddress}::vault::deposit_into_funding`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, params.subAddress, params.assetMetadata, params.amount.toString()],
+      functionArguments: [
+        params.vaultAddress,
+        params.subAddress,
+        params.assetMetadata,
+        params.amount.toString(),
+      ],
     };
   }
 
@@ -62,7 +67,12 @@ export class VaultOnChainClient {
     return {
       function: `${params.vaultAddress}::vault::withdraw_from_funding`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, params.subAddress, params.assetMetadata, params.amount.toString()],
+      functionArguments: [
+        params.vaultAddress,
+        params.subAddress,
+        params.assetMetadata,
+        params.amount.toString(),
+      ],
     };
   }
 

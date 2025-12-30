@@ -32,6 +32,7 @@ export type IntervalTime = string;
 export type Timeframe = string;
 export type OrderFilter = string;
 export type SmpType = "CancelMaker" | "CancelTaker" | "CancelBoth";
+export type TransferDirection = "FundingToTrading" | "TradingToFunding";
 
 export type ExecType =
   | "Trade"
@@ -221,6 +222,7 @@ export interface AuthorizeRequest {
 
 export interface AuthorizeResponse {
   token: string;
+  user_id: string;
 }
 
 export interface AccountBalance {
@@ -798,6 +800,35 @@ export interface GetRootAccountResponse {
 
 export interface GetSubAccountsResponse {
   sub_accounts: string[];
+}
+
+export interface FundRequest {
+  receiver: string;
+  metadatas: string[];
+  amounts: number[];
+  request_id?: string | null;
+}
+
+export interface FundResult {
+  txid: string;
+}
+
+export interface ApiTransferRequest {
+  amount: string;
+  direction: TransferDirection;
+}
+
+export interface ApiTransferResponse {
+  success: boolean;
+}
+
+export interface ApiWithdrawRequest {
+  asset: string;
+  amount: string;
+}
+
+export interface ApiWithdrawResponse {
+  success: boolean;
 }
 
 export interface LeaderboardData {
