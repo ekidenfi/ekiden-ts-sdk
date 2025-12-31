@@ -1,127 +1,155 @@
 import type { EkidenClientConfig } from "@/core/config";
+import type { VaultType } from "@/types/common";
 
-export interface DepositParams {
-  vaultAddress: string;
-  subAddress: string;
+export interface DepositIntoFundingParams {
+  rootAddress: string;
   assetMetadata: string;
   amount: bigint;
 }
 
-export interface DepositWithTransferParams {
-  vaultAddress: string;
-  fundingSubAddress: string;
+export interface DepositIntoFundingWithTransferToParams {
+  rootAddress: string;
   tradingSubAddress: string;
   assetMetadata: string;
   amount: bigint;
-  vaultToType: string;
+  vaultToType: VaultType;
 }
 
-export interface WithdrawParams {
-  vaultAddress: string;
-  subAddress: string;
+export interface WithdrawFromFundingParams {
+  rootAddress: string;
   assetMetadata: string;
   amount: bigint;
 }
 
 export interface TransferParams {
-  vaultAddress: string;
-  vaultFrom: string;
-  vaultTo: string;
+  vaultFrom: string | null;
+  vaultTo: string | null;
   amount: bigint;
-  vaultFromType: string;
-  vaultToType: string;
+  vaultFromType: VaultType;
+  vaultToType: VaultType;
+}
+
+export interface DepositIntoInsuranceParams {
+  amount: bigint;
+}
+
+export interface CreateEkidenUserParams {
+  fundingLinkProof: Uint8Array;
+  crossTradingLinkProof: Uint8Array;
+}
+
+export interface CreateAndLinkSubAccountParams {
+  linkProof: Uint8Array;
+  subAccountType: VaultType;
+}
+
+export interface GetSubAccsParams {
+  subAddresses: string[];
+}
+
+export interface OwnedSubAccsParams {
+  ownerAddress: string;
 }
 
 export class VaultOnChainClient {
   constructor(private readonly config: EkidenClientConfig) {}
 
-  depositIntoFunding(params: DepositParams) {
-    return {
-      function: `${params.vaultAddress}::vault::deposit_into_funding`,
-      typeArguments: [],
-      functionArguments: [params.vaultAddress, params.subAddress, params.assetMetadata, params.amount.toString()],
-    };
+  private get contractAddress(): string {
+    return this.config.contractAddress;
   }
 
-  depositIntoFundingWithTransferTo(params: DepositWithTransferParams) {
+  depositIntoFunding(params: DepositIntoFundingParams) {
     return {
-      function: `${params.vaultAddress}::vault::deposit_into_funding_with_transfer_to`,
+      function: `${this.contractAddress}::vault::deposit_into_funding`,
       typeArguments: [],
       functionArguments: [
-        params.vaultAddress,
-        params.fundingSubAddress,
-        params.tradingSubAddress,
+        params.rootAddress,
         params.assetMetadata,
         params.amount.toString(),
-        params.vaultToType,
       ],
     };
   }
 
-  withdrawFromFunding(params: WithdrawParams) {
+  depositIntoFundingWithTransferTo(params: DepositIntoFundingWithTransferToParams) {
     return {
-      function: `${params.vaultAddress}::vault::withdraw_from_funding`,
+      function: `${this.contractAddress}::vault::deposit_into_funding_with_transfer_to`,
+      typeArguments: [`${this.contractAddress}::vault_types::${params.vaultToType}`],
+      functionArguments: [
+        params.rootAddress,
+        params.tradingSubAddress,
+        params.assetMetadata,
+        params.amount.toString(),
+      ],
+    };
+  }
+
+  withdrawFromFunding(params: WithdrawFromFundingParams) {
+    return {
+      function: `${this.contractAddress}::vault::withdraw_from_funding`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, params.subAddress, params.assetMetadata, params.amount.toString()],
+      functionArguments: [
+        params.rootAddress,
+        params.assetMetadata,
+        params.amount.toString(),
+      ],
     };
   }
 
   transfer(params: TransferParams) {
     return {
-      function: `${params.vaultAddress}::vault::transfer`,
-      typeArguments: [],
+      function: `${this.contractAddress}::vault::transfer`,
+      typeArguments: [
+        `${this.contractAddress}::vault_types::${params.vaultFromType}`,
+        `${this.contractAddress}::vault_types::${params.vaultToType}`,
+      ],
       functionArguments: [
-        params.vaultAddress,
         params.vaultFrom,
         params.vaultTo,
         params.amount.toString(),
-        params.vaultFromType,
-        params.vaultToType,
       ],
     };
   }
 
-  getSubAccs(params: { vaultAddress: string; subAddresses: string[] }) {
+  depositIntoInsurance(params: DepositIntoInsuranceParams) {
     return {
-      function: `${params.vaultAddress}::vault::get_sub_accs`,
+      function: `${this.contractAddress}::vault::deposit_into_insurance`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, params.subAddresses],
+      functionArguments: [params.amount.toString()],
     };
   }
 
-  getOwnedSubAddresses(params: { vaultAddress: string; rootAddress: string }) {
+  createEkidenUser(params: CreateEkidenUserParams) {
     return {
-      function: `${params.vaultAddress}::vault::get_owned_sub_addresses`,
-      typeArguments: [],
-      functionArguments: [params.vaultAddress, params.rootAddress],
-    };
-  }
-
-  createEkidenUser(params: {
-    vaultAddress: string;
-    fundingLinkProof: Uint8Array;
-    crossTradingLinkProof: Uint8Array;
-  }) {
-    return {
-      function: `${params.vaultAddress}::vault::create_ekiden_user`,
+      function: `${this.contractAddress}::user::create_ekiden_user`,
       typeArguments: [],
       functionArguments: [
-        params.vaultAddress,
         Array.from(params.fundingLinkProof),
         Array.from(params.crossTradingLinkProof),
       ],
     };
   }
 
-  addTradingSubAccount(params: {
-    vaultAddress: string;
-    linkProof: Uint8Array;
-    tradingType: string;
-  }) {
+  createAndLinkSubAccount(params: CreateAndLinkSubAccountParams) {
     return {
-      function: `${params.vaultAddress}::vault::add_trading_sub_account`,
+      function: `${this.contractAddress}::user::create_and_link_sub_account`,
+      typeArguments: [`${this.contractAddress}::vault_types::${params.subAccountType}`],
+      functionArguments: [Array.from(params.linkProof)],
+    };
+  }
+
+  getSubAccs(params: GetSubAccsParams) {
+    return {
+      function: `${this.contractAddress}::user::get_sub_accs`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, Array.from(params.linkProof), params.tradingType],
+      functionArguments: [params.subAddresses],
+    };
+  }
+
+  ownedSubAccs(params: OwnedSubAccsParams) {
+    return {
+      function: `${this.contractAddress}::user::owned_sub_accs`,
+      typeArguments: [],
+      functionArguments: [params.ownerAddress],
     };
   }
 }

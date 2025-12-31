@@ -3,4 +3,6 @@ export type VaultType =
   | "Insurance"
   | "Funding"
   | "Cross"
-  | "Isolated";
+  | "CrossVirtual"
+  | "Isolated"
+  | "RealizedPnL";
