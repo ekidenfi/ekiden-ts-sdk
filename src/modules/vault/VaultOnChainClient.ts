@@ -1,43 +1,66 @@
 import type { EkidenClientConfig } from "@/core/config";
+import type { VaultType } from "@/types/common";
 
-export interface DepositParams {
-  vaultAddress: string;
-  subAddress: string;
+export interface DepositIntoFundingParams {
+  rootAddress: string;
   assetMetadata: string;
   amount: bigint;
 }
 
-export interface DepositWithTransferParams {
-  vaultAddress: string;
-  fundingSubAddress: string;
+export interface DepositIntoFundingWithTransferToParams {
+  rootAddress: string;
   tradingSubAddress: string;
   assetMetadata: string;
   amount: bigint;
-  vaultToType: string;
+  vaultToType: VaultType;
 }
 
-export interface WithdrawParams {
-  vaultAddress: string;
-  subAddress: string;
+export interface WithdrawFromFundingParams {
+  rootAddress: string;
   assetMetadata: string;
   amount: bigint;
 }
 
 export interface TransferParams {
-  vaultAddress: string;
-  vaultFrom: string;
-  vaultTo: string;
+  vaultFrom: string | null;
+  vaultTo: string | null;
   amount: bigint;
-  vaultFromType: string;
-  vaultToType: string;
+  vaultFromType: VaultType;
+  vaultToType: VaultType;
+}
+
+export interface DepositIntoInsuranceParams {
+  amount: bigint;
+}
+
+export interface CreateEkidenUserParams {
+  fundingLinkProof: Uint8Array;
+  crossTradingLinkProof: Uint8Array;
+}
+
+export interface CreateAndLinkSubAccountParams {
+  linkProof: Uint8Array;
+  subAccountType: VaultType;
+}
+
+export interface GetSubAccsParams {
+  subAddresses: string[];
+}
+
+export interface OwnedSubAccsParams {
+  ownerAddress: string;
 }
 
 export class VaultOnChainClient {
   constructor(private readonly config: EkidenClientConfig) {}
 
-  depositIntoFunding(params: DepositParams) {
+  private get contractAddress(): string {
+    return this.config.contractAddress;
+  }
+
+  depositIntoFunding(params: DepositIntoFundingParams) {
     return {
-      function: `${params.vaultAddress}::vault::deposit_into_funding`,
+      function: `${this.contractAddress}::vault::deposit_into_funding`,
       typeArguments: [],
       functionArguments: [
         params.subAddress,
@@ -47,7 +70,7 @@ export class VaultOnChainClient {
     };
   }
 
-  depositIntoFundingWithTransferTo(params: DepositWithTransferParams) {
+  depositIntoFundingWithTransferTo(params: DepositIntoFundingWithTransferToParams) {
     return {
       function: `${params.vaultAddress}::vault::deposit_into_funding_with_transfer_to`,
       typeArguments: [`${params.vaultAddress}::vault_types::${params.vaultToType}`],
@@ -60,9 +83,9 @@ export class VaultOnChainClient {
     };
   }
 
-  withdrawFromFunding(params: WithdrawParams) {
+  withdrawFromFunding(params: WithdrawFromFundingParams) {
     return {
-      function: `${params.vaultAddress}::vault::withdraw_from_funding`,
+      function: `${this.contractAddress}::vault::withdraw_from_funding`,
       typeArguments: [],
       functionArguments: [
         params.subAddress,
@@ -87,7 +110,7 @@ export class VaultOnChainClient {
     };
   }
 
-  getSubAccs(params: { vaultAddress: string; subAddresses: string[] }) {
+  depositIntoInsurance(params: DepositIntoInsuranceParams) {
     return {
       function: `${params.vaultAddress}::user::get_sub_accs`,
       typeArguments: [],
@@ -103,11 +126,7 @@ export class VaultOnChainClient {
     };
   }
 
-  createEkidenUser(params: {
-    vaultAddress: string;
-    fundingLinkProof: Uint8Array;
-    crossTradingLinkProof: Uint8Array;
-  }) {
+  getSubAccs(params: GetSubAccsParams) {
     return {
       function: `${params.vaultAddress}::user::create_ekiden_user`,
       typeArguments: [],
