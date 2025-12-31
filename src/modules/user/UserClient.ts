@@ -7,7 +7,9 @@ import type {
   LeaderboardResponse,
 } from "@/types/api";
 
+import { Account } from "@aptos-labs/ts-sdk";
 import { BaseHttpClient } from "@/core/base";
+import { generateAuthorizePayload } from "@/utils/account";
 
 export class UserClient extends BaseHttpClient {
   async authorize(params: AuthorizeRequest): Promise<AuthorizeResponse> {
@@ -18,6 +20,19 @@ export class UserClient extends BaseHttpClient {
     });
     if (data.token) this.setToken(data.token);
     return data;
+  }
+
+  async authorizeWithAccount(account: Account): Promise<AuthorizeResponse> {
+    const { timestamp_ms, nonce, message } = generateAuthorizePayload();
+    const messageBytes = new TextEncoder().encode(message);
+    const signature = account.sign(messageBytes).toString();
+
+    return this.authorize({
+      signature,
+      public_key: account.publicKey.toString(),
+      timestamp_ms,
+      nonce,
+    });
   }
 
   async getRootAccount(): Promise<GetRootAccountResponse> {
@@ -36,6 +51,10 @@ export class UserClient extends BaseHttpClient {
 
   async getAllLeverages(): Promise<{ market_addr: string; leverage: number; user_addr: string }[]> {
     this.ensureAuth();
-    return this.request<{ market_addr: string; leverage: number; user_addr: string }[]>("/user/leverages", {}, { auth: true });
+    return this.request<{ market_addr: string; leverage: number; user_addr: string }[]>(
+      "/user/leverages",
+      {},
+      { auth: true }
+    );
   }
 }

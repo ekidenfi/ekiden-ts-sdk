@@ -1,7 +1,13 @@
 import { BaseWebSocketClient } from "@/core/base";
 import type { EkidenClientConfig } from "@/core/config";
 import { ConfigurationError } from "@/core/errors";
-import type { ChannelMap } from "@/types/websocket";
+import type {
+  ChannelMap,
+  KlineEventHandler,
+  OrderbookEventHandler,
+  TickerEventHandler,
+  TradesEventHandler,
+} from "@/types/websocket";
 
 export class PublicStream {
   private ws: BaseWebSocketClient<string, ChannelMap>;
@@ -13,12 +19,40 @@ export class PublicStream {
     this.ws = new BaseWebSocketClient(config.wsURL);
   }
 
+  subscribeTicker(symbol: string, handler: TickerEventHandler): () => void {
+    const topic = `ticker.${symbol}` as const;
+    this.ws.subscribe(topic as any, handler as any);
+    return () => this.ws.unsubscribe(topic as any, handler as any);
+  }
+
+  subscribeTrades(symbol: string, handler: TradesEventHandler): () => void {
+    const topic = `trade.${symbol}` as const;
+    this.ws.subscribe(topic as any, handler as any);
+    return () => this.ws.unsubscribe(topic as any, handler as any);
+  }
+
+  subscribeOrderbook(
+    symbol: string,
+    depth: number | string,
+    handler: OrderbookEventHandler
+  ): () => void {
+    const topic = `orderbook.${depth}.${symbol}` as const;
+    this.ws.subscribe(topic as any, handler as any);
+    return () => this.ws.unsubscribe(topic as any, handler as any);
+  }
+
+  subscribeKline(symbol: string, interval: string, handler: KlineEventHandler): () => void {
+    const topic = `kline.${interval}.${symbol}` as const;
+    this.ws.subscribe(topic as any, handler as any);
+    return () => this.ws.unsubscribe(topic as any, handler as any);
+  }
+
   subscribeTopics(topics: string[], handler: (event: unknown) => void): () => void {
     this.ws.subscribe(topics as any, handler as any);
     return () => this.ws.unsubscribe(topics as any, handler as any);
   }
 
-  subscribeHandlers(handlers: Record<string, (event: unknown) => void>): () => void {
+  subscribeHandlers(handlers: Partial<ChannelMap>): () => void {
     this.ws.subscribe(handlers as any);
     return () => this.ws.unsubscribe(handlers as any);
   }
@@ -27,7 +61,7 @@ export class PublicStream {
     this.ws.unsubscribe(topics as any, handler as any);
   }
 
-  unsubscribeHandlers(handlers: Record<string, (event: unknown) => void>): void {
+  unsubscribeHandlers(handlers: Partial<ChannelMap>): void {
     this.ws.unsubscribe(handlers as any);
   }
 

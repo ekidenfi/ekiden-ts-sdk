@@ -192,6 +192,7 @@ export class PrivateWebSocketClient {
     }
   }
 
+  subscribe(topic: string, handler: (data: any) => void): void;
   subscribe(topics: string[], handler: (data: any) => void): void;
   subscribe(handlers: Record<string, (data: any) => void>): void;
   subscribe(arg1: any, arg2?: (data: any) => void): void {
@@ -228,35 +229,62 @@ export class PrivateWebSocketClient {
       return;
     }
 
-    const topics = arg1 as string[];
+    if (Array.isArray(arg1)) {
+      const topics = arg1 as string[];
+      const handler = arg2 as (data: any) => void;
+      if (!Array.isArray(topics) || topics.length === 0) {
+        throw new WebSocketError("topics must be a non-empty string[]");
+      }
+      if (typeof handler !== "function") {
+        throw new WebSocketError("handler must be a function");
+      }
+      const toSubscribe: string[] = [];
+      for (const topic of topics) {
+        if (!this.handlers.has(topic)) {
+          this.handlers.set(topic, new Set());
+        }
+        this.handlers.get(topic)!.add(handler);
+        if (!this.subscriptions.has(topic)) {
+          this.subscriptions.add(topic);
+          toSubscribe.push(topic);
+        }
+      }
+      if (toSubscribe.length > 0) {
+        const subscribeRequest: SubscribeRequest = {
+          op: "subscribe",
+          args: toSubscribe,
+          req_id: this.generateReqId(),
+        };
+        this.send(subscribeRequest);
+      }
+      return;
+    }
+
+    const topic = arg1 as string;
     const handler = arg2 as (data: any) => void;
-    if (!Array.isArray(topics) || topics.length === 0) {
-      throw new WebSocketError("topics must be a non-empty string[]");
+    if (typeof topic !== "string" || !topic) {
+      throw new WebSocketError("topic must be a non-empty string");
     }
     if (typeof handler !== "function") {
       throw new WebSocketError("handler must be a function");
     }
-    const toSubscribe: string[] = [];
-    for (const topic of topics) {
-      if (!this.handlers.has(topic)) {
-        this.handlers.set(topic, new Set());
-      }
-      this.handlers.get(topic)!.add(handler);
-      if (!this.subscriptions.has(topic)) {
-        this.subscriptions.add(topic);
-        toSubscribe.push(topic);
-      }
+
+    if (!this.handlers.has(topic)) {
+      this.handlers.set(topic, new Set());
     }
-    if (toSubscribe.length > 0) {
+    this.handlers.get(topic)!.add(handler);
+    if (!this.subscriptions.has(topic)) {
+      this.subscriptions.add(topic);
       const subscribeRequest: SubscribeRequest = {
         op: "subscribe",
-        args: toSubscribe,
+        args: [topic],
         req_id: this.generateReqId(),
       };
       this.send(subscribeRequest);
     }
   }
 
+  unsubscribe(topic: string, handler: (data: any) => void): void;
   unsubscribe(topics: string[], handler: (data: any) => void): void;
   unsubscribe(handlers: Record<string, (data: any) => void>): void;
   unsubscribe(arg1: any, arg2?: (data: any) => void): void {
@@ -290,33 +318,60 @@ export class PrivateWebSocketClient {
       return;
     }
 
-    const topics = arg1 as string[];
+    if (Array.isArray(arg1)) {
+      const topics = arg1 as string[];
+      const handler = arg2 as (data: any) => void;
+      if (!Array.isArray(topics) || topics.length === 0) {
+        throw new WebSocketError("topics must be a non-empty string[]");
+      }
+
+      const toUnsubscribe: string[] = [];
+
+      for (const topic of topics) {
+        const handlers = this.handlers.get(topic);
+        if (!handlers) {
+          console.warn("[PrivateWebSocketClient] No handlers found for topic:", topic);
+          continue;
+        }
+
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          this.handlers.delete(topic);
+          this.subscriptions.delete(topic);
+          toUnsubscribe.push(topic);
+        }
+      }
+
+      if (toUnsubscribe.length > 0) {
+        const unsubscribeRequest: UnsubscribeRequest = {
+          op: "unsubscribe",
+          args: toUnsubscribe,
+          req_id: this.generateReqId(),
+        };
+        this.send(unsubscribeRequest);
+      }
+      return;
+    }
+
+    const topic = arg1 as string;
     const handler = arg2 as (data: any) => void;
-    if (!Array.isArray(topics) || topics.length === 0) {
-      throw new WebSocketError("topics must be a non-empty string[]");
+    if (typeof topic !== "string" || !topic) {
+      throw new WebSocketError("topic must be a non-empty string");
     }
 
-    const toUnsubscribe: string[] = [];
-
-    for (const topic of topics) {
-      const handlers = this.handlers.get(topic);
-      if (!handlers) {
-        console.warn("[PrivateWebSocketClient] No handlers found for topic:", topic);
-        continue;
-      }
-
-      handlers.delete(handler);
-      if (handlers.size === 0) {
-        this.handlers.delete(topic);
-        this.subscriptions.delete(topic);
-        toUnsubscribe.push(topic);
-      }
+    const handlers = this.handlers.get(topic);
+    if (!handlers) {
+      console.warn("[PrivateWebSocketClient] No handlers found for topic:", topic);
+      return;
     }
 
-    if (toUnsubscribe.length > 0) {
+    handlers.delete(handler);
+    if (handlers.size === 0) {
+      this.handlers.delete(topic);
+      this.subscriptions.delete(topic);
       const unsubscribeRequest: UnsubscribeRequest = {
         op: "unsubscribe",
-        args: toUnsubscribe,
+        args: [topic],
         req_id: this.generateReqId(),
       };
       this.send(unsubscribeRequest);

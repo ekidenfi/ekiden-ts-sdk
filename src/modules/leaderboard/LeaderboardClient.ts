@@ -22,6 +22,10 @@ export class LeaderboardClient extends BaseHttpClient {
 
   async getLeaderboardMy(params: { time_frame: string }): Promise<LeaderboardEntry | null> {
     this.ensureAuth();
-    return this.request<LeaderboardEntry | null>("/leaderboard/my", {}, { auth: true, query: params });
+    return this.request<LeaderboardEntry | null>(
+      "/leaderboard/my",
+      {},
+      { auth: true, query: params }
+    );
   }
 }

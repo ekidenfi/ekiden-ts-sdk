@@ -63,7 +63,7 @@ export class VaultOnChainClient {
       function: `${this.contractAddress}::vault::deposit_into_funding`,
       typeArguments: [],
       functionArguments: [
-        params.rootAddress,
+        params.subAddress,
         params.assetMetadata,
         params.amount.toString(),
       ],
@@ -72,10 +72,10 @@ export class VaultOnChainClient {
 
   depositIntoFundingWithTransferTo(params: DepositIntoFundingWithTransferToParams) {
     return {
-      function: `${this.contractAddress}::vault::deposit_into_funding_with_transfer_to`,
-      typeArguments: [`${this.contractAddress}::vault_types::${params.vaultToType}`],
+      function: `${params.vaultAddress}::vault::deposit_into_funding_with_transfer_to`,
+      typeArguments: [`${params.vaultAddress}::vault_types::${params.vaultToType}`],
       functionArguments: [
-        params.rootAddress,
+        params.fundingSubAddress,
         params.tradingSubAddress,
         params.assetMetadata,
         params.amount.toString(),
@@ -88,7 +88,7 @@ export class VaultOnChainClient {
       function: `${this.contractAddress}::vault::withdraw_from_funding`,
       typeArguments: [],
       functionArguments: [
-        params.rootAddress,
+        params.subAddress,
         params.assetMetadata,
         params.amount.toString(),
       ],
@@ -97,14 +97,14 @@ export class VaultOnChainClient {
 
   transfer(params: TransferParams) {
     return {
-      function: `${this.contractAddress}::vault::transfer`,
+      function: `${params.vaultAddress}::vault::transfer`,
       typeArguments: [
-        `${this.contractAddress}::vault_types::${params.vaultFromType}`,
-        `${this.contractAddress}::vault_types::${params.vaultToType}`,
+        `${params.vaultAddress}::vault_types::${params.vaultFromType}`,
+        `${params.vaultAddress}::vault_types::${params.vaultToType}`,
       ],
       functionArguments: [
-        params.vaultFrom,
-        params.vaultTo,
+        params.vaultFrom ? [params.vaultFrom] : [],
+        params.vaultTo ? [params.vaultTo] : [],
         params.amount.toString(),
       ],
     };
@@ -112,15 +112,23 @@ export class VaultOnChainClient {
 
   depositIntoInsurance(params: DepositIntoInsuranceParams) {
     return {
-      function: `${this.contractAddress}::vault::deposit_into_insurance`,
+      function: `${params.vaultAddress}::user::get_sub_accs`,
       typeArguments: [],
-      functionArguments: [params.amount.toString()],
+      functionArguments: [params.subAddresses],
     };
   }
 
-  createEkidenUser(params: CreateEkidenUserParams) {
+  ownedSubAccs(params: { vaultAddress: string; userAddress: string }) {
     return {
-      function: `${this.contractAddress}::user::create_ekiden_user`,
+      function: `${params.vaultAddress}::user::owned_sub_accs`,
+      typeArguments: [],
+      functionArguments: [params.userAddress],
+    };
+  }
+
+  getSubAccs(params: GetSubAccsParams) {
+    return {
+      function: `${params.vaultAddress}::user::create_ekiden_user`,
       typeArguments: [],
       functionArguments: [
         Array.from(params.fundingLinkProof),
@@ -129,27 +137,16 @@ export class VaultOnChainClient {
     };
   }
 
-  createAndLinkSubAccount(params: CreateAndLinkSubAccountParams) {
+  createAndLinkSubAccount(params: {
+    vaultAddress: string;
+    linkProof: Uint8Array;
+    subAccountType?: string;
+  }) {
+    const type = params.subAccountType || "Cross";
     return {
-      function: `${this.contractAddress}::user::create_and_link_sub_account`,
-      typeArguments: [`${this.contractAddress}::vault_types::${params.subAccountType}`],
+      function: `${params.vaultAddress}::user::create_and_link_sub_account`,
+      typeArguments: [`${params.vaultAddress}::vault_types::${type}`],
       functionArguments: [Array.from(params.linkProof)],
-    };
-  }
-
-  getSubAccs(params: GetSubAccsParams) {
-    return {
-      function: `${this.contractAddress}::user::get_sub_accs`,
-      typeArguments: [],
-      functionArguments: [params.subAddresses],
-    };
-  }
-
-  ownedSubAccs(params: OwnedSubAccsParams) {
-    return {
-      function: `${this.contractAddress}::user::owned_sub_accs`,
-      typeArguments: [],
-      functionArguments: [params.ownerAddress],
     };
   }
 }

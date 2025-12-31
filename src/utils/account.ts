@@ -19,12 +19,12 @@ export const decodeHexToString = (hex: string): string => {
 };
 
 export const parseSubAccountsData = (data: any[]): SubAccountData => {
-  if (data.length >= 4) {
+  if (data.length >= 6) {
     return {
-      types: data[0] || [],
-      subs: data[1] || [],
-      nonces: data[2] || [],
-      orderIndexes: data[3] || [],
+      orderIndexes: data[0] || [],
+      types: data[1] || [],
+      subs: data[3] || [],
+      nonces: data[5] || [],
     };
   }
   return {
@@ -383,4 +383,26 @@ export const deriveTradingAccountFromMasterSignature = async (
     type: "Trading",
     nonce,
   });
+};
+
+/**
+ * Generate a nonce and message for authorization
+ */
+export const generateAuthorizePayload = (): {
+  timestamp_ms: number;
+  nonce: string;
+  message: string;
+  full_message: string;
+} => {
+  const timestamp_ms = Date.now();
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  const raw = Array.from(bytes)
+    .map((b) => String.fromCharCode(b))
+    .join("");
+  const nonce = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+  const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
+  const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
+
+  return { timestamp_ms, nonce, message, full_message };
 };
