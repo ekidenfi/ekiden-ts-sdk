@@ -7,6 +7,7 @@ import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";
 import { MarketClient } from "@/modules/market";
 import { PositionClient } from "@/modules/position";
+import { SystemClient } from "@/modules/system";
 import { TradeClient } from "@/modules/trade";
 import { UserClient } from "@/modules/user";
 import { VaultClient, VaultOnChainClient } from "@/modules/vault";
@@ -20,6 +21,7 @@ export class EkidenClient {
   public readonly market: MarketClient;
   public readonly trade: TradeClient;
   public readonly position: PositionClient;
+  public readonly system: SystemClient;
   public readonly user: UserClient;
   public readonly vault: VaultClient;
   public readonly vaultOnChain: VaultOnChainClient;
@@ -34,6 +36,7 @@ export class EkidenClient {
     this.market = new MarketClient(config);
     this.trade = new TradeClient(config);
     this.position = new PositionClient(config);
+    this.system = new SystemClient(config);
     this.user = new UserClient(config);
     this.vault = new VaultClient(config);
     this.vaultOnChain = new VaultOnChainClient(config);
@@ -100,13 +103,13 @@ export class EkidenClient {
     if (!this.privateStream) {
       throw new ConfigurationError("Private WebSocket not configured");
     }
-    this.privateStream.subscribe(handlers);
+    this.privateStream.subscribe(handlers as any);
   }
 
   unsubscribeHandlers(handlers: Record<string, (data: any) => void>): void {
     if (!this.privateStream) {
       throw new ConfigurationError("Private WebSocket not configured");
     }
-    this.privateStream.unsubscribe(handlers);
+    this.privateStream.unsubscribe(handlers as any);
   }
 }

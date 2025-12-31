@@ -40,7 +40,6 @@ export class VaultOnChainClient {
       function: `${params.vaultAddress}::vault::deposit_into_funding`,
       typeArguments: [],
       functionArguments: [
-        params.vaultAddress,
         params.subAddress,
         params.assetMetadata,
         params.amount.toString(),
@@ -51,14 +50,12 @@ export class VaultOnChainClient {
   depositIntoFundingWithTransferTo(params: DepositWithTransferParams) {
     return {
       function: `${params.vaultAddress}::vault::deposit_into_funding_with_transfer_to`,
-      typeArguments: [],
+      typeArguments: [`${params.vaultAddress}::vault_types::${params.vaultToType}`],
       functionArguments: [
-        params.vaultAddress,
         params.fundingSubAddress,
         params.tradingSubAddress,
         params.assetMetadata,
         params.amount.toString(),
-        params.vaultToType,
       ],
     };
   }
@@ -68,7 +65,6 @@ export class VaultOnChainClient {
       function: `${params.vaultAddress}::vault::withdraw_from_funding`,
       typeArguments: [],
       functionArguments: [
-        params.vaultAddress,
         params.subAddress,
         params.assetMetadata,
         params.amount.toString(),
@@ -79,31 +75,31 @@ export class VaultOnChainClient {
   transfer(params: TransferParams) {
     return {
       function: `${params.vaultAddress}::vault::transfer`,
-      typeArguments: [],
+      typeArguments: [
+        `${params.vaultAddress}::vault_types::${params.vaultFromType}`,
+        `${params.vaultAddress}::vault_types::${params.vaultToType}`,
+      ],
       functionArguments: [
-        params.vaultAddress,
-        params.vaultFrom,
-        params.vaultTo,
+        params.vaultFrom ? [params.vaultFrom] : [],
+        params.vaultTo ? [params.vaultTo] : [],
         params.amount.toString(),
-        params.vaultFromType,
-        params.vaultToType,
       ],
     };
   }
 
   getSubAccs(params: { vaultAddress: string; subAddresses: string[] }) {
     return {
-      function: `${params.vaultAddress}::vault::get_sub_accs`,
+      function: `${params.vaultAddress}::user::get_sub_accs`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, params.subAddresses],
+      functionArguments: [params.subAddresses],
     };
   }
 
-  getOwnedSubAddresses(params: { vaultAddress: string; rootAddress: string }) {
+  ownedSubAccs(params: { vaultAddress: string; userAddress: string }) {
     return {
-      function: `${params.vaultAddress}::vault::get_owned_sub_addresses`,
+      function: `${params.vaultAddress}::user::owned_sub_accs`,
       typeArguments: [],
-      functionArguments: [params.vaultAddress, params.rootAddress],
+      functionArguments: [params.userAddress],
     };
   }
 
@@ -113,25 +109,25 @@ export class VaultOnChainClient {
     crossTradingLinkProof: Uint8Array;
   }) {
     return {
-      function: `${params.vaultAddress}::vault::create_ekiden_user`,
+      function: `${params.vaultAddress}::user::create_ekiden_user`,
       typeArguments: [],
       functionArguments: [
-        params.vaultAddress,
         Array.from(params.fundingLinkProof),
         Array.from(params.crossTradingLinkProof),
       ],
     };
   }
 
-  addTradingSubAccount(params: {
+  createAndLinkSubAccount(params: {
     vaultAddress: string;
     linkProof: Uint8Array;
-    tradingType: string;
+    subAccountType?: string;
   }) {
+    const type = params.subAccountType || "Cross";
     return {
-      function: `${params.vaultAddress}::vault::add_trading_sub_account`,
-      typeArguments: [],
-      functionArguments: [params.vaultAddress, Array.from(params.linkProof), params.tradingType],
+      function: `${params.vaultAddress}::user::create_and_link_sub_account`,
+      typeArguments: [`${params.vaultAddress}::vault_types::${type}`],
+      functionArguments: [Array.from(params.linkProof)],
     };
   }
 }

@@ -19,12 +19,12 @@ export const decodeHexToString = (hex: string): string => {
 };
 
 export const parseSubAccountsData = (data: any[]): SubAccountData => {
-  if (data.length >= 4) {
+  if (data.length >= 6) {
     return {
-      types: data[0] || [],
-      subs: data[1] || [],
-      nonces: data[2] || [],
-      orderIndexes: data[3] || [],
+      orderIndexes: data[0] || [],
+      types: data[1] || [],
+      subs: data[3] || [],
+      nonces: data[5] || [],
     };
   }
   return {

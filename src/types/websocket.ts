@@ -145,14 +145,21 @@ export type AccountBalanceEventMessage = {
 };
 
 export type ChannelMap = {
-  [key: OrderbookChannel]: OrderbookEventMessage;
-  [key: TradesChannel]: TradesEventMessage;
-  [key: TickerChannel]: TickerEventMessage;
-  [key: KlineChannel]: KlineEventMessage;
-  [key: OrderChannel]: OrderEventMessage;
-  [key: PositionChannel]: PositionEventMessage;
-  [key: ExecutionChannel]: ExecutionEventMessage;
-  [key: AccountBalanceChannel]: AccountBalanceEventMessage;
+  [K in OrderbookChannel]: OrderbookEventMessage;
+} & {
+  [K in TradesChannel]: TradesEventMessage;
+} & {
+  [K in TickerChannel]: TickerEventMessage;
+} & {
+  [K in KlineChannel]: KlineEventMessage;
+} & {
+  [K in OrderChannel]: OrderEventMessage;
+} & {
+  [K in PositionChannel]: PositionEventMessage;
+} & {
+  [K in ExecutionChannel]: ExecutionEventMessage;
+} & {
+  [K in AccountBalanceChannel]: AccountBalanceEventMessage;
 };
 
 export interface OrderResponse {

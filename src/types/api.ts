@@ -802,6 +802,13 @@ export interface GetSubAccountsResponse {
   sub_accounts: string[];
 }
 
+export interface SystemInfo {
+  aptos_network: string;
+  vault_contract_address: string;
+  aptos_api_key: string;
+  gas_station_api_key: string;
+}
+
 export interface FundRequest {
   receiver: string;
   metadatas: string[];
