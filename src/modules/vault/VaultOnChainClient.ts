@@ -2,13 +2,14 @@ import type { EkidenClientConfig } from "@/core/config";
 import type { VaultType } from "@/types/common";
 
 export interface DepositIntoFundingParams {
-  rootAddress: string;
+  subAddress: string;
   assetMetadata: string;
   amount: bigint;
 }
 
 export interface DepositIntoFundingWithTransferToParams {
-  rootAddress: string;
+  vaultAddress: string;
+  fundingSubAddress: string;
   tradingSubAddress: string;
   assetMetadata: string;
   amount: bigint;
@@ -16,12 +17,13 @@ export interface DepositIntoFundingWithTransferToParams {
 }
 
 export interface WithdrawFromFundingParams {
-  rootAddress: string;
+  subAddress: string;
   assetMetadata: string;
   amount: bigint;
 }
 
 export interface TransferParams {
+  vaultAddress: string;
   vaultFrom: string | null;
   vaultTo: string | null;
   amount: bigint;
@@ -30,10 +32,12 @@ export interface TransferParams {
 }
 
 export interface DepositIntoInsuranceParams {
-  amount: bigint;
+  vaultAddress: string;
+  subAddresses: string[];
 }
 
 export interface CreateEkidenUserParams {
+  vaultAddress: string;
   fundingLinkProof: Uint8Array;
   crossTradingLinkProof: Uint8Array;
 }
@@ -44,7 +48,9 @@ export interface CreateAndLinkSubAccountParams {
 }
 
 export interface GetSubAccsParams {
-  subAddresses: string[];
+  vaultAddress: string;
+  fundingLinkProof: Uint8Array;
+  crossTradingLinkProof: Uint8Array;
 }
 
 export interface OwnedSubAccsParams {
