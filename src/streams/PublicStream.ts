@@ -33,7 +33,7 @@ export class PublicStream {
 
   subscribeOrderbook(
     symbol: string,
-    depth: number | string,
+    depth: string,
     handler: OrderbookEventHandler
   ): () => void {
     const topic = `orderbook.${depth}.${symbol}` as const;

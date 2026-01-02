@@ -14,16 +14,20 @@ BigNumber.config({
 
 type Value = BN | BigNumber.Value;
 
-const bignumberify = (n: any): string | number => {
-  if (n?.toString) {
-    const primitive = n.toString();
+const bignumberify = (n: unknown): string => {
+  if (n !== null && typeof n === "object" && "toString" in n) {
+    const primitive = (n as { toString: () => unknown }).toString();
 
-    if (typeof primitive !== "object") {
-      return primitive;
+    if (typeof primitive === "string" || typeof primitive === "number") {
+      return String(primitive);
     }
   }
 
-  return n;
+  if (typeof n === "string" || typeof n === "number") {
+    return String(n);
+  }
+
+  return String(n || "0");
 };
 
 export class BN extends BigNumber {
@@ -144,7 +148,7 @@ export class BN extends BigNumber {
     return new BN(super.sum(...n.map(bignumberify)));
   };
 
-  static toBN = (p: Promise<number | string | bigint>): Promise<BN> => {
+  static toBN = (p: Promise<string | bigint>): Promise<BN> => {
     return p.then((v) => new BN(v.toString()));
   };
 

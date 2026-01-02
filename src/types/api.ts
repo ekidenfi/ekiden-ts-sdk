@@ -304,6 +304,7 @@ export interface GetWithdrawalRecordsParams {
 
 export interface TickerSnapshot {
   symbol: SymbolName;
+  addr: string;
   last_price: string;
   index_price: string;
   mark_price: string;
@@ -338,8 +339,8 @@ export interface OrderBookSnapshot {
   ts: string;
   b: OrderBookLevel[];
   a: OrderBookLevel[];
-  u: number;
-  seq: number;
+  u: string;
+  seq: string;
   mts: string;
 }
 
@@ -667,7 +668,7 @@ export interface Execution {
   fee_rate: string;
   mark_price: string;
   index_price: string;
-  seq: number;
+  seq: string;
   order_link_id?: OrderLinkId | null;
   closed_size?: string | null;
   create_type?: CreateType | null;
@@ -716,7 +717,7 @@ export interface Position {
   is_reduce_only: boolean;
   created_time: string;
   updated_time: string;
-  seq: number;
+  seq: string;
   take_profit?: string | null;
   stop_loss?: string | null;
   trailing_stop?: string | null;

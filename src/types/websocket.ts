@@ -5,8 +5,8 @@ export type OrderbookSnapshot = {
   ts: number; // timestamp
   b: PriceLevel[]; // bids
   a: PriceLevel[]; // asks
-  u: number; // update_id
-  seq: number;
+  u: string; // update_id
+  seq: string;
   mts: number; // matching_ts
 };
 
@@ -15,8 +15,8 @@ export type OrderbookDelta = {
   ts: number; // timestamp
   b: PriceLevel[]; // bids
   a: PriceLevel[]; // asks
-  u: number; // update_id
-  seq: number;
+  u: string; // update_id
+  seq: string;
   mts: number; // matching_ts
 };
 
@@ -42,7 +42,7 @@ export type Trade = {
   v: string; // size
   p: string; // price
   T: number; // trade_time
-  seq: number;
+  seq: string;
 };
 
 export type TradesEventData = Trade[];
@@ -59,6 +59,7 @@ export type TickerChannel = `ticker.${string}`;
 
 export type WSTickerSnapshot = {
   symbol: string;
+  addr: string;
   last_price: string;
   index_price: string;
   mark_price: string;
@@ -187,7 +188,7 @@ export interface FillResponse {
   exec_time: string;
   fee_rate: string;
   user_id: string;
-  seq?: number;
+  seq?: string;
 }
 
 export interface PositionResponse {
@@ -207,7 +208,7 @@ export interface PositionResponse {
   realized_pnl_cum: string;
   created_time: string;
   updated_time: string;
-  seq?: number;
+  seq?: string;
   take_profit?: string | null;
   stop_loss?: string | null;
 }
