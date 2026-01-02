@@ -15,6 +15,4 @@ export { VaultClient, VaultOnChainClient } from "./modules/vault";
 export * from "./streams";
 export * from "./types";
 export * from "./utils";
-
-// Re-export everything from @aptos-labs/ts-sdk
 export * from "@aptos-labs/ts-sdk";
