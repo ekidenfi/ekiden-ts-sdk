@@ -49,8 +49,7 @@ export interface CreateAndLinkSubAccountParams {
 
 export interface GetSubAccsParams {
   vaultAddress: string;
-  fundingLinkProof: Uint8Array;
-  crossTradingLinkProof: Uint8Array;
+  subAddresses: string[];
 }
 
 export interface OwnedSubAccsParams {
@@ -134,6 +133,18 @@ export class VaultOnChainClient {
 
   getSubAccs(params: GetSubAccsParams) {
     return {
+      function: `${params.vaultAddress}::user::get_sub_accs`,
+      typeArguments: [],
+      functionArguments: [params.subAddresses],
+    };
+  }
+
+  createEkidenUser(params: {
+    vaultAddress: string;
+    fundingLinkProof: Uint8Array;
+    crossTradingLinkProof: Uint8Array;
+  }) {
+    return {
       function: `${params.vaultAddress}::user::create_ekiden_user`,
       typeArguments: [],
       functionArguments: [
@@ -148,10 +159,19 @@ export class VaultOnChainClient {
     linkProof: Uint8Array;
     subAccountType?: string;
   }) {
-    const type = params.subAccountType || "Cross";
+    // Map VaultType to user module type names
+    // user module has: Funding, CrossTrading, IsolatedTrading
+    const typeMapping: Record<string, string> = {
+      Funding: "Funding",
+      Cross: "CrossTrading",
+      Isolated: "IsolatedTrading",
+    };
+    const inputType = params.subAccountType || "Cross";
+    const userType = typeMapping[inputType] || "CrossTrading";
+
     return {
       function: `${params.vaultAddress}::user::create_and_link_sub_account`,
-      typeArguments: [`${params.vaultAddress}::vault_types::${type}`],
+      typeArguments: [`${params.vaultAddress}::user::${userType}`],
       functionArguments: [Array.from(params.linkProof)],
     };
   }
