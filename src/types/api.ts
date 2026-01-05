@@ -805,7 +805,7 @@ export interface GetSubAccountsResponse {
 
 export interface SystemInfo {
   aptos_network: string;
-  vault_contract_address: string;
+  perpetual_addr: string;
   aptos_api_key: string;
   gas_station_api_key: string;
 }
