@@ -865,3 +865,35 @@ export interface PaginationParams {
   limit?: number | null;
   cursor?: string | null;
 }
+
+export type Category = "spot" | "linear" | "inverse" | "option";
+export type OptionType = "Call" | "Put";
+
+export interface PublicTrade {
+  exec_id: string;
+  symbol: SymbolName;
+  price: string;
+  size: string;
+  side: Side;
+  time: string;
+  is_block_trade: boolean;
+  is_rpi_trade: boolean;
+  mark_price?: string;
+  index_price?: string;
+  mark_iv?: string;
+  iv?: string;
+  seq: string;
+}
+
+export interface GetRecentTradesParams {
+  category: Category;
+  symbol?: SymbolName | null;
+  base_coin?: string | null;
+  option_type?: OptionType | null;
+  limit?: number | null;
+}
+
+export interface GetRecentTradesResponse {
+  category: Category;
+  list: PublicTrade[];
+}
