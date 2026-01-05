@@ -48,13 +48,4 @@ export class UserClient extends BaseHttpClient {
   async getLeaderboard(params: GetLeaderboardParams): Promise<LeaderboardResponse> {
     return this.request<LeaderboardResponse>("/user/leaderboard", {}, { query: params });
   }
-
-  async getAllLeverages(): Promise<{ market_addr: string; leverage: number; user_addr: string }[]> {
-    this.ensureAuth();
-    return this.request<{ market_addr: string; leverage: number; user_addr: string }[]>(
-      "/user/leverages",
-      {},
-      { auth: true }
-    );
-  }
 }
