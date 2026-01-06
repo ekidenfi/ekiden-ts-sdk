@@ -806,6 +806,7 @@ export interface GetSubAccountsResponse {
 export interface SystemInfo {
   aptos_network: string;
   perpetual_addr: string;
+  vault_contract_address: string;
   aptos_api_key: string;
   gas_station_api_key: string;
 }
@@ -837,28 +838,6 @@ export interface ApiWithdrawRequest {
 
 export interface ApiWithdrawResponse {
   success: boolean;
-}
-
-export interface LeaderboardData {
-  place: string;
-  wallet: string;
-  account_value: string;
-  volume: string;
-  pnl: string;
-  roi: string;
-}
-
-export interface LeaderboardMeta {
-  total: number;
-}
-
-export interface LeaderboardResponse {
-  data: LeaderboardData[];
-  meta: LeaderboardMeta;
-}
-
-export interface GetLeaderboardParams {
-  timeframe: Timeframe;
 }
 
 export interface PaginationParams {

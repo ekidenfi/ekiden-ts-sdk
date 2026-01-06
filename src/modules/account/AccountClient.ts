@@ -1,6 +1,4 @@
 import type {
-  ApiTransferRequest,
-  ApiTransferResponse,
   ApiWithdrawRequest,
   ApiWithdrawResponse,
   FundRequest,
@@ -17,36 +15,10 @@ export class AccountClient extends BaseHttpClient {
   }
 
   async fund(params: FundRequest): Promise<FundResult> {
-    return this.request<FundResult>("/account/fund", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
-  }
-
-  async transfer(params: ApiTransferRequest): Promise<ApiTransferResponse> {
-    this.ensureAuth();
-    return this.request<ApiTransferResponse>(
-      "/account/transfer",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<FundResult>("/account/fund", params, { auth: false });
   }
 
   async withdraw(params: ApiWithdrawRequest): Promise<ApiWithdrawResponse> {
-    this.ensureAuth();
-    return this.request<ApiWithdrawResponse>(
-      "/account/withdraw",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<ApiWithdrawResponse>("/account/withdraw", params);
   }
 }

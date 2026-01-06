@@ -24,94 +24,31 @@ import { BaseHttpClient } from "@/core/base";
 
 export class TradeClient extends BaseHttpClient {
   async placeOrder(params: PlaceOrderRequest): Promise<PlaceOrderResponse> {
-    this.ensureAuth();
-    return this.request<PlaceOrderResponse>(
-      "/order/place",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<PlaceOrderResponse>("/order/place", params);
   }
 
   async batchPlaceOrders(params: BatchPlaceOrdersRequest): Promise<BatchPlaceOrdersResponse> {
-    this.ensureAuth();
-    return this.request<BatchPlaceOrdersResponse>(
-      "/order/place-batch",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<BatchPlaceOrdersResponse>("/order/place-batch", params);
   }
 
   async amendOrder(params: AmendOrderRequest): Promise<AmendOrderResponse> {
-    this.ensureAuth();
-    return this.request<AmendOrderResponse>(
-      "/order/amend",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<AmendOrderResponse>("/order/amend", params);
   }
 
   async batchAmendOrders(params: BatchAmendOrdersRequest): Promise<BatchAmendOrdersResponse> {
-    this.ensureAuth();
-    return this.request<BatchAmendOrdersResponse>(
-      "/order/amend-batch",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<BatchAmendOrdersResponse>("/order/amend-batch", params);
   }
 
   async cancelOrder(params: CancelOrderRequest): Promise<CancelOrderResponse> {
-    this.ensureAuth();
-    return this.request<CancelOrderResponse>(
-      "/order/cancel",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<CancelOrderResponse>("/order/cancel", params);
   }
 
   async batchCancelOrders(params: BatchCancelOrdersRequest): Promise<BatchCancelOrdersResponse> {
-    this.ensureAuth();
-    return this.request<BatchCancelOrdersResponse>(
-      "/order/cancel-batch",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<BatchCancelOrdersResponse>("/order/cancel-batch", params);
   }
 
   async cancelAllOrders(params: CancelAllOrdersRequest = {}): Promise<CancelAllOrdersResponse> {
-    this.ensureAuth();
-    return this.request<CancelAllOrdersResponse>(
-      "/order/cancel-all",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth: true }
-    );
+    return this.post<CancelAllOrdersResponse>("/order/cancel-all", params);
   }
 
   async getRealtimeOrders(params: GetRealtimeOrdersParams): Promise<OrderListResponse> {
@@ -126,10 +63,6 @@ export class TradeClient extends BaseHttpClient {
 
   async getTradeHistory(params: GetTradeHistoryParams = {}): Promise<GetTradeHistoryResponse> {
     this.ensureAuth();
-    return this.request<GetTradeHistoryResponse>(
-      "/execution/list",
-      {},
-      { auth: true, query: params }
-    );
+    return this.request<GetTradeHistoryResponse>("/execution/list", {}, { auth: true, query: params });
   }
 }

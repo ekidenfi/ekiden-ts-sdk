@@ -32,6 +32,24 @@ export class BaseHttpClient {
     }
   }
 
+  protected async post<T>(
+    path: string,
+    params: Record<string, any>,
+    options: { auth?: boolean } = {}
+  ): Promise<T> {
+    const { auth = true } = options;
+    if (auth) this.ensureAuth();
+    return this.request<T>(
+      path,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
+      { auth }
+    );
+  }
+
   protected async request<T>(
     path: string,
     options: RequestInit = {},

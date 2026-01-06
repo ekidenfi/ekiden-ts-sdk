@@ -1,10 +1,8 @@
 import type {
   AuthorizeRequest,
   AuthorizeResponse,
-  GetLeaderboardParams,
   GetRootAccountResponse,
   GetSubAccountsResponse,
-  LeaderboardResponse,
 } from "@/types/api";
 
 import { Account } from "@aptos-labs/ts-sdk";
@@ -13,11 +11,7 @@ import { generateAuthorizePayload } from "@/utils/account";
 
 export class UserClient extends BaseHttpClient {
   async authorize(params: AuthorizeRequest): Promise<AuthorizeResponse> {
-    const data = await this.request<AuthorizeResponse>("/authorize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
+    const data = await this.post<AuthorizeResponse>("/authorize", params, { auth: false });
     if (data.token) this.setToken(data.token);
     return data;
   }
@@ -43,9 +37,5 @@ export class UserClient extends BaseHttpClient {
   async getSubAccounts(): Promise<GetSubAccountsResponse> {
     this.ensureAuth();
     return this.request<GetSubAccountsResponse>("/user/sub-accounts", {}, { auth: true });
-  }
-
-  async getLeaderboard(params: GetLeaderboardParams): Promise<LeaderboardResponse> {
-    return this.request<LeaderboardResponse>("/user/leaderboard", {}, { query: params });
   }
 }

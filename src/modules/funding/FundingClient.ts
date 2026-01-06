@@ -9,10 +9,6 @@ export interface FundingRateInfo {
 }
 
 export class FundingClient extends BaseHttpClient {
-  async getFundingRates(): Promise<FundingRateInfo[]> {
-    return this.request<FundingRateInfo[]>("/funding/rates", {});
-  }
-
   async getFundingRateByMarket(marketAddr: string): Promise<FundingRateInfo> {
     return this.request<FundingRateInfo>(
       "/funding/rate",
