@@ -5,9 +5,9 @@ import type {
   GetSubAccountsResponse,
 } from "@/types/api";
 
-import { Account } from "@aptos-labs/ts-sdk";
 import { BaseHttpClient } from "@/core/base";
 import { generateAuthorizePayload } from "@/utils/account";
+import { Account } from "@aptos-labs/ts-sdk";
 
 export class UserClient extends BaseHttpClient {
   async authorize(params: AuthorizeRequest): Promise<AuthorizeResponse> {

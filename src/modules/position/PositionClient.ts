@@ -14,12 +14,20 @@ import { BaseHttpClient } from "@/core/base";
 export class PositionClient extends BaseHttpClient {
   async getPositionInfo(params: GetPositionInfoParams): Promise<GetPositionInfoResponse> {
     this.ensureAuth();
-    return this.request<GetPositionInfoResponse>("/position/list", {}, { auth: true, query: params });
+    return this.request<GetPositionInfoResponse>(
+      "/position/list",
+      {},
+      { auth: true, query: params }
+    );
   }
 
   async getClosedPnl(params: GetClosedPnlParams = {}): Promise<GetClosedPnlResponse> {
     this.ensureAuth();
-    return this.request<GetClosedPnlResponse>("/position/closed-pnl", {}, { auth: true, query: params });
+    return this.request<GetClosedPnlResponse>(
+      "/position/closed-pnl",
+      {},
+      { auth: true, query: params }
+    );
   }
 
   async setLeverage(params: SetLeverageRequest): Promise<SetLeverageResponse> {

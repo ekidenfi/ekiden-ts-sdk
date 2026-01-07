@@ -63,6 +63,10 @@ export class TradeClient extends BaseHttpClient {
 
   async getTradeHistory(params: GetTradeHistoryParams = {}): Promise<GetTradeHistoryResponse> {
     this.ensureAuth();
-    return this.request<GetTradeHistoryResponse>("/execution/list", {}, { auth: true, query: params });
+    return this.request<GetTradeHistoryResponse>(
+      "/execution/list",
+      {},
+      { auth: true, query: params }
+    );
   }
 }

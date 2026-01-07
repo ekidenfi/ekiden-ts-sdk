@@ -31,11 +31,7 @@ export class PublicStream {
     return () => this.ws.unsubscribe(topic as any, handler as any);
   }
 
-  subscribeOrderbook(
-    symbol: string,
-    depth: string,
-    handler: OrderbookEventHandler
-  ): () => void {
+  subscribeOrderbook(symbol: string, depth: string, handler: OrderbookEventHandler): () => void {
     const topic = `orderbook.${depth}.${symbol}` as const;
     this.ws.subscribe(topic as any, handler as any);
     return () => this.ws.unsubscribe(topic as any, handler as any);
