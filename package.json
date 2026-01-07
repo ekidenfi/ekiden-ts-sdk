@@ -34,6 +34,7 @@
     "format": "biome format --write .",
     "test": "bun test",
     "test:watch": "bun test --watch",
+    "mock": "bun run tests/serveMock.ts",
     "publish:dry": "bun publish --dry-run",
     "release": "bun run build && bun publish"
   },

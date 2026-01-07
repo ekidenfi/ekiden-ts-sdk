@@ -1,24 +1,21 @@
-import type {
-  ListVaultsParams,
-  VaultResponse,
-  WithdrawFromTradingParams,
-  WithdrawFromTradingResponse,
-} from "./types";
-
 import { BaseHttpClient } from "@/core/base";
 
-export class VaultClient extends BaseHttpClient {
-  async getUserVaults(params: ListVaultsParams = {}): Promise<VaultResponse[]> {
-    this.ensureAuth();
-    return this.request<VaultResponse[]>("/user/vaults", {}, { auth: true, query: params });
-  }
+export interface WithdrawFromTradingParams {
+  addr_from: string;
+  addr_to: string;
+  amount: number;
+  asset_metadata: string;
+  nonce: number;
+  signature: string;
+  timestamp: number;
+  withdraw_available: boolean;
+}
 
-  async withdrawFromTrading(
-    params: WithdrawFromTradingParams
-  ): Promise<WithdrawFromTradingResponse> {
+export class VaultClient extends BaseHttpClient {
+  async withdrawFromTrading(params: WithdrawFromTradingParams): Promise<void> {
     this.ensureAuth();
-    return this.request<WithdrawFromTradingResponse>(
-      "/user/vaults/withdraw",
+    await this.request(
+      "/vault/withdraw-from-trading",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

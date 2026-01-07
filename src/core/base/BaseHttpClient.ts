@@ -32,6 +32,24 @@ export class BaseHttpClient {
     }
   }
 
+  protected async post<T>(
+    path: string,
+    params: Record<string, any>,
+    options: { auth?: boolean } = {}
+  ): Promise<T> {
+    const { auth = true } = options;
+    if (auth) this.ensureAuth();
+    return this.request<T>(
+      path,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      },
+      { auth }
+    );
+  }
+
   protected async request<T>(
     path: string,
     options: RequestInit = {},
@@ -55,9 +73,8 @@ export class BaseHttpClient {
       const method = options.method || "GET";
       let errorResponseContent = "";
 
-      let rawText = "";
       try {
-        rawText = await response.text();
+        const rawText = await response.text();
         try {
           const errorData = JSON.parse(rawText);
           if (errorData.error) {
@@ -72,7 +89,7 @@ export class BaseHttpClient {
             errorResponseContent = rawText;
           }
         }
-      } catch (_e) {
+      } catch {
         // Ignore error parsing failures
       }
 
@@ -87,7 +104,11 @@ export class BaseHttpClient {
     if (query) {
       Object.entries(query).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          url.searchParams.append(key, String(value));
+          if (Array.isArray(value)) {
+            value.forEach((v) => url.searchParams.append(key, String(v)));
+          } else {
+            url.searchParams.append(key, String(value));
+          }
         }
       });
     }

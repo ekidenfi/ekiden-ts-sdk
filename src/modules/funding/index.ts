@@ -1,2 +1,1 @@
-export * from "./FundingClient";
-export * from "./types";
+export { FundingClient } from "./FundingClient";

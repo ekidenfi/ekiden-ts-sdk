@@ -1,17 +1,19 @@
-import type { FundingEpochResponse, FundingRateResponse, GetFundingRateParams } from "./types";
-
 import { BaseHttpClient } from "@/core/base";
 
+export interface FundingRateInfo {
+  market_addr: string;
+  funding_rate_percentage: number;
+  next_funding_time: string;
+  oracle_price: number;
+  funding_index: number;
+}
+
 export class FundingClient extends BaseHttpClient {
-  async getFundingRates(params: GetFundingRateParams = {}): Promise<FundingRateResponse[]> {
-    return this.request<FundingRateResponse[]>("/market/funding_rate", {}, { query: params });
-  }
-
-  async getFundingRateByMarket(marketAddr: string): Promise<FundingRateResponse> {
-    return this.request<FundingRateResponse>(`/market/funding_rate/${marketAddr}`);
-  }
-
-  async getFundingEpoch(): Promise<FundingEpochResponse> {
-    return this.request<FundingEpochResponse>("/market/funding_rate/epoch");
+  async getFundingRateByMarket(marketAddr: string): Promise<FundingRateInfo> {
+    return this.request<FundingRateInfo>(
+      "/funding/rate",
+      {},
+      { query: { market_addr: marketAddr } }
+    );
   }
 }

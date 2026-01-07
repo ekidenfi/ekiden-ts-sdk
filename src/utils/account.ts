@@ -2,6 +2,39 @@ import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 
 import { addressToBytes } from "./address";
 
+export interface SubAccountData {
+  types: string[][];
+  subs: string[];
+  nonces: string[];
+  orderIndexes: string[];
+}
+
+export const decodeHexToString = (hex: string): string => {
+  const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const bytes = new Uint8Array(cleanHex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return new TextDecoder().decode(bytes);
+};
+
+export const parseSubAccountsData = (data: any[]): SubAccountData => {
+  if (data.length >= 6) {
+    return {
+      orderIndexes: data[0] || [],
+      types: data[1] || [],
+      subs: data[3] || [],
+      nonces: data[5] || [],
+    };
+  }
+  return {
+    types: [],
+    subs: [],
+    nonces: [],
+    orderIndexes: [],
+  };
+};
+
 /**
  * Message input for wallet signing
  */
@@ -350,4 +383,26 @@ export const deriveTradingAccountFromMasterSignature = async (
     type: "Trading",
     nonce,
   });
+};
+
+/**
+ * Generate a nonce and message for authorization
+ */
+export const generateAuthorizePayload = (): {
+  timestamp_ms: number;
+  nonce: string;
+  message: string;
+  full_message: string;
+} => {
+  const timestamp_ms = Date.now();
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  const raw = Array.from(bytes)
+    .map((b) => String.fromCharCode(b))
+    .join("");
+  const nonce = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+  const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
+  const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
+
+  return { timestamp_ms, nonce, message, full_message };
 };

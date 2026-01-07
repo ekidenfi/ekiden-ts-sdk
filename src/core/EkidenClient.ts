@@ -1,51 +1,45 @@
 import type { EkidenClientConfig } from "./config";
 import { ConfigurationError } from "./errors";
 
+import { AccountClient } from "@/modules/account";
+import { AssetClient } from "@/modules/asset";
 import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";
 import { MarketClient } from "@/modules/market";
-import { OrderClient } from "@/modules/order";
 import { PositionClient } from "@/modules/position";
+import { SystemClient } from "@/modules/system";
+import { TradeClient } from "@/modules/trade";
 import { UserClient } from "@/modules/user";
-import { VaultClient, VaultOnChain } from "@/modules/vault";
+import { VaultClient, VaultOnChainClient } from "@/modules/vault";
 import { PrivateStream, PublicStream } from "@/streams";
 
-/**
- * Main Ekiden SDK client
- * @example
- * ```typescript
- * import { EkidenClient, TESTNET } from "@ekidenfi/ts-sdk";
- *
- * const ekiden = new EkidenClient(TESTNET);
- *
- * const { token } = await ekiden.user.authorize({...});
- * await ekiden.setToken(token);
- *
- * const markets = await ekiden.market.getMarkets();
- * const orders = await ekiden.order.getUserOrders();
- * ```
- */
 export class EkidenClient {
-  public readonly market: MarketClient;
-  public readonly order: OrderClient;
-  public readonly user: UserClient;
-  public readonly position: PositionClient;
-  public readonly vault: VaultClient;
-  public readonly vaultOnChain: VaultOnChain;
+  public readonly account: AccountClient;
+  public readonly asset: AssetClient;
   public readonly funding: FundingClient;
   public readonly leaderboard: LeaderboardClient;
+  public readonly market: MarketClient;
+  public readonly trade: TradeClient;
+  public readonly position: PositionClient;
+  public readonly system: SystemClient;
+  public readonly user: UserClient;
+  public readonly vault: VaultClient;
+  public readonly vaultOnChain: VaultOnChainClient;
   public readonly publicStream?: PublicStream;
   public readonly privateStream?: PrivateStream;
 
   constructor(public readonly config: EkidenClientConfig) {
-    this.market = new MarketClient(config);
-    this.order = new OrderClient(config);
-    this.user = new UserClient(config);
-    this.position = new PositionClient(config);
-    this.vault = new VaultClient(config);
-    this.vaultOnChain = new VaultOnChain();
+    this.account = new AccountClient(config);
+    this.asset = new AssetClient(config);
     this.funding = new FundingClient(config);
     this.leaderboard = new LeaderboardClient(config);
+    this.market = new MarketClient(config);
+    this.trade = new TradeClient(config);
+    this.position = new PositionClient(config);
+    this.system = new SystemClient(config);
+    this.user = new UserClient(config);
+    this.vault = new VaultClient(config);
+    this.vaultOnChain = new VaultOnChainClient(config);
 
     if (config.wsURL) {
       this.publicStream = new PublicStream(config);
@@ -56,33 +50,16 @@ export class EkidenClient {
     }
   }
 
-  /**
-   * Set authentication token for all clients
-   * @param token - JWT token from authorize()
-   * @example
-   * ```typescript
-   * await ekiden.setToken(token);
-   * ```
-   */
   setToken(token: string): void {
-    this.user.setToken(token);
-    this.order.setToken(token);
-    this.position.setToken(token);
-    this.vault.setToken(token);
+    this.account.setToken(token);
+    this.asset.setToken(token);
     this.leaderboard.setToken(token);
+    this.trade.setToken(token);
+    this.position.setToken(token);
+    this.user.setToken(token);
+    this.vault.setToken(token);
   }
 
-  /**
-   * Set different tokens for REST API and WebSocket
-   * @param tokens - Separate tokens for REST and WS
-   * @example
-   * ```typescript
-   * await ekiden.setTokens({
-   *   rest: tradingAccountToken,
-   *   ws: rootAccountToken,
-   * });
-   * ```
-   */
   async setTokens(tokens: {
     rest?: string;
     ws?: string;
@@ -91,11 +68,13 @@ export class EkidenClient {
     const { rest, ws, connectPrivateWS = true } = tokens || {};
 
     if (rest) {
-      this.user.setToken(rest);
-      this.order.setToken(rest);
-      this.position.setToken(rest);
-      this.vault.setToken(rest);
+      this.account.setToken(rest);
+      this.asset.setToken(rest);
       this.leaderboard.setToken(rest);
+      this.trade.setToken(rest);
+      this.position.setToken(rest);
+      this.user.setToken(rest);
+      this.vault.setToken(rest);
     }
 
     if (this.privateStream && ws) {
@@ -124,13 +103,13 @@ export class EkidenClient {
     if (!this.privateStream) {
       throw new ConfigurationError("Private WebSocket not configured");
     }
-    this.privateStream.subscribe(handlers);
+    this.privateStream.subscribe(handlers as any);
   }
 
   unsubscribeHandlers(handlers: Record<string, (data: any) => void>): void {
     if (!this.privateStream) {
       throw new ConfigurationError("Private WebSocket not configured");
     }
-    this.privateStream.unsubscribe(handlers);
+    this.privateStream.unsubscribe(handlers as any);
   }
 }

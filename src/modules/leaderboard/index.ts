@@ -1,2 +1,5 @@
-export * from "./LeaderboardClient";
-export * from "./types";
+export {
+  LeaderboardClient,
+  type LeaderboardEntry,
+  type LeaderboardParams,
+} from "./LeaderboardClient";
