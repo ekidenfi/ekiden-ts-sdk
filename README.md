@@ -17,21 +17,24 @@ The SDK follows a modular, object-oriented architecture with clear separation of
 
 ```
 EkidenClient
-├── market          - Market data, candles, statistics
-├── order           - Order management, fills, intents
-├── user            - User authentication, portfolio, leverage
-├── position        - Position management
+├── account         - Account balance, funding, withdrawals
+├── asset           - Deposit/withdrawal records
+├── market          - Market data, orderbook, klines, tickers
+├── trade           - Order management (place, amend, cancel)
+├── position        - Position management, leverage, TP/SL
+├── funding         - Funding rates
+├── leaderboard     - Leaderboard data
+├── user            - User authentication
 ├── vault           - Vault operations (REST API)
 ├── vaultOnChain    - Aptos on-chain vault operations
-├── funding         - Funding rates and epochs
-├── leaderboard     - Leaderboard data
+├── system          - System information
 ├── publicStream    - Public WebSocket streams
 └── privateStream   - Private WebSocket streams
 ```
 
 ### Core Principles
 
-- **Modular Design**: Each domain has its own client (MarketClient, OrderClient, etc.)
+- **Modular Design**: Each domain has its own client (MarketClient, TradeClient, etc.)
 - **Type Safety**: Full TypeScript support with comprehensive type definitions
 - **OOP Approach**: Proper object-oriented design with class instances
 - **Clean Separation**: Business logic separated by domain
@@ -44,10 +47,12 @@ import { Ed25519Account, Ed25519PrivateKey, PrivateKey } from "@aptos-labs/ts-sd
 
 const ekiden = new EkidenClient(TESTNET);
 
+// Setup account
 const formatted = PrivateKey.formatPrivateKey(process.env.PRIVATE_KEY!, "ed25519");
 const privateKey = new Ed25519PrivateKey(formatted);
 const account = new Ed25519Account({ privateKey });
 
+// Authenticate
 const timestamp_ms = Date.now();
 const nonce = Math.random().toString(36).slice(2);
 const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
@@ -60,94 +65,222 @@ const { token } = await ekiden.user.authorize({
   signature,
 });
 
-await ekiden.setToken(token);
+ekiden.setToken(token);
 
+// Use the SDK
 const markets = await ekiden.market.getMarkets();
-const portfolio = await ekiden.user.getUserPortfolio();
-const positions = await ekiden.position.getUserPositions();
+const balance = await ekiden.account.getBalance();
+const positions = await ekiden.position.getPositionInfo({ symbol: "BTCUSDT" });
 ```
 
 ## Module Documentation
 
 ### MarketClient
 
-Access market data, OHLCV candles, and statistics.
+Access market data, orderbook, klines, and statistics.
 
 ```typescript
+// Get all tickers
+const tickers = await ekiden.market.getTickers();
+
+// Get specific market ticker
+const btcTicker = await ekiden.market.getTickers({ symbol: "BTCUSDT" });
+
+// Get markets (wrapper over getTickers)
 const markets = await ekiden.market.getMarkets();
 
-const marketInfo = await ekiden.market.getMarketInfo({
-  symbol: "BTC-WUSDC",
+// Get orderbook
+const orderbook = await ekiden.market.getOrderbook({
+  symbol: "BTCUSDT",
+  limit: 50,
 });
 
-const candles = await ekiden.market.getCandles({
-  market_addr: "0x...",
-  timeframe: "1h",
-  start_time: Date.now() - 86400000,
+// Get klines (OHLCV candles)
+const klines = await ekiden.market.getKline({
+  symbol: "BTCUSDT",
+  interval: "1h",
+  limit: 100,
 });
 
-const stats = await ekiden.market.getMarketStats("0x...");
+// Get mark price klines
+const markPriceKlines = await ekiden.market.getMarkPriceKline({
+  symbol: "BTCUSDT",
+  interval: "1h",
+});
+
+// Get index price klines
+const indexPriceKlines = await ekiden.market.getIndexPriceKline({
+  symbol: "BTCUSDT",
+  interval: "1h",
+});
+
+// Get funding rate history
+const fundingHistory = await ekiden.market.getFundingRateHistory({
+  symbol: "BTCUSDT",
+  limit: 100,
+});
+
+// Get open interest
+const openInterest = await ekiden.market.getOpenInterest({
+  symbol: "BTCUSDT",
+  interval: "5min",
+});
+
+// Get long/short ratio
+const ratio = await ekiden.market.getLongShortRatio({
+  symbol: "BTCUSDT",
+  period: "5min",
+});
+
+// Get order price limits
+const priceLimit = await ekiden.market.getOrderPriceLimit("BTCUSDT");
+
+// Get risk limits
+const riskLimits = await ekiden.market.getRiskLimit({ symbol: "BTCUSDT" });
+
+// Get recent trades
+const recentTrades = await ekiden.market.getRecentTrades({
+  category: "linear",
+  symbol: "BTCUSDT",
+});
+
+// Get 24h market statistics
+const stats = await ekiden.market.getMarketStats("BTCUSDT");
 ```
 
-### OrderClient
+### TradeClient
 
-Manage orders, fills, and intents.
-
-```typescript
-const orders = await ekiden.order.getOrders({
-  market_addr: "0x...",
-  page: 1,
-  per_page: 50,
-});
-
-const userOrders = await ekiden.order.getUserOrders({
-  market_addr: "0x...",
-});
-
-const fills = await ekiden.order.getUserFills();
-
-import { buildOrderPayload } from "@ekidenfi/ts-sdk";
-
-const payload = {
-  type: "order_create",
-  orders: [{
-    market_addr: "0x...",
-    side: "buy",
-    size: 100,
-    price: 50000000000,
-    type: "limit",
-    leverage: 1,
-    is_cross: true,
-    time_in_force: "PostOnly",
-  }],
-};
-
-const nonce = Date.now();
-const toSign = buildOrderPayload({ payload, nonce });
-const sig = account.sign(toSign).toString();
-
-const response = await ekiden.order.sendIntentWithCommit({
-  payload,
-  nonce,
-  signature: sig.startsWith("0x") ? sig : `0x${sig}`,
-});
-```
-
-### UserClient
-
-User authentication, portfolio, and leverage management.
+Manage orders - place, amend, cancel.
 
 ```typescript
-const portfolio = await ekiden.user.getUserPortfolio();
-
-const leverage = await ekiden.user.getUserLeverage("0x...");
-
-await ekiden.user.setUserLeverage({
-  market_addr: "0x...",
-  leverage: 5,
+// Place a limit order
+const order = await ekiden.trade.placeOrder({
+  symbol: "BTCUSDT",
+  side: "Buy",
+  order_type: "Limit",
+  qty: "0.001",
+  price: "50000",
+  leverage: "10",
+  margin_mode: "Cross",
+  time_in_force: "GTC",
+  post_only: false,
+  reduce_only: false,
+  close_on_trigger: false,
 });
 
-const allPortfolios = await ekiden.user.getAllPortfolios();
+// Place a market order
+const marketOrder = await ekiden.trade.placeOrder({
+  symbol: "BTCUSDT",
+  side: "Buy",
+  order_type: "Market",
+  qty: "0.001",
+  price: "0",
+  leverage: "10",
+  margin_mode: "Cross",
+  time_in_force: "IOC",
+  post_only: false,
+  reduce_only: false,
+  close_on_trigger: false,
+});
+
+// Place order with TP/SL
+const orderWithTpSl = await ekiden.trade.placeOrder({
+  symbol: "BTCUSDT",
+  side: "Buy",
+  order_type: "Limit",
+  qty: "0.001",
+  price: "50000",
+  leverage: "10",
+  margin_mode: "Cross",
+  time_in_force: "GTC",
+  post_only: false,
+  reduce_only: false,
+  close_on_trigger: false,
+  tpsl: {
+    mode: "Full",
+    take_profit: {
+      market: {
+        trigger_price: "55000",
+        trigger_by: "LastPrice",
+      },
+    },
+    stop_loss: {
+      market: {
+        trigger_price: "48000",
+        trigger_by: "LastPrice",
+      },
+    },
+  },
+});
+
+// Batch place orders
+const batchOrders = await ekiden.trade.batchPlaceOrders({
+  request: [
+    {
+      symbol: "BTCUSDT",
+      side: "Buy",
+      order_type: "Limit",
+      qty: "0.001",
+      price: "49000",
+      leverage: "10",
+      margin_mode: "Cross",
+      time_in_force: "GTC",
+      post_only: false,
+      reduce_only: false,
+      close_on_trigger: false,
+    },
+    {
+      symbol: "BTCUSDT",
+      side: "Buy",
+      order_type: "Limit",
+      qty: "0.001",
+      price: "48000",
+      leverage: "10",
+      margin_mode: "Cross",
+      time_in_force: "GTC",
+      post_only: false,
+      reduce_only: false,
+      close_on_trigger: false,
+    },
+  ],
+});
+
+// Amend order
+const amended = await ekiden.trade.amendOrder({
+  symbol: "BTCUSDT",
+  order_id: "order-id-here",
+  size: 0.002,
+  price: 51000,
+});
+
+// Cancel order
+const cancelled = await ekiden.trade.cancelOrder({
+  symbol: "BTCUSDT",
+  order_id: "order-id-here",
+});
+
+// Cancel all orders
+const cancelledAll = await ekiden.trade.cancelAllOrders({
+  symbol: "BTCUSDT",
+});
+
+// Get active orders
+const activeOrders = await ekiden.trade.getRealtimeOrders({
+  symbol: "BTCUSDT",
+  open_only: true,
+});
+
+// Get order history
+const orderHistory = await ekiden.trade.getOrderHistory({
+  symbol: "BTCUSDT",
+  limit: 50,
+});
+
+// Get trade/execution history
+const tradeHistory = await ekiden.trade.getTradeHistory({
+  symbol: "BTCUSDT",
+  limit: 50,
+});
 ```
 
 ### PositionClient
@@ -155,67 +288,89 @@ const allPortfolios = await ekiden.user.getAllPortfolios();
 Position management and queries.
 
 ```typescript
-const positions = await ekiden.position.getUserPositions();
+// Get positions
+const positions = await ekiden.position.getPositionInfo({
+  symbol: "BTCUSDT",
+});
 
-const marketPositions = await ekiden.position.getUserPositions({
-  market_addr: "0x...",
+// Get closed PnL history
+const closedPnl = await ekiden.position.getClosedPnl({
+  symbol: "BTCUSDT",
+  limit: 50,
+});
+
+// Set leverage
+await ekiden.position.setLeverage({
+  symbol: "BTCUSDT",
+  leverage: "20",
+});
+
+// Set trading stop (TP/SL)
+await ekiden.position.setTradingStop({
+  symbol: "BTCUSDT",
+  tpsl: {
+    mode: "Full",
+    take_profit: {
+      market: {
+        trigger_price: "55000",
+        trigger_by: "LastPrice",
+      },
+    },
+    stop_loss: {
+      market: {
+        trigger_price: "48000",
+        trigger_by: "LastPrice",
+      },
+    },
+  },
 });
 ```
 
-### VaultClient
+### AccountClient
 
-Vault operations via REST API.
+Account balance and fund management.
 
 ```typescript
-const vaults = await ekiden.vault.getUserVaults();
+// Get account balance
+const balance = await ekiden.account.getBalance();
 
-await ekiden.vault.withdrawFromTrading({
-  addr_from: "0x...",
-  addr_to: "0x...",
-  amount: 1000000,
-  asset_metadata: "0x...",
-  nonce: Date.now(),
-  signature: "0x...",
-  timestamp: Date.now(),
-  withdraw_available: true,
+// Fund account (faucet - testnet only)
+const funded = await ekiden.account.fund({
+  receiver: "0x...",
+  metadatas: ["0x..."],
+  amounts: [1000000],
+});
+
+// Withdraw from account
+const withdrawn = await ekiden.account.withdraw({
+  asset: "USDT",
+  amount: "100",
 });
 ```
 
-### VaultOnChain
+### AssetClient
 
-Aptos on-chain vault operations.
+Deposit and withdrawal records.
 
 ```typescript
-const depositPayload = ekiden.vaultOnChain.depositIntoUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000),
+// Get deposit records
+const deposits = await ekiden.asset.getDeposits({
+  limit: 50,
 });
 
-const withdrawPayload = ekiden.vaultOnChain.requestWithdrawFromUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000),
-});
-
-const balance = ekiden.vaultOnChain.vaultBalance({
-  vaultAddress: "0x...",
-  userAddress: "0x...",
-  assetMetadata: "0x...",
-  vaultType: "Cross",
+// Get withdrawal records
+const withdrawals = await ekiden.asset.getWithdrawals({
+  limit: 50,
 });
 ```
 
 ### FundingClient
 
-Funding rates and epochs.
+Funding rates.
 
 ```typescript
-const fundingRates = await ekiden.funding.getFundingRates();
-
+// Get funding rate by market
 const fundingRate = await ekiden.funding.getFundingRateByMarket("0x...");
-
-const epoch = await ekiden.funding.getFundingEpoch();
 ```
 
 ### LeaderboardClient
@@ -223,15 +378,94 @@ const epoch = await ekiden.funding.getFundingEpoch();
 Leaderboard data and rankings.
 
 ```typescript
+// Get global leaderboard
 const leaderboard = await ekiden.leaderboard.getLeaderboardAll({
   time_frame: "24h",
   page: 1,
   per_page: 50,
 });
 
+// Get my leaderboard position
 const myRank = await ekiden.leaderboard.getLeaderboardMy({
   time_frame: "24h",
 });
+```
+
+### UserClient
+
+User authentication and account info.
+
+```typescript
+// Authenticate
+const { token, user_id } = await ekiden.user.authorize({
+  public_key: "0x...",
+  timestamp_ms: Date.now(),
+  nonce: "random-nonce",
+  signature: "0x...",
+});
+
+// Get root account
+const rootAccount = await ekiden.user.getRootAccount();
+
+// Get sub accounts
+const subAccounts = await ekiden.user.getSubAccounts();
+```
+
+### VaultClient
+
+Vault operations via REST API.
+
+```typescript
+// Deposit into vault
+await ekiden.vault.deposit(params);
+
+// Withdraw from vault
+await ekiden.vault.withdraw(params);
+```
+
+### VaultOnChainClient
+
+Aptos on-chain vault operations.
+
+```typescript
+// Deposit into user account
+const depositPayload = ekiden.vaultOnChain.depositIntoUser({
+  vaultAddress: "0x...",
+  assetMetadata: "0x...",
+  amount: BigInt(1000000),
+});
+
+// Request withdrawal
+const withdrawPayload = ekiden.vaultOnChain.requestWithdrawFromUser({
+  vaultAddress: "0x...",
+  assetMetadata: "0x...",
+  amount: BigInt(1000000),
+});
+
+// Get vault balance
+const balance = ekiden.vaultOnChain.vaultBalance({
+  vaultAddress: "0x...",
+  userAddress: "0x...",
+  assetMetadata: "0x...",
+  vaultType: "Cross",
+});
+
+// Create Ekiden user
+const createUserPayload = ekiden.vaultOnChain.createEkidenUser({
+  vaultAddress: "0x...",
+  fundingLinkProof: fundingLinkProof,
+  crossTradingLinkProof: tradingLinkProof,
+});
+```
+
+### SystemClient
+
+System information.
+
+```typescript
+// Get system info
+const systemInfo = await ekiden.system.getSystemInfo();
+// Returns: { aptos_network, perpetual_addr, vault_contract_address, ... }
 ```
 
 ### PublicStream
@@ -241,13 +475,13 @@ Public WebSocket streams for market data.
 ```typescript
 if (ekiden.publicStream) {
   ekiden.publicStream.subscribeHandlers({
-    "orderbook/0x...": (event) => {
+    "orderbook/BTCUSDT": (event) => {
       console.log("Orderbook update:", event.data);
     },
-    "trade/0x...": (event) => {
+    "trade/BTCUSDT": (event) => {
       console.log("Trade:", event.data);
     },
-    "ticker/0x...": (event) => {
+    "ticker/BTCUSDT": (event) => {
       console.log("Ticker:", event.data);
     },
   });
@@ -262,13 +496,13 @@ Private WebSocket streams for user events.
 if (ekiden.privateStream) {
   await ekiden.privateStream.connect();
 
-  ekiden.privateStream.subscribe(["orders", "positions", "fills"], (data) => {
+  ekiden.privateStream.subscribe(["orders", "positions", "executions"], (data) => {
     console.log("User event:", data);
   });
 
   ekiden.privateStream.subscribe({
-    "orders": (data) => console.log("Order update:", data),
-    "positions": (data) => console.log("Position update:", data),
+    orders: (data) => console.log("Order update:", data),
+    positions: (data) => console.log("Position update:", data),
   });
 }
 ```
@@ -313,7 +547,7 @@ const tradingAccount = createSubAccountFromSignature({
 const { funding, trading } = createSubAccounts(
   rootAddress,
   fundingSignature.signature,
-  tradingSignature.signature,
+  tradingSignature.signature
 );
 
 // 2b. For keyless wallets (Google, Apple) - create deterministically
@@ -329,7 +563,7 @@ const { funding, trading } = await createSubAccountsDeterministic(rootAddress);
 const linkProof = buildLinkProof(
   account.publicKey.toUint8Array(),
   rootAddress,
-  account.sign(rootAddress).toUint8Array(),
+  account.sign(rootAddress).toUint8Array()
 );
 
 // 4. Register on blockchain
@@ -337,34 +571,6 @@ const payload = ekiden.vaultOnChain.createEkidenUser({
   vaultAddress: VAULT_ADDRESS,
   fundingLinkProof: fundingLinkProof,
   crossTradingLinkProof: tradingLinkProof,
-});
-```
-
-#### SubAccount Type
-
-```typescript
-interface SubAccount {
-  address: string;
-  privateKey: string;
-  publicKey: string;
-  type: "funding" | "trading";
-  nonce: string;
-}
-```
-
-### buildOrderPayload
-
-Build payload for order intents.
-
-```typescript
-import { buildOrderPayload } from "@ekidenfi/ts-sdk";
-
-const hexPayload = buildOrderPayload({
-  payload: {
-    type: "order_create",
-    orders: [...],
-  },
-  nonce: Date.now(),
 });
 ```
 
@@ -395,30 +601,27 @@ const bytes = addressToBytes("0x1234...");
 ```typescript
 import { EkidenClientConfig, TESTNET } from "@ekidenfi/ts-sdk";
 
-const TESTNET: EkidenClientConfig = {
-  baseURL: "https://api.staging.ekiden.fi",
-  wsURL: "wss://api.staging.ekiden.fi/ws/public",
-  privateWSURL: "wss://api.staging.ekiden.fi/ws/private",
-  apiPrefix: "/api/v1",
-};
-
+// Use predefined testnet config
 const ekiden = new EkidenClient(TESTNET);
 
+// Custom configuration
 const CUSTOM: EkidenClientConfig = {
   baseURL: "https://your-api.example.com",
-  apiPrefix: "/api/v2",
+  wsURL: "wss://your-api.example.com/ws/public",
+  privateWSURL: "wss://your-api.example.com/ws/private",
+  apiPrefix: "/api/v1",
 };
 
 const customClient = new EkidenClient(CUSTOM);
 ```
 
-## Advanced Usage
-
-### Token Management
+## Token Management
 
 ```typescript
-await ekiden.setToken(token);
+// Set token for REST API
+ekiden.setToken(token);
 
+// Set tokens for both REST and WebSocket
 await ekiden.setTokens({
   rest: restToken,
   ws: wsToken,
@@ -426,31 +629,17 @@ await ekiden.setTokens({
 });
 ```
 
-### Helper Methods for Private Streams
+## Helper Methods for Private Streams
 
 ```typescript
 ekiden.subscribeTo(["orders", "positions"], handler);
 ekiden.unsubscribeFrom(["orders"], handler);
 
 ekiden.subscribeHandlers({
-  "orders": orderHandler,
-  "positions": positionHandler,
+  orders: orderHandler,
+  positions: positionHandler,
 });
-ekiden.unsubscribeHandlers({ "orders": orderHandler });
-```
-
-## Backward Compatibility
-
-The SDK maintains backward compatibility with the previous API:
-
-```typescript
-import { Vault } from "@ekidenfi/ts-sdk";
-
-const payload = Vault.depositIntoUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000),
-});
+ekiden.unsubscribeHandlers({ orders: orderHandler });
 ```
 
 ## Type Exports
@@ -459,14 +648,45 @@ All types are exported for external use:
 
 ```typescript
 import type {
-  MarketResponse,
-  OrderResponse,
-  PositionResponse,
-  FillResponse,
-  VaultResponse,
-  ActionPayload,
-  SendIntentParams,
-  PaginationParams,
+  // Order types
+  Order,
+  OrderId,
+  OrderLinkId,
+  OrderStatus,
+  OrderType,
+  PlaceOrderRequest,
+  PlaceOrderResponse,
+  AmendOrderRequest,
+  CancelOrderRequest,
+
+  // Position types
+  Position,
+  PositionStatus,
+  GetPositionInfoParams,
+  SetLeverageRequest,
+  SetTradingStopRequest,
+
+  // Market types
+  TickerSnapshot,
+  KlineSnapshot,
+  OrderBookSnapshot,
+  GetTickersParams,
+  GetKlineParams,
+  GetOrderBookParams,
+
+  // Account types
+  AccountBalance,
+  GetAccountBalanceResponse,
+
+  // Common types
+  Side,
+  MarginMode,
+  TimeInForce,
+  Interval,
+  TpSl,
+  TpSlMode,
+  ConditionalOrder,
+  TriggerBy,
 } from "@ekidenfi/ts-sdk";
 ```
 
@@ -474,7 +694,7 @@ import type {
 
 ```typescript
 try {
-  const orders = await ekiden.order.getUserOrders();
+  const orders = await ekiden.trade.getRealtimeOrders({ open_only: true });
 } catch (error) {
   if (error.message.includes("Not authenticated")) {
     console.error("Please authenticate first");
@@ -484,6 +704,7 @@ try {
 ```
 
 ## Links
+
 - [Ekiden Documentation](https://docs.ekiden.fi)
 
 ## License
