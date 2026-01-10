@@ -1,13 +1,13 @@
 export { VaultClient } from "./VaultClient";
 export {
-  VaultOnChainClient,
-  type DepositIntoFundingParams,
-  type DepositIntoFundingWithTransferToParams,
-  type WithdrawFromFundingParams,
-  type TransferParams,
-  type DepositIntoInsuranceParams,
-  type CreateEkidenUserParams,
-  type CreateAndLinkSubAccountParams,
-  type GetSubAccsParams,
-  type OwnedSubAccsParams,
+	type CreateAndLinkSubAccountParams,
+	type CreateEkidenUserParams,
+	type DepositIntoFundingParams,
+	type DepositIntoFundingWithTransferToParams,
+	type DepositIntoInsuranceParams,
+	type GetSubAccsParams,
+	type OwnedSubAccsParams,
+	type TransferParams,
+	VaultOnChainClient,
+	type WithdrawFromFundingParams,
 } from "./VaultOnChainClient";

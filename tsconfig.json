@@ -1,31 +1,31 @@
 {
-  "compilerOptions": {
-    "outDir": "./dist",
-    "baseUrl": ".",
-    "declaration": true,
-    "declarationMap": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
-    "lib": ["dom", "esnext"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "sourceMap": true,
-    "strict": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
-    "target": "ES2020",
-    "types": ["bun-types"]
-  },
-  "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "tests", "examples"]
+	"compilerOptions": {
+		"outDir": "./dist",
+		"baseUrl": ".",
+		"declaration": true,
+		"declarationMap": true,
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"jsx": "react-jsx",
+		"lib": ["dom", "esnext"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"noFallthroughCasesInSwitch": true,
+		"noImplicitAny": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"strict": true,
+		"strictFunctionTypes": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"target": "ES2020",
+		"types": ["bun-types"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["dist", "node_modules", "tests", "examples"]
 }

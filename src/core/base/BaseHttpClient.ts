@@ -2,116 +2,122 @@ import type { EkidenClientConfig } from "@/core/config";
 import { APIError, AuthenticationError } from "@/core/errors";
 
 export class BaseHttpClient {
-  protected token?: string;
+	protected token?: string;
 
-  constructor(protected readonly config: EkidenClientConfig) {}
+	constructor(protected readonly config: EkidenClientConfig) {}
 
-  protected get baseURL(): string {
-    return this.config.baseURL;
-  }
+	protected get baseURL(): string {
+		return this.config.baseURL;
+	}
 
-  protected get apiPrefix(): string {
-    return this.config.apiPrefix;
-  }
+	protected get apiPrefix(): string {
+		return this.config.apiPrefix;
+	}
 
-  public setToken(token: string): void {
-    this.token = token;
-  }
+	public setToken(token: string): void {
+		this.token = token;
+	}
 
-  public getToken(): string | undefined {
-    return this.token;
-  }
+	public getToken(): string | undefined {
+		return this.token;
+	}
 
-  protected authHeader(): Record<string, string> {
-    return this.token ? { Authorization: `Bearer ${this.token}` } : {};
-  }
+	protected authHeader(): Record<string, string> {
+		return this.token ? { Authorization: `Bearer ${this.token}` } : {};
+	}
 
-  protected ensureAuth(): void {
-    if (!this.token) {
-      throw new AuthenticationError();
-    }
-  }
+	protected ensureAuth(): void {
+		if (!this.token) {
+			throw new AuthenticationError();
+		}
+	}
 
-  protected async post<T>(
-    path: string,
-    params: Record<string, any>,
-    options: { auth?: boolean } = {}
-  ): Promise<T> {
-    const { auth = true } = options;
-    if (auth) this.ensureAuth();
-    return this.request<T>(
-      path,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(params),
-      },
-      { auth }
-    );
-  }
+	protected async post<T>(
+		path: string,
+		params: Record<string, any>,
+		options: { auth?: boolean } = {}
+	): Promise<T> {
+		const { auth = true } = options;
+		if (auth) this.ensureAuth();
+		return this.request<T>(
+			path,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(params),
+			},
+			{ auth }
+		);
+	}
 
-  protected async request<T>(
-    path: string,
-    options: RequestInit = {},
-    config: {
-      auth?: boolean;
-      query?: Record<string, any>;
-    } = {}
-  ): Promise<T> {
-    const { auth = false, query } = config;
+	protected async request<T>(
+		path: string,
+		options: RequestInit = {},
+		config: {
+			auth?: boolean;
+			query?: Record<string, any>;
+		} = {}
+	): Promise<T> {
+		const { auth = false, query } = config;
 
-    const url = this.buildUrl(path, query);
+		const url = this.buildUrl(path, query);
 
-    const headers: HeadersInit = {
-      ...(options.headers || {}),
-      ...(auth ? this.authHeader() : {}),
-    };
+		const headers: HeadersInit = {
+			...(options.headers || {}),
+			...(auth ? this.authHeader() : {}),
+		};
 
-    const response = await fetch(url, { ...options, headers });
+		const response = await fetch(url, { ...options, headers });
 
-    if (!response.ok) {
-      const method = options.method || "GET";
-      let errorResponseContent = "";
+		if (!response.ok) {
+			const method = options.method || "GET";
+			let errorResponseContent = "";
 
-      try {
-        const rawText = await response.text();
-        try {
-          const errorData = JSON.parse(rawText);
-          if (errorData.error) {
-            errorResponseContent = errorData.error;
-          } else if (errorData.message) {
-            errorResponseContent = errorData.message;
-          } else if (typeof errorData === "string") {
-            errorResponseContent = errorData;
-          }
-        } catch {
-          if (rawText) {
-            errorResponseContent = rawText;
-          }
-        }
-      } catch {
-        // Ignore error parsing failures
-      }
+			try {
+				const rawText = await response.text();
+				try {
+					const errorData = JSON.parse(rawText);
+					if (errorData.error) {
+						errorResponseContent = errorData.error;
+					} else if (errorData.message) {
+						errorResponseContent = errorData.message;
+					} else if (typeof errorData === "string") {
+						errorResponseContent = errorData;
+					}
+				} catch {
+					if (rawText) {
+						errorResponseContent = rawText;
+					}
+				}
+			} catch {
+				// Ignore error parsing failures
+			}
 
-      throw new APIError(errorResponseContent || `${method} ${path} failed`, response.status, path);
-    }
+			throw new APIError(
+				errorResponseContent || `${method} ${path} failed`,
+				response.status,
+				path
+			);
+		}
 
-    return response.json();
-  }
+		return response.json();
+	}
 
-  protected buildUrl(path: string, query?: Record<string, any>): string {
-    const url = new URL(`${this.baseURL}${this.apiPrefix}${path}`);
-    if (query) {
-      Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== "") {
-          if (Array.isArray(value)) {
-            value.forEach((v) => url.searchParams.append(key, String(v)));
-          } else {
-            url.searchParams.append(key, String(value));
-          }
-        }
-      });
-    }
-    return url.toString();
-  }
+	protected buildUrl(path: string, query?: Record<string, any>): string {
+		const url = new URL(`${this.baseURL}${this.apiPrefix}${path}`);
+		if (query) {
+			Object.entries(query).forEach(([key, value]) => {
+				if (value !== undefined && value !== null && value !== "") {
+					if (Array.isArray(value)) {
+						value.forEach((v) => {
+							url.searchParams.append(key, String(v));
+						});
+					} else {
+						url.searchParams.append(key, String(value));
+					}
+				}
+			});
+		}
+		return url.toString();
+	}
 }

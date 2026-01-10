@@ -1,5 +1,5 @@
 export {
-  LeaderboardClient,
-  type LeaderboardEntry,
-  type LeaderboardParams,
+	LeaderboardClient,
+	type LeaderboardEntry,
+	type LeaderboardParams,
 } from "./LeaderboardClient";

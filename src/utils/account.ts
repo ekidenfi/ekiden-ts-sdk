@@ -3,72 +3,72 @@ import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 import { addressToBytes } from "./address";
 
 export interface SubAccountData {
-  types: string[][];
-  subs: string[];
-  nonces: string[];
-  orderIndexes: string[];
+	types: string[][];
+	subs: string[];
+	nonces: string[];
+	orderIndexes: string[];
 }
 
 export const decodeHexToString = (hex: string): string => {
-  const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
-  const bytes = new Uint8Array(cleanHex.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
-  }
-  return new TextDecoder().decode(bytes);
+	const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
+	const bytes = new Uint8Array(cleanHex.length / 2);
+	for (let i = 0; i < bytes.length; i++) {
+		bytes[i] = Number.parseInt(cleanHex.slice(i * 2, i * 2 + 2), 16);
+	}
+	return new TextDecoder().decode(bytes);
 };
 
 export const parseSubAccountsData = (data: any[]): SubAccountData => {
-  if (data.length >= 6) {
-    return {
-      orderIndexes: data[0] || [],
-      types: data[1] || [],
-      subs: data[3] || [],
-      nonces: data[5] || [],
-    };
-  }
-  return {
-    types: [],
-    subs: [],
-    nonces: [],
-    orderIndexes: [],
-  };
+	if (data.length >= 6) {
+		return {
+			orderIndexes: data[0] || [],
+			types: data[1] || [],
+			subs: data[3] || [],
+			nonces: data[5] || [],
+		};
+	}
+	return {
+		types: [],
+		subs: [],
+		nonces: [],
+		orderIndexes: [],
+	};
 };
 
 /**
  * Message input for wallet signing
  */
 export interface AccountMessageInput {
-  message: string;
-  nonce: string;
+	message: string;
+	nonce: string;
 }
 
 /**
  * Sub-account data structure
  */
 export interface SubAccount {
-  address: string;
-  privateKey: string;
-  publicKey: string;
-  type: "funding" | "trading";
-  nonce: string;
+	address: string;
+	privateKey: string;
+	publicKey: string;
+	type: "funding" | "trading";
+	nonce: string;
 }
 
 /**
  * Options for creating a sub-account
  */
 export interface CreateSubAccountOptions {
-  rootAddress: string;
-  type: "Funding" | "Trading";
-  version?: string;
-  nonce?: string;
+	rootAddress: string;
+	type: "Funding" | "Trading";
+	version?: string;
+	nonce?: string;
 }
 
 /**
  * Options for creating sub-account from signature
  */
 export interface CreateSubAccountFromSignatureOptions extends CreateSubAccountOptions {
-  signature: string | Uint8Array;
+	signature: string | Uint8Array;
 }
 
 /**
@@ -91,13 +91,13 @@ export interface CreateSubAccountDeterministicOptions extends CreateSubAccountOp
  * ```
  */
 export const createAccountMessage = (
-  rootAddress: string,
-  type: "Funding" | "Trading",
-  version = "v2",
-  nonce = "0"
+	rootAddress: string,
+	type: "Funding" | "Trading",
+	version = "v2",
+	nonce = "0"
 ): AccountMessageInput => ({
-  message: `Ekiden ${type}`,
-  nonce: `${rootAddress}${type}${version}${nonce}`,
+	message: `Ekiden ${type}`,
+	nonce: `${rootAddress}${type}${version}${nonce}`,
 });
 
 /**
@@ -123,12 +123,12 @@ export const createAccountMessage = (
  * ```
  */
 export const buildLinkProof = (
-  publicKey: Uint8Array,
-  rootAddress: string,
-  signature: Uint8Array
+	publicKey: Uint8Array,
+	rootAddress: string,
+	signature: Uint8Array
 ): Uint8Array => {
-  const rootAddressBytes = addressToBytes(rootAddress);
-  return new Uint8Array([...publicKey, ...rootAddressBytes, ...signature]);
+	const rootAddressBytes = addressToBytes(rootAddress);
+	return new Uint8Array([...publicKey, ...rootAddressBytes, ...signature]);
 };
 
 /**
@@ -138,26 +138,26 @@ export const buildLinkProof = (
  * @returns 32-byte private key as Uint8Array
  */
 export const extractPrivateKeyFromSignature = (
-  signature: string | Uint8Array | { data: Uint8Array }
+	signature: string | Uint8Array | { data: Uint8Array }
 ): Uint8Array => {
-  let bytes: Uint8Array;
+	let bytes: Uint8Array;
 
-  if (signature instanceof Uint8Array) {
-    bytes = signature;
-  } else if (typeof signature === "string") {
-    const hex = signature.startsWith("0x") ? signature.slice(2) : signature;
-    bytes = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < bytes.length; i++) {
-      bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-    }
-  } else if (signature && typeof signature === "object" && "data" in signature) {
-    bytes = signature.data;
-  } else {
-    throw new Error("Unsupported signature format");
-  }
+	if (signature instanceof Uint8Array) {
+		bytes = signature;
+	} else if (typeof signature === "string") {
+		const hex = signature.startsWith("0x") ? signature.slice(2) : signature;
+		bytes = new Uint8Array(hex.length / 2);
+		for (let i = 0; i < bytes.length; i++) {
+			bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+		}
+	} else if (signature && typeof signature === "object" && "data" in signature) {
+		bytes = signature.data;
+	} else {
+		throw new Error("Unsupported signature format");
+	}
 
-  // Take first 32 bytes for Ed25519 private key
-  return bytes.slice(0, 32);
+	// Take first 32 bytes for Ed25519 private key
+	return bytes.slice(0, 32);
 };
 
 /**
@@ -180,21 +180,21 @@ export const extractPrivateKeyFromSignature = (
  * ```
  */
 export const createSubAccountFromSignature = (
-  options: CreateSubAccountFromSignatureOptions
+	options: CreateSubAccountFromSignatureOptions
 ): SubAccount => {
-  const { rootAddress, type, version = "v2", nonce = "0", signature } = options;
+	const { rootAddress, type, version = "v2", nonce = "0", signature } = options;
 
-  const privateKeyBytes = extractPrivateKeyFromSignature(signature);
-  const privateKey = new Ed25519PrivateKey(privateKeyBytes);
-  const account = Account.fromPrivateKey({ privateKey });
+	const privateKeyBytes = extractPrivateKeyFromSignature(signature);
+	const privateKey = new Ed25519PrivateKey(privateKeyBytes);
+	const account = Account.fromPrivateKey({ privateKey });
 
-  return {
-    address: account.accountAddress.toString(),
-    privateKey: privateKey.toString(),
-    publicKey: account.publicKey.toString(),
-    type: type.toLowerCase() as "funding" | "trading",
-    nonce,
-  };
+	return {
+		address: account.accountAddress.toString(),
+		privateKey: privateKey.toString(),
+		publicKey: account.publicKey.toString(),
+		type: type.toLowerCase() as "funding" | "trading",
+		nonce,
+	};
 };
 
 /**
@@ -215,26 +215,26 @@ export const createSubAccountFromSignature = (
  * ```
  */
 export const createSubAccountDeterministic = async (
-  options: CreateSubAccountDeterministicOptions
+	options: CreateSubAccountDeterministicOptions
 ): Promise<SubAccount> => {
-  const { rootAddress, type, version = "v2", nonce = "0" } = options;
+	const { rootAddress, type, version = "v2", nonce = "0" } = options;
 
-  const seed = `${rootAddress}:${type}:${version}${nonce !== "0" ? `:${nonce}` : ""}`;
-  const encoder = new TextEncoder();
-  const data = encoder.encode(seed);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const privateKeyBytes = new Uint8Array(hashBuffer);
+	const seed = `${rootAddress}:${type}:${version}${nonce !== "0" ? `:${nonce}` : ""}`;
+	const encoder = new TextEncoder();
+	const data = encoder.encode(seed);
+	const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+	const privateKeyBytes = new Uint8Array(hashBuffer);
 
-  const privateKey = new Ed25519PrivateKey(privateKeyBytes);
-  const account = Account.fromPrivateKey({ privateKey });
+	const privateKey = new Ed25519PrivateKey(privateKeyBytes);
+	const account = Account.fromPrivateKey({ privateKey });
 
-  return {
-    address: account.accountAddress.toString(),
-    privateKey: privateKey.toString(),
-    publicKey: account.publicKey.toString(),
-    type: type.toLowerCase() as "funding" | "trading",
-    nonce,
-  };
+	return {
+		address: account.accountAddress.toString(),
+		privateKey: privateKey.toString(),
+		publicKey: account.publicKey.toString(),
+		type: type.toLowerCase() as "funding" | "trading",
+		nonce,
+	};
 };
 
 /**
@@ -261,23 +261,23 @@ export const createSubAccountDeterministic = async (
  * ```
  */
 export const createSubAccounts = (
-  rootAddress: string,
-  fundingSignature: string | Uint8Array,
-  tradingSignature: string | Uint8Array
+	rootAddress: string,
+	fundingSignature: string | Uint8Array,
+	tradingSignature: string | Uint8Array
 ): { funding: SubAccount; trading: SubAccount } => {
-  const funding = createSubAccountFromSignature({
-    rootAddress,
-    type: "Funding",
-    signature: fundingSignature,
-  });
+	const funding = createSubAccountFromSignature({
+		rootAddress,
+		type: "Funding",
+		signature: fundingSignature,
+	});
 
-  const trading = createSubAccountFromSignature({
-    rootAddress,
-    type: "Trading",
-    signature: tradingSignature,
-  });
+	const trading = createSubAccountFromSignature({
+		rootAddress,
+		type: "Trading",
+		signature: tradingSignature,
+	});
 
-  return { funding, trading };
+	return { funding, trading };
 };
 
 /**
@@ -294,115 +294,115 @@ export const createSubAccounts = (
  * ```
  */
 export const createSubAccountsDeterministic = async (
-  rootAddress: string
+	rootAddress: string
 ): Promise<{ funding: SubAccount; trading: SubAccount }> => {
-  const funding = await createSubAccountDeterministic({
-    rootAddress,
-    type: "Funding",
-  });
+	const funding = await createSubAccountDeterministic({
+		rootAddress,
+		type: "Funding",
+	});
 
-  const trading = await createSubAccountDeterministic({
-    rootAddress,
-    type: "Trading",
-  });
+	const trading = await createSubAccountDeterministic({
+		rootAddress,
+		type: "Trading",
+	});
 
-  return { funding, trading };
+	return { funding, trading };
 };
 
 export interface MasterSignaturePayload {
-  message: string;
-  nonce: string;
+	message: string;
+	nonce: string;
 }
 
 export interface DeriveFromMasterSignatureOptions {
-  masterSignature: string | Uint8Array;
-  type: "Funding" | "Trading";
-  nonce?: string;
+	masterSignature: string | Uint8Array;
+	type: "Funding" | "Trading";
+	nonce?: string;
 }
 
 export const createMasterSignaturePayload = (
-  rootAddress: string,
-  version = 1
+	rootAddress: string,
+	version = 1
 ): MasterSignaturePayload => ({
-  message: "Ekiden Account Derivation",
-  nonce: `${rootAddress}:${version}`,
+	message: "Ekiden Account Derivation",
+	nonce: `${rootAddress}:${version}`,
 });
 
 export const deriveSubAccountFromMasterSignature = async (
-  options: DeriveFromMasterSignatureOptions
+	options: DeriveFromMasterSignatureOptions
 ): Promise<SubAccount> => {
-  const { masterSignature, type, nonce = "0" } = options;
+	const { masterSignature, type, nonce = "0" } = options;
 
-  const signatureBytes = extractPrivateKeyFromSignature(masterSignature);
+	const signatureBytes = extractPrivateKeyFromSignature(masterSignature);
 
-  const encoder = new TextEncoder();
-  const typeBytes = encoder.encode(type);
-  const nonceBytes = encoder.encode(nonce);
+	const encoder = new TextEncoder();
+	const typeBytes = encoder.encode(type);
+	const nonceBytes = encoder.encode(nonce);
 
-  const combinedData = new Uint8Array([...signatureBytes, ...typeBytes, ...nonceBytes]);
+	const combinedData = new Uint8Array([...signatureBytes, ...typeBytes, ...nonceBytes]);
 
-  const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
-  const privateKeyBytes = new Uint8Array(hashBuffer);
+	const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
+	const privateKeyBytes = new Uint8Array(hashBuffer);
 
-  const privateKey = new Ed25519PrivateKey(privateKeyBytes);
-  const account = Account.fromPrivateKey({ privateKey });
+	const privateKey = new Ed25519PrivateKey(privateKeyBytes);
+	const account = Account.fromPrivateKey({ privateKey });
 
-  return {
-    address: account.accountAddress.toString(),
-    privateKey: privateKey.toString(),
-    publicKey: account.publicKey.toString(),
-    type: type.toLowerCase() as "funding" | "trading",
-    nonce,
-  };
+	return {
+		address: account.accountAddress.toString(),
+		privateKey: privateKey.toString(),
+		publicKey: account.publicKey.toString(),
+		type: type.toLowerCase() as "funding" | "trading",
+		nonce,
+	};
 };
 
 export const deriveSubAccountsFromMasterSignature = async (
-  masterSignature: string | Uint8Array
+	masterSignature: string | Uint8Array
 ): Promise<{ funding: SubAccount; trading: SubAccount }> => {
-  const funding = await deriveSubAccountFromMasterSignature({
-    masterSignature,
-    type: "Funding",
-    nonce: "0",
-  });
+	const funding = await deriveSubAccountFromMasterSignature({
+		masterSignature,
+		type: "Funding",
+		nonce: "0",
+	});
 
-  const trading = await deriveSubAccountFromMasterSignature({
-    masterSignature,
-    type: "Trading",
-    nonce: "0",
-  });
+	const trading = await deriveSubAccountFromMasterSignature({
+		masterSignature,
+		type: "Trading",
+		nonce: "0",
+	});
 
-  return { funding, trading };
+	return { funding, trading };
 };
 
 export const deriveTradingAccountFromMasterSignature = async (
-  masterSignature: string | Uint8Array,
-  nonce: string
+	masterSignature: string | Uint8Array,
+	nonce: string
 ): Promise<SubAccount> => {
-  return deriveSubAccountFromMasterSignature({
-    masterSignature,
-    type: "Trading",
-    nonce,
-  });
+	return deriveSubAccountFromMasterSignature({
+		masterSignature,
+		type: "Trading",
+		nonce,
+	});
 };
 
 /**
  * Generate a nonce and message for authorization
  */
 export const generateAuthorizePayload = (): {
-  timestamp_ms: number;
-  nonce: string;
-  message: string;
-  full_message: string;
+	timestamp_ms: number;
+	nonce: string;
+	message: string;
+	full_message: string;
 } => {
-  const timestamp_ms = Date.now();
-  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
-  const raw = Array.from(bytes)
-    .map((b) => String.fromCharCode(b))
-    .join("");
-  const nonce = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	const timestamp_ms = Date.now();
+	const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+	const raw = Array.from(bytes)
+		.map((b) => String.fromCharCode(b))
+		.join("");
+	const nonce = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 
-  const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
-  const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
+	const message = `AUTHORIZE|${timestamp_ms}|${nonce}`;
+	const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
 
-  return { timestamp_ms, nonce, message, full_message };
+	return { timestamp_ms, nonce, message, full_message };
 };
