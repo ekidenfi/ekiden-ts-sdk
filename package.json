@@ -27,11 +27,11 @@
 		"dist"
 	],
 	"scripts": {
-		"build": "bun run build:esm && bun run build:cjs && bun run build:types",
-		"build:cjs": "bun build src/index.ts --outfile dist/index.cjs --format cjs --sourcemap=linked --minify",
-		"build:esm": "bun build src/index.ts --outdir dist --format esm --sourcemap=external --minify",
+		"build": "bun run build:cjs && bun run build:esm && bun run build:types",
+		"build:cjs": "bun build ./src/index.ts --outdir ./dist --root ./src --format cjs --sourcemap=linked --minify && mv ./dist/index.js ./dist/index.cjs && mv ./dist/index.js.map ./dist/index.cjs.map",
+		"build:esm": "bun build ./src/index.ts --outdir ./dist --root ./src --format esm --sourcemap=external --minify",
 		"build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
-		"dev": "bun build src/index.ts --outdir dist --watch",
+		"dev": "bun build ./src/index.ts --outdir ./dist --root ./src --watch",
 		"fix": "bun pkgs:fix && bun i && bun format && bun fix-biome",
 		"fix-biome": "biome check --write --unsafe",
 		"format": "biome format --write .",
@@ -40,8 +40,6 @@
 		"prepare": "bun run update-hooks",
 		"publish:dry": "bun publish --dry-run",
 		"release": "bun run build && bun publish",
-		"test": "bun test",
-		"test:watch": "bun test --watch",
 		"update-hooks": "simple-git-hooks"
 	},
 	"dependencies": {

@@ -1,5 +1,4 @@
 import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
-
 import { addressToBytes } from "./address";
 
 export interface SubAccountData {

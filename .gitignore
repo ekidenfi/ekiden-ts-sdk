@@ -29,6 +29,3 @@ coverage
 
 package-lock.json
 bun.lock
-
-index.cjs
-index.cjs.map

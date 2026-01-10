@@ -327,7 +327,7 @@ export interface TickerSnapshot {
 	volume_24h: string;
 	turnover_24h: string;
 	open_interest: string;
-	open_interest_volume: string;
+	open_interest_value: string;
 	funding_rate: string;
 	next_funding_time: string;
 	best_ask_size: string;
