@@ -112,4 +112,9 @@ export class EkidenClient {
     }
     this.privateStream.unsubscribe(handlers as any);
   }
+
+  close(): void {
+    this.publicStream?.close();
+    this.privateStream?.close();
+  }
 }
