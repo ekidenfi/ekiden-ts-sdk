@@ -37,6 +37,7 @@
 		"format": "biome format --write .",
 		"lint": "biome lint",
 		"pkgs:fix": "syncpack fix-mismatches && syncpack set-semver-ranges && syncpack format",
+		"prepare": "bun run update-hooks",
 		"publish:dry": "bun publish --dry-run",
 		"release": "bun run build && bun publish",
 		"test": "bun test",
