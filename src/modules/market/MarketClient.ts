@@ -7,6 +7,7 @@ import type {
 	GetKlineResponse,
 	GetLongShortRatioParams,
 	GetLongShortRatioResponse,
+	GetInstrumentsInfoResponse,
 	GetMarkPriceKlineParams,
 	GetOpenInterestParams,
 	GetOpenInterestResponse,
@@ -29,13 +30,13 @@ export class MarketClient extends BaseHttpClient {
 		return this.request<GetTickersResponse>("/market/tickers", {}, { query: params });
 	}
 
+	async getInstrumentsInfo(): Promise<GetInstrumentsInfoResponse> {
+		return this.request<GetInstrumentsInfoResponse>("/market/instruments-info", {}, {});
+	}
+
 	async getMarkets(params: GetTickersParams = {}): Promise<TickerSnapshot[]> {
 		const response = await this.getTickers(params);
 		return response.list;
-	}
-
-	async getMarketInfo(params: GetTickersParams = {}): Promise<TickerSnapshot[]> {
-		return this.getMarkets(params);
 	}
 
 	async getOrderbook(params: GetOrderBookParams): Promise<GetOrderBookResponse> {

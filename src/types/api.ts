@@ -344,6 +344,58 @@ export interface GetTickersParams {
 	symbol?: SymbolName | null;
 }
 
+export interface PriceFilter {
+	min_price: string;
+	max_price: string;
+	tick_size: string;
+}
+
+export interface LotSizeFilter {
+	max_order_qty: string;
+	min_order_qty: string;
+	qty_step: string;
+	post_only_max_order_qty: string;
+	max_mkt_order_qty: string;
+	min_notional_value: string;
+}
+
+export interface LeverageFilter {
+	min_leverage: string;
+	max_leverage: string;
+	leverage_step: string;
+}
+
+export interface InstrumentInfo {
+	symbol: SymbolName;
+	status: string;
+	base_coin: string;
+	quote_coin: string;
+	launch_time: string;
+	delivery_time: string;
+	delivery_fee_rate: string;
+	price_scale: number;
+
+	leverage_filter: LeverageFilter;
+	price_filter: PriceFilter;
+	lot_size_filter: LotSizeFilter;
+
+	unified_margin_trade: boolean;
+	funding_interval: number;
+	settle_coin: string;
+
+	addr: string;
+	quote_addr: string;
+	maker_fee_rate: string;
+	taker_fee_rate: string;
+	base_scale: number;
+	quote_scale: number;
+}
+
+export interface GetInstrumentsInfoResponse {
+	category: string;
+	list: InstrumentInfo[];
+}
+
 export type OrderBookLevel = [string, string];
 
 export interface OrderBookSnapshot {
