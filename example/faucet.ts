@@ -23,7 +23,15 @@
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 bun run example/faucet.ts`
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=local bun run example/faucet.ts`
 
-import { Account, Aptos, AptosConfig, Ed25519PrivateKey, Network, PrivateKey, PrivateKeyVariants } from "@aptos-labs/ts-sdk";
+import {
+	Account,
+	Aptos,
+	AptosConfig,
+	Ed25519PrivateKey,
+	Network,
+	PrivateKey,
+	PrivateKeyVariants,
+} from "@aptos-labs/ts-sdk";
 import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
 import { auth, SDK_CONFIG } from "./auth";
 
@@ -92,10 +100,6 @@ async function main() {
 		console.log("Waiting for funding transaction to be processed...");
 		await aptos.waitForTransaction({ transactionHash: fundResult.txid });
 		console.log("Funding confirmed.");
-
-		// 4. WebSocket Subscription
-		console.log("\n--- 5. Subscribing to Account Balance Updates ---");
-		let unsubscribe: (() => void) | undefined;
 
 		// Check registration via on-chain view function
 		console.log("\n--- 6. Checking Registration ---");
@@ -242,7 +246,9 @@ async function main() {
 		console.log(`Current nonce for trading sub-account: ${nonce} (raw: ${nonceStr})`);
 
 		if (Number.isNaN(nonce)) {
-			throw new Error(`Failed to parse nonce from view result: ${JSON.stringify(tradingSubAccInfo)}`);
+			throw new Error(
+				`Failed to parse nonce from view result: ${JSON.stringify(tradingSubAccInfo)}`
+			);
 		}
 
 		const withdrawParams = client.vault.buildWithdrawFromTradingParams(tradingAcc, {
@@ -280,7 +286,7 @@ async function main() {
 		// 6. Verification
 		console.log("\n--- 11. Verification ---");
 		console.log("Subscribing to Account Balance Updates for final check...");
-		unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
+		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
 			console.log(`[WS] Balance Update for ${data.account_type}: ${data.available_balance}`);
 		});
 

@@ -1,6 +1,5 @@
 import { type Account, AccountAddress, Bool, U64 } from "@aptos-labs/ts-sdk";
 import { BaseHttpClient } from "@/core/base";
-import { BN } from "@/utils/BigNumber";
 
 export interface WithdrawFromTradingParams {
 	addr_from: string;
