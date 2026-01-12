@@ -34,7 +34,10 @@ export const SDK_CONFIG = {
  * @param pk - Ed25519 private key hex
  * @returns JWT token string
  */
-export async function auth(pk: string, client = new EkidenClient(SDK_CONFIG)): Promise<[string, Ed25519Account]> {
+export async function auth(
+	pk: string,
+	client = new EkidenClient(SDK_CONFIG)
+): Promise<[string, Ed25519Account]> {
 	const account = Account.fromPrivateKey({
 		privateKey: new Ed25519PrivateKey(pk),
 	});
