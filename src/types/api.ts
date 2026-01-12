@@ -599,8 +599,8 @@ export interface OrderListResponse {
 }
 
 export interface PlaceOrderRequest {
+	vault_address: string;
 	symbol: SymbolName;
-	leverage: string;
 	side: Side;
 	order_type: OrderType;
 	qty: string;
@@ -635,6 +635,7 @@ export interface BatchPlaceOrdersResponse {
 }
 
 export interface AmendOrderRequest {
+	vault_address: string;
 	symbol: SymbolName;
 	size: number;
 	price: number;
@@ -661,6 +662,7 @@ export interface BatchAmendOrdersResponse {
 }
 
 export interface CancelOrderRequest {
+	vault_address: string;
 	symbol: SymbolName;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -682,6 +684,7 @@ export interface BatchCancelOrdersResponse {
 }
 
 export interface CancelAllOrdersRequest {
+	vault_address: string;
 	symbol?: SymbolName | null;
 }
 
@@ -692,16 +695,18 @@ export interface CancelAllOrdersResponse {
 }
 
 export interface GetRealtimeOrdersParams {
+	vault_address: string;
 	symbol?: SymbolName | null;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
-	open_only: boolean;
+	open_only?: boolean | null;
 	order_filter?: OrderFilter | null;
 	limit?: number | null;
 	cursor?: string | null;
 }
 
 export interface GetOrderHistoryParams {
+	vault_address: string;
 	symbol?: SymbolName | null;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -745,6 +750,7 @@ export interface GetTradeHistoryResponse {
 }
 
 export interface GetTradeHistoryParams {
+	vault_address: string;
 	symbol?: SymbolName | null;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -795,7 +801,8 @@ export interface GetPositionInfoResponse {
 }
 
 export interface GetPositionInfoParams {
-	symbol: SymbolName;
+	vault_address: string;
+	symbol?: SymbolName | null;
 	limit?: number | null;
 	cursor?: string | null;
 }
@@ -828,6 +835,7 @@ export interface GetClosedPnlResponse {
 }
 
 export interface GetClosedPnlParams {
+	vault_address: string;
 	symbol?: SymbolName | null;
 	start_time?: string | null;
 	end_time?: string | null;
@@ -836,6 +844,7 @@ export interface GetClosedPnlParams {
 }
 
 export interface SetLeverageRequest {
+	vault_address: string;
 	symbol: SymbolName;
 	leverage: string;
 }
@@ -846,6 +855,7 @@ export interface SetLeverageResponse {
 }
 
 export interface SetTradingStopRequest {
+	vault_address: string;
 	symbol: SymbolName;
 	tpsl?: TpSl | null;
 	trailing_stop?: string | null;
@@ -913,6 +923,16 @@ export interface PaginationParams {
 export type Category = "spot" | "linear" | "inverse" | "option";
 export type OptionType = "Call" | "Put";
 
+export interface PublicTradeRaw {
+	i: string;
+	s: SymbolName;
+	S: Side;
+	v: string;
+	p: string;
+	seq: number;
+	T: number;
+}
+
 export interface PublicTrade {
 	exec_id: string;
 	symbol: SymbolName;
@@ -920,12 +940,6 @@ export interface PublicTrade {
 	size: string;
 	side: Side;
 	time: string;
-	is_block_trade: boolean;
-	is_rpi_trade: boolean;
-	mark_price?: string;
-	index_price?: string;
-	mark_iv?: string;
-	iv?: string;
 	seq: string;
 }
 

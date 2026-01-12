@@ -46,7 +46,7 @@ export class TradeClient extends BaseHttpClient {
 		return this.post<BatchCancelOrdersResponse>("/order/cancel-batch", params);
 	}
 
-	async cancelAllOrders(params: CancelAllOrdersRequest = {}): Promise<CancelAllOrdersResponse> {
+	async cancelAllOrders(params: CancelAllOrdersRequest): Promise<CancelAllOrdersResponse> {
 		return this.post<CancelAllOrdersResponse>("/order/cancel-all", params);
 	}
 
@@ -59,12 +59,12 @@ export class TradeClient extends BaseHttpClient {
 		);
 	}
 
-	async getOrderHistory(params: GetOrderHistoryParams = {}): Promise<OrderListResponse> {
+	async getOrderHistory(params: GetOrderHistoryParams): Promise<OrderListResponse> {
 		this.ensureAuth();
 		return this.request<OrderListResponse>("/order/history", {}, { auth: true, query: params });
 	}
 
-	async getTradeHistory(params: GetTradeHistoryParams = {}): Promise<GetTradeHistoryResponse> {
+	async getTradeHistory(params: GetTradeHistoryParams): Promise<GetTradeHistoryResponse> {
 		this.ensureAuth();
 		return this.request<GetTradeHistoryResponse>(
 			"/execution/list",

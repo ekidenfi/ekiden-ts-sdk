@@ -20,7 +20,7 @@ export class PositionClient extends BaseHttpClient {
 		);
 	}
 
-	async getClosedPnl(params: GetClosedPnlParams = {}): Promise<GetClosedPnlResponse> {
+	async getClosedPnl(params: GetClosedPnlParams): Promise<GetClosedPnlResponse> {
 		this.ensureAuth();
 		return this.request<GetClosedPnlResponse>(
 			"/position/closed-pnl",

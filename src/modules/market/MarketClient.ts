@@ -21,6 +21,8 @@ import type {
 	GetTickersParams,
 	GetTickersResponse,
 	OrderPriceLimit,
+	PublicTrade,
+	PublicTradeRaw,
 	SymbolName,
 	TickerSnapshot,
 } from "@/types/api";
@@ -98,7 +100,28 @@ export class MarketClient extends BaseHttpClient {
 	}
 
 	async getRecentTrades(params: GetRecentTradesParams): Promise<GetRecentTradesResponse> {
-		return this.request<GetRecentTradesResponse>("/market/recent-trade", {}, { query: params });
+		const response = await this.request<{ list: PublicTradeRaw[] }>(
+			"/market/recent-trade",
+			{},
+			{ query: params }
+		);
+
+		return {
+			category: params.category,
+			list: response.list.map(this.mapPublicTrade),
+		};
+	}
+
+	private mapPublicTrade(raw: PublicTradeRaw): PublicTrade {
+		return {
+			exec_id: raw.i,
+			symbol: raw.s,
+			side: raw.S,
+			size: raw.v,
+			price: raw.p,
+			seq: String(raw.seq),
+			time: String(raw.T),
+		};
 	}
 
 	async getMarketStats(symbol: SymbolName): Promise<{

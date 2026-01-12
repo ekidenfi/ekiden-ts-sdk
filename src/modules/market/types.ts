@@ -31,6 +31,7 @@ export type {
 	OrderPriceLimit,
 	PriceKlineSnapshot,
 	PublicTrade,
+	PublicTradeRaw,
 	RiskLimit,
 	SymbolName,
 	TickerSnapshot,

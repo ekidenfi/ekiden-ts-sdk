@@ -31,6 +31,14 @@ export interface TransferParams {
 	vaultToType: VaultType;
 }
 
+export interface TransferRequestParams {
+	vaultAddress: string;
+	fromSubAddress: string;
+	toSubAddress: string;
+	amount: bigint;
+	vaultToType: VaultType;
+}
+
 export interface DepositIntoInsuranceParams {
 	vaultAddress: string;
 	subAddresses: string[];
@@ -100,8 +108,26 @@ export class VaultOnChainClient {
 				`${params.vaultAddress}::vault_types::${params.vaultToType}`,
 			],
 			functionArguments: [
-				params.vaultFrom ? [params.vaultFrom] : [],
-				params.vaultTo ? [params.vaultTo] : [],
+				params.vaultFrom ?? null,
+				params.vaultTo ?? null,
+				params.amount.toString(),
+			],
+		};
+	}
+
+	/**
+	 * Creates a transfer request from Funding to Trading account.
+	 * The request will be executed by the backend.
+	 */
+	transferRequest(params: TransferRequestParams) {
+		return {
+			function: `${params.vaultAddress}::vault::transfer_request`,
+			typeArguments: [
+				`${params.vaultAddress}::vault_types::${params.vaultToType}`,
+			],
+			functionArguments: [
+				params.fromSubAddress,
+				params.toSubAddress,
 				params.amount.toString(),
 			],
 		};
