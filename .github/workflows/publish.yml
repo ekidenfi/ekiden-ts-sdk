@@ -21,7 +21,7 @@ jobs:
         run: bun install
 
       - name: Lint
-        run: bun run lint:check
+        run: bun run lint
 
       - name: Build package
         run: bun run build
