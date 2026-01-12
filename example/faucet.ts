@@ -1,11 +1,15 @@
-// Basic example:
-// 1. Authenticate (with either prod/staging/local);
-// 2. Listen to the private WS account_balance;
-// 3. Request funding from faucet;
-// 4. Deposit first half of the funds to funding account;
-// 5. Deposit second half of the funds to trading account;
-// 6. Withdraw funds from funding account;
-// 7. Receive balance updates;
+// Comprehensive integration example:
+// 1. Authenticate (REST + Private WebSocket);
+// 2. Fetch system info (metadatas and addresses);
+// 3. Setup sub-accounts deterministically;
+// 4. Request funding from faucet (Gas + Tokens);
+// 5. Subscribe to balance updates;
+// 6. Perform on-chain registration (if needed);
+// 7. Deposit funds to funding account;
+// 8. Deposit funds to trading account via transfer;
+// 9. Withdraw from trading to funding (REST API);
+// 10. Withdraw from funding to root wallet (On-chain);
+// 11. Receive balance updates and exit.
 //
 // Required env: PK=<private_key>
 // Optional env: NETWORK=prod/staging/local (default: staging)
@@ -19,7 +23,7 @@
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 bun run example/faucet.ts`
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=local bun run example/faucet.ts`
 
-import { Account, Aptos, AptosConfig, Ed25519PrivateKey, Network } from "@aptos-labs/ts-sdk";
+import { Account, Aptos, AptosConfig, Ed25519PrivateKey, Network, PrivateKey, PrivateKeyVariants } from "@aptos-labs/ts-sdk";
 import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
 import { auth, SDK_CONFIG } from "./auth";
 
@@ -45,7 +49,9 @@ async function main() {
 	try {
 		// 1. Authenticate
 		console.log("\n--- 1. Authenticating ---");
-		const [token, rootAccount] = await auth(pk, client);
+		// Format PK to be AIP-80 compliant to avoid SDK warnings/instability
+		const compliantPk = PrivateKey.formatPrivateKey(pk, PrivateKeyVariants.Ed25519);
+		const [token, rootAccount] = await auth(compliantPk, client);
 		await client.setTokens({ rest: token, ws: token, connectPrivateWS: true });
 		console.log("Authenticated and Private WS connected.");
 
@@ -67,6 +73,13 @@ async function main() {
 		console.log(`Funding Sub-Account: ${funding.address}`);
 		console.log(`Trading Sub-Account: ${trading.address}`);
 
+		const fundingAcc = Account.fromPrivateKey({
+			privateKey: new Ed25519PrivateKey(funding.privateKey),
+		});
+		const tradingAcc = Account.fromPrivateKey({
+			privateKey: new Ed25519PrivateKey(trading.privateKey),
+		});
+
 		// Step 1: Faucet Funding (Get gas and tokens before registration)
 		console.log("\n--- 4. Requesting Funding from Faucet ---");
 		const fundAmount = 1000 * 10 ** 6; // 1000 USDC
@@ -82,9 +95,7 @@ async function main() {
 
 		// 4. WebSocket Subscription
 		console.log("\n--- 5. Subscribing to Account Balance Updates ---");
-		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
-			console.log("[WS] Account Balance Update:", JSON.stringify(data, null, 2));
-		});
+		let unsubscribe: (() => void) | undefined;
 
 		// Check registration via on-chain view function
 		console.log("\n--- 6. Checking Registration ---");
@@ -100,12 +111,6 @@ async function main() {
 			console.log("User already registered.");
 		} else {
 			console.log("User not registered, performing on-chain registration...");
-			const fundingAcc = Account.fromPrivateKey({
-				privateKey: new Ed25519PrivateKey(funding.privateKey),
-			});
-			const tradingAcc = Account.fromPrivateKey({
-				privateKey: new Ed25519PrivateKey(trading.privateKey),
-			});
 
 			const fundingLinkProof = buildLinkProof(
 				fundingAcc.publicKey.toUint8Array(),
@@ -192,9 +197,95 @@ async function main() {
 		await aptos.waitForTransaction({ transactionHash: committedTx2.hash });
 		console.log(`Deposit to Trading successful: ${committedTx2.hash}`);
 
+		// Step 4: Withdraw from Trading back to Funding
+		console.log(
+			`\n--- 9. Withdrawing ${Number(depositAmount) / 1e6} USDC from Trading to Funding ---`
+		);
+
+		// Wait for the trading sub-account to be active on-chain
+		console.log("Waiting for trading sub-account to be active on-chain...");
+		let activeOnChain = false;
+		for (let i = 0; i < 15; i++) {
+			try {
+				await aptos.view({
+					payload: {
+						function: `${systemInfo.perpetual_addr}::user::get_sub_acc`,
+						functionArguments: [trading.address],
+					},
+				});
+				activeOnChain = true;
+				break;
+			} catch (e) {
+				await new Promise((resolve) => setTimeout(resolve, 2000));
+			}
+		}
+
+		if (!activeOnChain) throw new Error("Sub-account failed to activate on-chain");
+
+		// Get current nonce for trading sub-account
+		const tradingSubAccInfo = (await aptos.view({
+			payload: {
+				function: `${systemInfo.perpetual_addr}::user::get_sub_acc`,
+				functionArguments: [trading.address],
+			},
+		})) as any[];
+
+		// Robust nonce parsing: handle both flat and nested arrays from view result
+		let nonceStr: string;
+		if (Array.isArray(tradingSubAccInfo[0]) && tradingSubAccInfo[0].length >= 6) {
+			nonceStr = tradingSubAccInfo[0][5] as string;
+		} else {
+			nonceStr = tradingSubAccInfo[5] as string;
+		}
+
+		const nonce = Number.parseInt(nonceStr, 10);
+		console.log(`Current nonce for trading sub-account: ${nonce} (raw: ${nonceStr})`);
+
+		if (Number.isNaN(nonce)) {
+			throw new Error(`Failed to parse nonce from view result: ${JSON.stringify(tradingSubAccInfo)}`);
+		}
+
+		const withdrawParams = client.vault.buildWithdrawFromTradingParams(tradingAcc, {
+			addr_to: funding.address,
+			amount: (Number(depositAmount) / 1e6).toString(),
+			asset_metadata: quoteAsset,
+			nonce,
+		});
+
+		await client.vault.withdrawFromTrading(withdrawParams);
+		console.log("Withdrawal from Trading initiated successfully.");
+
+		// Step 5: Withdraw from Funding back to Wallet (On-chain)
+		console.log(
+			`\n--- 10. Withdrawing ${Number(depositAmount) / 1e6} USDC from Funding back to Wallet ---`
+		);
+		const withdrawFundingPayload = client.vaultOnChain.withdrawFromFunding({
+			subAddress: funding.address,
+			assetMetadata: quoteAsset,
+			amount: depositAmount,
+		});
+
+		const tx3 = await aptos.transaction.build.simple({
+			sender: rootAccount.accountAddress,
+			data: withdrawFundingPayload as any,
+		});
+		const auth3 = aptos.transaction.sign({ signer: rootAccount, transaction: tx3 });
+		const committedTx3 = await aptos.transaction.submit.simple({
+			transaction: tx3,
+			senderAuthenticator: auth3,
+		});
+		await aptos.waitForTransaction({ transactionHash: committedTx3.hash });
+		console.log(`Withdraw from Funding successful: ${committedTx3.hash}`);
+
 		// 6. Verification
-		console.log("\nWaiting 10 seconds for balance updates...");
-		await new Promise((resolve) => setTimeout(resolve, 10000));
+		console.log("\n--- 11. Verification ---");
+		console.log("Subscribing to Account Balance Updates for final check...");
+		unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
+			console.log(`[WS] Balance Update for ${data.account_type}: ${data.available_balance}`);
+		});
+
+		console.log("Waiting 5 seconds for final balance updates...");
+		await new Promise((resolve) => setTimeout(resolve, 5000));
 
 		if (unsubscribe) unsubscribe();
 		client.close();
