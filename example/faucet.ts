@@ -102,7 +102,7 @@ async function main() {
 		console.log("Funding confirmed.");
 
 		// Check registration via on-chain view function
-		console.log("\n--- 6. Checking Registration ---");
+		console.log("\n--- 5. Checking Registration ---");
 		const viewResult = await aptos.view({
 			payload: {
 				function: `${systemInfo.perpetual_addr}::user::is_ekiden_user`,
@@ -152,11 +152,10 @@ async function main() {
 			isRegistered = true;
 		}
 
-		// 5. Execution
 		// Step 2: Deposit to Funding (half)
 		const depositAmount = BigInt(fundAmount / 2);
 		console.log(
-			`\n--- 7. Depositing ${Number(depositAmount) / 1e6} USDC to Funding Account ---`
+			`\n--- 6. Depositing ${Number(depositAmount) / 1e6} USDC to Funding Account ---`
 		);
 		const depositFundingPayload = client.vaultOnChain.depositIntoFunding({
 			subAddress: funding.address,
@@ -178,7 +177,7 @@ async function main() {
 
 		// Step 3: Deposit to Trading (second half)
 		console.log(
-			`\n--- 8. Depositing ${Number(depositAmount) / 1e6} USDC to Trading Account via Transfer ---`
+			`\n--- 7. Depositing ${Number(depositAmount) / 1e6} USDC to Trading Account via Transfer ---`
 		);
 		const depositTradingPayload = client.vaultOnChain.depositIntoFundingWithTransferTo({
 			vaultAddress: systemInfo.perpetual_addr,
@@ -203,7 +202,7 @@ async function main() {
 
 		// Step 4: Withdraw from Trading back to Funding
 		console.log(
-			`\n--- 9. Withdrawing ${Number(depositAmount) / 1e6} USDC from Trading to Funding ---`
+			`\n--- 8. Withdrawing ${Number(depositAmount) / 1e6} USDC from Trading to Funding ---`
 		);
 
 		// Wait for the trading sub-account to be active on-chain
@@ -263,7 +262,7 @@ async function main() {
 
 		// Step 5: Withdraw from Funding back to Wallet (On-chain)
 		console.log(
-			`\n--- 10. Withdrawing ${Number(depositAmount) / 1e6} USDC from Funding back to Wallet ---`
+			`\n--- 9. Withdrawing ${Number(depositAmount) / 1e6} USDC from Funding back to Wallet ---`
 		);
 		const withdrawFundingPayload = client.vaultOnChain.withdrawFromFunding({
 			subAddress: funding.address,
@@ -284,7 +283,7 @@ async function main() {
 		console.log(`Withdraw from Funding successful: ${committedTx3.hash}`);
 
 		// 6. Verification
-		console.log("\n--- 11. Verification ---");
+		console.log("\n--- 10. Verification ---");
 		console.log("Subscribing to Account Balance Updates for final check...");
 		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
 			console.log(`[WS] Balance Update for ${data.account_type}: ${data.available_balance}`);

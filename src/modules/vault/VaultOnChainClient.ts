@@ -122,9 +122,7 @@ export class VaultOnChainClient {
 	transferRequest(params: TransferRequestParams) {
 		return {
 			function: `${params.vaultAddress}::vault::transfer_request`,
-			typeArguments: [
-				`${params.vaultAddress}::vault_types::${params.vaultToType}`,
-			],
+			typeArguments: [`${params.vaultAddress}::vault_types::${params.vaultToType}`],
 			functionArguments: [
 				params.fromSubAddress,
 				params.toSubAddress,

@@ -394,6 +394,12 @@ export interface InstrumentInfo {
 export interface GetInstrumentsInfoResponse {
 	category: string;
 	list: InstrumentInfo[];
+	build_id: string;
+	aptos_network: string;
+	perpetual_addr: string;
+	quote_asset_metadata: string;
+	aptos_api_key: string;
+	gas_station_api_key: string;
 }
 
 export type OrderBookLevel = [string, string];
