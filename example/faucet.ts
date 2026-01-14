@@ -96,15 +96,35 @@ async function main() {
 			amounts: [fundAmount, 100_000_000], // 500 USDC + 1 APT
 		});
 		console.log(`Requested ${fundAmount / 1e6} USDC and 1 APT from faucet.`);
-		console.log("Waiting for funding transaction to be processed...");
-		await aptos.waitForTransaction({ transactionHash: fundResult.txid });
+
+		if (fundResult.txid === "accepted") {
+			console.log("Funding request accepted by faucet queue. Waiting for balance update...");
+			// Wait for balance to increase (at least 0.5 APT buffer)
+			let funded = false;
+			for (let i = 0; i < 30; i++) {
+				const currentBalance = await aptos.getAccountAPTAmount({
+					accountAddress: rootAccount.accountAddress,
+				});
+				if (Number(currentBalance) >= 50_000_000) {
+					funded = true;
+					break;
+				}
+				await new Promise((resolve) => setTimeout(resolve, 2000));
+			}
+			if (!funded) {
+				throw new Error("Timed out waiting for faucet funding");
+			}
+		} else {
+			console.log("Waiting for funding transaction to be processed...");
+			await aptos.waitForTransaction({ transactionHash: fundResult.txid });
+		}
 		console.log("Funding confirmed.");
 
 		// Verify balance
-		const balance = await aptos.getAccountAPTAmount({
+		const finalBalance = await aptos.getAccountAPTAmount({
 			accountAddress: rootAccount.accountAddress,
 		});
-		console.log(`Root account balance: ${Number(balance) / 1e8} APT`);
+		console.log(`Root account balance: ${Number(finalBalance) / 1e8} APT`);
 
 		// Step 5: Subscribe to Balance Updates (Before activity starts)
 		console.log("\n--- 5. Subscribing to Account Balance Updates ---");
@@ -212,6 +232,28 @@ async function main() {
 		});
 		await aptos.waitForTransaction({ transactionHash: committedTx2.hash });
 		console.log(`Deposit to Trading successful: ${committedTx2.hash}`);
+
+		// Wait for the vault to be indexed by the gateway
+		console.log("Waiting for vault to be indexed by the gateway...");
+		let indexed = false;
+		for (let i = 0; i < 30; i++) {
+			try {
+				const balances = await client.account.getBalance();
+				const hasVault = balances.list.some(
+					(b) => b.user_addr === trading.address || b.vault_addr === trading.address
+				);
+				if (hasVault) {
+					indexed = true;
+					break;
+				}
+			} catch (e) {
+				// Ignore errors and retry
+			}
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+		if (!indexed) {
+			console.warn("Warning: Vault not yet visible in gateway balances, but proceeding...");
+		}
 
 		// Step 9: Withdraw from Trading back to Funding
 		console.log(
