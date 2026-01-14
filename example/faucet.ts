@@ -12,7 +12,7 @@
 // 11. Receive balance updates and exit.
 //
 // Required env: PK=<private_key>
-// Optional env: NETWORK=prod/staging/local (default: staging)
+// Optional env: NETWORK=prod/staging/dev/local (default: staging)
 //
 // Note: Root owner PK (private key) is required.
 // Supported private key formats:
@@ -21,6 +21,7 @@
 //
 // Example:
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 bun run example/faucet.ts`
+// - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=dev bun run example/faucet.ts`
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=local bun run example/faucet.ts`
 
 import {
@@ -43,14 +44,12 @@ async function main() {
 	}
 
 	// Initialize Clients
-	const client = new EkidenClient({
-		...SDK_CONFIG,
-		privateWSURL: Bun.env.PRIVATE_WS_URL || "ws://localhost:4020/ws/private",
-	});
+	const client = new EkidenClient(SDK_CONFIG);
 
 	// Infer network from baseURL or default to local for this example
+	const isLocal = SDK_CONFIG.baseURL.includes("localhost");
 	const aptosConfig = new AptosConfig({
-		network: SDK_CONFIG.baseURL.includes("localhost") ? Network.LOCAL : Network.TESTNET,
+		network: isLocal ? Network.LOCAL : Network.TESTNET,
 	});
 	const aptos = new Aptos(aptosConfig);
 
@@ -90,19 +89,33 @@ async function main() {
 
 		// Step 1: Faucet Funding (Get gas and tokens before registration)
 		console.log("\n--- 4. Requesting Funding from Faucet ---");
-		const fundAmount = 1000 * 10 ** 6; // 1000 USDC
+		const fundAmount = 500 * 10 ** 6; // 500 USDC
 		const fundResult = await client.account.fund({
 			receiver: rootAccount.accountAddress.toString(),
 			metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
-			amounts: [fundAmount, 100_000_000], // 1000 USDC + 1 APT
+			amounts: [fundAmount, 100_000_000], // 500 USDC + 1 APT
 		});
 		console.log(`Requested ${fundAmount / 1e6} USDC and 1 APT from faucet.`);
 		console.log("Waiting for funding transaction to be processed...");
 		await aptos.waitForTransaction({ transactionHash: fundResult.txid });
 		console.log("Funding confirmed.");
 
+		// Verify balance
+		const balance = await aptos.getAccountAPTAmount({
+			accountAddress: rootAccount.accountAddress,
+		});
+		console.log(`Root account balance: ${Number(balance) / 1e8} APT`);
+
+		// Step 5: Subscribe to Balance Updates (Before activity starts)
+		console.log("\n--- 5. Subscribing to Account Balance Updates ---");
+		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
+			const type = data.account_type || "unknown";
+			const balance = data.available_balance ?? "0";
+			console.log(`[WS] Balance Update for ${type}: ${balance}`);
+		});
+
 		// Check registration via on-chain view function
-		console.log("\n--- 5. Checking Registration ---");
+		console.log("\n--- 6. Checking Registration ---");
 		const viewResult = await aptos.view({
 			payload: {
 				function: `${systemInfo.perpetual_addr}::user::is_ekiden_user`,
@@ -152,10 +165,10 @@ async function main() {
 			isRegistered = true;
 		}
 
-		// Step 2: Deposit to Funding (half)
+		// Step 7: Deposit to Funding (half)
 		const depositAmount = BigInt(fundAmount / 2);
 		console.log(
-			`\n--- 6. Depositing ${Number(depositAmount) / 1e6} USDC to Funding Account ---`
+			`\n--- 7. Depositing ${Number(depositAmount) / 1e6} USDC to Funding Account ---`
 		);
 		const depositFundingPayload = client.vaultOnChain.depositIntoFunding({
 			subAddress: funding.address,
@@ -175,9 +188,9 @@ async function main() {
 		await aptos.waitForTransaction({ transactionHash: committedTx1.hash });
 		console.log(`Deposit to Funding successful: ${committedTx1.hash}`);
 
-		// Step 3: Deposit to Trading (second half)
+		// Step 8: Deposit to Trading (second half)
 		console.log(
-			`\n--- 7. Depositing ${Number(depositAmount) / 1e6} USDC to Trading Account via Transfer ---`
+			`\n--- 8. Depositing ${Number(depositAmount) / 1e6} USDC to Trading Account via Transfer ---`
 		);
 		const depositTradingPayload = client.vaultOnChain.depositIntoFundingWithTransferTo({
 			vaultAddress: systemInfo.perpetual_addr,
@@ -200,9 +213,9 @@ async function main() {
 		await aptos.waitForTransaction({ transactionHash: committedTx2.hash });
 		console.log(`Deposit to Trading successful: ${committedTx2.hash}`);
 
-		// Step 4: Withdraw from Trading back to Funding
+		// Step 9: Withdraw from Trading back to Funding
 		console.log(
-			`\n--- 8. Withdrawing ${Number(depositAmount) / 1e6} USDC from Trading to Funding ---`
+			`\n--- 9. Withdrawing ${Number(depositAmount) / 1e6} USDC from Trading to Funding ---`
 		);
 
 		// Wait for the trading sub-account to be active on-chain
@@ -260,9 +273,9 @@ async function main() {
 		await client.vault.withdrawFromTrading(withdrawParams);
 		console.log("Withdrawal from Trading initiated successfully.");
 
-		// Step 5: Withdraw from Funding back to Wallet (On-chain)
+		// Step 10: Withdraw from Funding back to Wallet (On-chain)
 		console.log(
-			`\n--- 9. Withdrawing ${Number(depositAmount) / 1e6} USDC from Funding back to Wallet ---`
+			`\n--- 10. Withdrawing ${Number(depositAmount) / 1e6} USDC from Funding back to Wallet ---`
 		);
 		const withdrawFundingPayload = client.vaultOnChain.withdrawFromFunding({
 			subAddress: funding.address,
@@ -282,23 +295,30 @@ async function main() {
 		await aptos.waitForTransaction({ transactionHash: committedTx3.hash });
 		console.log(`Withdraw from Funding successful: ${committedTx3.hash}`);
 
-		// 6. Verification
-		console.log("\n--- 10. Verification ---");
-		console.log("Subscribing to Account Balance Updates for final check...");
-		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
-			console.log(`[WS] Balance Update for ${data.account_type}: ${data.available_balance}`);
-		});
-
-		console.log("Waiting 5 seconds for final balance updates...");
+		// Step 11: Verification & Final Balance Updates
+		console.log("\n--- 11. Final Verification ---");
+		console.log("Waiting 5 seconds for final balance updates via WS...");
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 
 		if (unsubscribe) unsubscribe();
 		client.close();
 		console.log("\nDone.");
 	} catch (error) {
-		console.error("\nExecution failed:", error instanceof Error ? error.message : error);
+		console.error("\nExecution failed:");
+		if (error instanceof Error) {
+			console.error(`Message: ${error.message}`);
+			if ("statusCode" in error) {
+				console.error(`Status Code: ${(error as any).statusCode}`);
+			}
+			if ("endpoint" in error) {
+				console.error(`Endpoint: ${(error as any).endpoint}`);
+			}
+		} else {
+			console.error(error);
+		}
+
 		if (error && typeof error === "object" && "data" in error) {
-			console.error("Error data:", (error as Error & { data: unknown }).data);
+			console.error("Error data:", (error as any).data);
 		}
 	}
 }

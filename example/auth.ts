@@ -4,7 +4,7 @@
 // 3. Listen to the public WS orderbook.10.BTC-USDC;
 //
 // Required env: PK=<private_key>
-// Optional env: NETWORK=prod/staging/local (default: staging)
+// Optional env: NETWORK=prod/staging/dev/local (default: staging)
 //
 // Note: Root owner PK (private key) is required.
 // Supported private key formats:
@@ -13,6 +13,7 @@
 //
 // Example:
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 bun run example/basic.ts`
+// - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=dev bun run example/basic.ts`
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=local bun run example/basic.ts`
 
 import { Account, type Ed25519Account, Ed25519PrivateKey, EkidenClient } from "../src";
@@ -20,9 +21,43 @@ import { Account, type Ed25519Account, Ed25519PrivateKey, EkidenClient } from ".
 /**
  * Common configuration for the SDK examples.
  */
+const network = Bun.env.NETWORK || "staging";
+
+const getConfigs = (network: string) => {
+	switch (network) {
+		case "prod":
+			return {
+				baseURL: "https://api.ekiden.fi",
+				wsURL: "wss://api.ekiden.fi/ws/public",
+				privateWSURL: "wss://api.ekiden.fi/ws/private",
+			};
+		case "staging":
+			return {
+				baseURL: "https://api.staging.ekiden.fi",
+				wsURL: "wss://api.staging.ekiden.fi/ws/public",
+				privateWSURL: "wss://api.staging.ekiden.fi/ws/private",
+			};
+		case "dev":
+			return {
+				baseURL: "https://api.dev.ekiden.fi",
+				wsURL: "wss://api.dev.ekiden.fi/ws/public",
+				privateWSURL: "wss://api.dev.ekiden.fi/ws/private",
+			};
+		default:
+			return {
+				baseURL: "http://localhost:4020",
+				wsURL: "ws://localhost:4020/ws/public",
+				privateWSURL: "ws://localhost:4020/ws/private",
+			};
+	}
+};
+
+const networkConfig = getConfigs(network);
+
 export const SDK_CONFIG = {
-	baseURL: Bun.env.BASE_URL || "http://localhost:4020",
-	wsURL: Bun.env.WS_URL || "ws://localhost:4020/ws/public",
+	baseURL: Bun.env.BASE_URL || networkConfig.baseURL,
+	wsURL: Bun.env.WS_URL || networkConfig.wsURL,
+	privateWSURL: Bun.env.PRIVATE_WS_URL || networkConfig.privateWSURL,
 	apiPrefix: "/api/v1",
 	contractAddress: "0x1", // Placeholder for local dev
 };

@@ -137,6 +137,7 @@ export type AccountBalanceEventMessage = {
 	topic: AccountBalanceChannel;
 	data: {
 		user_id: string;
+		account_type: "funding" | "cross" | "isolated";
 		total_equity: string;
 		available_balance: string;
 		position_margin: string;

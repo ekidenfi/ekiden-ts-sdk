@@ -77,10 +77,12 @@ export class BaseHttpClient {
 				const rawText = await response.text();
 				try {
 					const errorData = JSON.parse(rawText);
-					if (errorData.error) {
-						errorResponseContent = errorData.error;
-					} else if (errorData.message) {
-						errorResponseContent = errorData.message;
+					const parts: string[] = [];
+					if (errorData.error) parts.push(errorData.error);
+					if (errorData.message) parts.push(errorData.message);
+
+					if (parts.length > 0) {
+						errorResponseContent = parts.join(": ");
 					} else if (typeof errorData === "string") {
 						errorResponseContent = errorData;
 					}
