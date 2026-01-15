@@ -13,6 +13,7 @@ export type OrderStatus =
 	| "New"
 	| "PartiallyFilled"
 	| "Untriggered"
+	| "CancelRequested"
 	| "Rejected"
 	| "PartiallyFilledCanceled"
 	| "Filled"
