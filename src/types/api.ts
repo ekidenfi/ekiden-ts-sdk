@@ -9,19 +9,6 @@ export type WithdrawId = string;
 export type Side = "Sell" | "Buy";
 export type OrderType = "Limit" | "Market";
 
-export type OrderStatus =
-	| "New"
-	| "PartiallyFilled"
-	| "Untriggered"
-	| "CancelRequested"
-	| "Rejected"
-	| "PartiallyFilledCanceled"
-	| "Filled"
-	| "Canceled"
-	| "Triggered"
-	| "Deactivated"
-	| "Expired";
-
 export type MarginMode = "Cross" | "Isolated";
 export type PositionStatus = "Normal" | "Liq" | "Adl";
 export type AdlRankIndicator = "Zero" | "One" | "Two" | "Three" | "Four" | "Five";
@@ -57,6 +44,18 @@ export type ExecType =
 	| "BlockTrade"
 	| "MovePosition"
 	| "FutureSpread";
+
+export type StopOrderType =
+	| "TakeProfit"
+	| "StopLoss"
+	| "TrailingStop"
+	| "Stop"
+	| "PartialTakeProfit"
+	| "PartialStopLoss"
+	| "TpslOrder"
+	| "OcoOrder"
+	| "MmRateClose"
+	| "BidirectionalTpslOrder";
 
 export type CancelType =
 	| "CancelByUser"
@@ -105,21 +104,23 @@ export type CreateType =
 	| "CreateByDdh"
 	| "CreateByBboOrder";
 
-export type StopOrderType =
-	| "TakeProfit"
-	| "StopLoss"
-	| "TrailingStop"
-	| "Stop"
-	| "PartialTakeProfit"
-	| "PartialStopLoss"
-	| "TpslOrder"
-	| "OcoOrder"
-	| "MmRateClose"
-	| "BidirectionalTpslOrder";
+export type OrderStatus =
+	| "New"
+	| "PartiallyFilled"
+	| "Untriggered"
+	| "CancelRequested"
+	| "Rejected"
+	| "PartiallyFilledCanceled"
+	| "Filled"
+	| "Canceled"
+	| "Triggered"
+	| "Deactivated"
+	| "Expired";
 
 export type RejectReason =
 	| "EcNoError"
 	| "EcOthers"
+	| "EcInsufficientFunds"
 	| "EcUnknownMessageType"
 	| "EcMissingClOrdId"
 	| "EcMissingOrigClOrdId"
