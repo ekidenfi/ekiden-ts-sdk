@@ -1,3 +1,5 @@
+import type { AccountBalance, Execution, Order, Position } from "./api";
+
 export type PriceLevel = [price: string, size: string];
 
 export type OrderbookSnapshot = {
@@ -135,15 +137,7 @@ export type ExecutionEventMessage = {
 export type AccountBalanceEventMessage = {
 	op: "event";
 	topic: AccountBalanceChannel;
-	data: {
-		user_id: string;
-		account_type: "funding" | "cross" | "isolated";
-		total_equity: string;
-		available_balance: string;
-		position_margin: string;
-		order_margin: string;
-		unrealized_pnl: string;
-	};
+	data: AccountBalance;
 };
 
 export type ChannelMap = {
@@ -164,52 +158,6 @@ export type ChannelMap = {
 	[K in AccountBalanceChannel]: AccountBalanceEventMessage;
 };
 
-export interface OrderResponse {
-	order_id: string;
-	symbol: string;
-	side: "Buy" | "Sell";
-	order_type: string;
-	price: string;
-	qty: string;
-	order_status: string;
-	leverage: string;
-	created_time: string;
-	updated_time: string;
-	user_id: string;
-	tpsl?: any;
-}
-
-export interface FillResponse {
-	exec_id: string;
-	symbol: string;
-	order_id: string;
-	side: "Buy" | "Sell";
-	exec_price: string;
-	exec_qty: string;
-	exec_time: string;
-	fee_rate: string;
-	user_id: string;
-	seq?: string;
-}
-
-export interface PositionResponse {
-	symbol: string;
-	user_id: string;
-	side: "Buy" | "Sell";
-	size: string;
-	avg_price: string;
-	position_value: string;
-	margin_mode: string;
-	position_balance: string;
-	position_status: string;
-	leverage: string;
-	mark_price: string;
-	liq_price: string;
-	unrealized_pnl: string;
-	realized_pnl_cum: string;
-	created_time: string;
-	updated_time: string;
-	seq?: string;
-	take_profit?: string | null;
-	stop_loss?: string | null;
-}
+export type OrderResponse = Order;
+export type FillResponse = Execution;
+export type PositionResponse = Position;

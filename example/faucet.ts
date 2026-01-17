@@ -240,7 +240,7 @@ async function main() {
 			try {
 				const balances = await client.account.getBalance();
 				const hasVault = balances.list.some(
-					(b) => b.user_addr === trading.address || b.vault_addr === trading.address
+					(b) => b.sub_account_address === trading.address
 				);
 				if (hasVault) {
 					indexed = true;

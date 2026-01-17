@@ -2,7 +2,7 @@ export interface SendIntentParams {
 	nonce: number;
 	payload: ActionPayload;
 	signature: string;
-	user_addr?: string;
+	sub_account_address?: string;
 }
 
 export interface SendIntentResponse {

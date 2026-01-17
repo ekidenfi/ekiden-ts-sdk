@@ -240,11 +240,10 @@ export interface AuthorizeResponse {
 }
 
 export interface AccountBalance {
-	user_id: UserId;
-	user_addr: string;
-	vault_addr: string;
+	sub_account_address: string;
+	account_type: string;
 	equity: string;
-	wallet_balance: string;
+	vault_balance: string;
 	margin_balance: string;
 	available_balance: string;
 	accrued_interest: string;
@@ -569,7 +568,7 @@ export interface GetRiskLimitParams {
 export interface Order {
 	order_id: OrderId;
 	symbol: SymbolName;
-	user_id: UserId;
+	sub_account_address: string;
 	price: string;
 	qty: string;
 	side: Side;
@@ -607,7 +606,7 @@ export interface OrderListResponse {
 }
 
 export interface PlaceOrderRequest {
-	vault_address: string;
+	sub_account_address: string;
 	symbol: SymbolName;
 	side: Side;
 	order_type: OrderType;
@@ -643,7 +642,7 @@ export interface BatchPlaceOrdersResponse {
 }
 
 export interface AmendOrderRequest {
-	vault_address: string;
+	sub_account_address: string;
 	symbol: SymbolName;
 	size: number;
 	price: number;
@@ -670,7 +669,7 @@ export interface BatchAmendOrdersResponse {
 }
 
 export interface CancelOrderRequest {
-	vault_address: string;
+	sub_account_address: string;
 	symbol: SymbolName;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -692,7 +691,7 @@ export interface BatchCancelOrdersResponse {
 }
 
 export interface CancelAllOrdersRequest {
-	vault_address: string;
+	sub_account_address: string;
 	symbol?: SymbolName | null;
 }
 
@@ -703,7 +702,7 @@ export interface CancelAllOrdersResponse {
 }
 
 export interface GetRealtimeOrdersParams {
-	vault_address: string;
+	sub_account_address: string;
 	symbol?: SymbolName | null;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -714,7 +713,7 @@ export interface GetRealtimeOrdersParams {
 }
 
 export interface GetOrderHistoryParams {
-	vault_address: string;
+	sub_account_address: string;
 	symbol?: SymbolName | null;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -731,7 +730,7 @@ export interface Execution {
 	symbol: SymbolName;
 	order_id: OrderId;
 	side: Side;
-	user_id: UserId;
+	sub_account_address: string;
 	order_price: string;
 	order_qty: string;
 	leaves_qty: string;
@@ -758,7 +757,7 @@ export interface GetTradeHistoryResponse {
 }
 
 export interface GetTradeHistoryParams {
-	vault_address: string;
+	sub_account_address: string;
 	symbol?: SymbolName | null;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
@@ -772,7 +771,7 @@ export interface Position {
 	risk_id: number;
 	risk_limit_value: string;
 	symbol: SymbolName;
-	user_id: UserId;
+	sub_account_address: string;
 	side: Side;
 	size: string;
 	avg_price: string;
@@ -809,7 +808,7 @@ export interface GetPositionInfoResponse {
 }
 
 export interface GetPositionInfoParams {
-	vault_address: string;
+	sub_account_address: string;
 	symbol?: SymbolName | null;
 	limit?: number | null;
 	cursor?: string | null;
@@ -843,7 +842,7 @@ export interface GetClosedPnlResponse {
 }
 
 export interface GetClosedPnlParams {
-	vault_address: string;
+	sub_account_address: string;
 	symbol?: SymbolName | null;
 	start_time?: string | null;
 	end_time?: string | null;
@@ -852,7 +851,7 @@ export interface GetClosedPnlParams {
 }
 
 export interface SetLeverageRequest {
-	vault_address: string;
+	sub_account_address: string;
 	symbol: SymbolName;
 	leverage: string;
 }
@@ -863,7 +862,7 @@ export interface SetLeverageResponse {
 }
 
 export interface SetTradingStopRequest {
-	vault_address: string;
+	sub_account_address: string;
 	symbol: SymbolName;
 	tpsl?: TpSl | null;
 	trailing_stop?: string | null;

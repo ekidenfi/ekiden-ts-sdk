@@ -70,7 +70,7 @@ ekiden.setToken(token);
 // Use the SDK
 const markets = await ekiden.market.getMarkets();
 const balance = await ekiden.account.getBalance();
-const positions = await ekiden.position.getPositionInfo({ symbol: "BTCUSDT" });
+const positions = await ekiden.position.getPositionInfo({ sub_account_address: "0x...", symbol: "BTCUSDT" });
 ```
 
 ## Module Documentation
@@ -155,12 +155,12 @@ Manage orders - place, amend, cancel.
 ```typescript
 // Place a limit order
 const order = await ekiden.trade.placeOrder({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   side: "Buy",
   order_type: "Limit",
   qty: "0.001",
   price: "50000",
-  leverage: "10",
   margin_mode: "Cross",
   time_in_force: "GTC",
   post_only: false,
@@ -170,12 +170,12 @@ const order = await ekiden.trade.placeOrder({
 
 // Place a market order
 const marketOrder = await ekiden.trade.placeOrder({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   side: "Buy",
   order_type: "Market",
   qty: "0.001",
   price: "0",
-  leverage: "10",
   margin_mode: "Cross",
   time_in_force: "IOC",
   post_only: false,
@@ -185,12 +185,12 @@ const marketOrder = await ekiden.trade.placeOrder({
 
 // Place order with TP/SL
 const orderWithTpSl = await ekiden.trade.placeOrder({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   side: "Buy",
   order_type: "Limit",
   qty: "0.001",
   price: "50000",
-  leverage: "10",
   margin_mode: "Cross",
   time_in_force: "GTC",
   post_only: false,
@@ -217,12 +217,12 @@ const orderWithTpSl = await ekiden.trade.placeOrder({
 const batchOrders = await ekiden.trade.batchPlaceOrders({
   request: [
     {
+      sub_account_address: "0x...",
       symbol: "BTCUSDT",
       side: "Buy",
       order_type: "Limit",
       qty: "0.001",
       price: "49000",
-      leverage: "10",
       margin_mode: "Cross",
       time_in_force: "GTC",
       post_only: false,
@@ -230,12 +230,12 @@ const batchOrders = await ekiden.trade.batchPlaceOrders({
       close_on_trigger: false,
     },
     {
+      sub_account_address: "0x...",
       symbol: "BTCUSDT",
       side: "Buy",
       order_type: "Limit",
       qty: "0.001",
       price: "48000",
-      leverage: "10",
       margin_mode: "Cross",
       time_in_force: "GTC",
       post_only: false,
@@ -247,6 +247,7 @@ const batchOrders = await ekiden.trade.batchPlaceOrders({
 
 // Amend order
 const amended = await ekiden.trade.amendOrder({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   order_id: "order-id-here",
   size: 0.002,
@@ -255,29 +256,34 @@ const amended = await ekiden.trade.amendOrder({
 
 // Cancel order
 const cancelled = await ekiden.trade.cancelOrder({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   order_id: "order-id-here",
 });
 
 // Cancel all orders
 const cancelledAll = await ekiden.trade.cancelAllOrders({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
 });
 
 // Get active orders
 const activeOrders = await ekiden.trade.getRealtimeOrders({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   open_only: true,
 });
 
 // Get order history
 const orderHistory = await ekiden.trade.getOrderHistory({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   limit: 50,
 });
 
 // Get trade/execution history
 const tradeHistory = await ekiden.trade.getTradeHistory({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   limit: 50,
 });
@@ -290,23 +296,27 @@ Position management and queries.
 ```typescript
 // Get positions
 const positions = await ekiden.position.getPositionInfo({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
 });
 
 // Get closed PnL history
 const closedPnl = await ekiden.position.getClosedPnl({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   limit: 50,
 });
 
 // Set leverage
 await ekiden.position.setLeverage({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   leverage: "20",
 });
 
 // Set trading stop (TP/SL)
 await ekiden.position.setTradingStop({
+  sub_account_address: "0x...",
   symbol: "BTCUSDT",
   tpsl: {
     mode: "Full",
@@ -694,7 +704,10 @@ import type {
 
 ```typescript
 try {
-  const orders = await ekiden.trade.getRealtimeOrders({ open_only: true });
+  const orders = await ekiden.trade.getRealtimeOrders({
+    sub_account_address: "0x...",
+    open_only: true,
+  });
 } catch (error) {
   if (error.message.includes("Not authenticated")) {
     console.error("Please authenticate first");
