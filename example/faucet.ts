@@ -1,10 +1,10 @@
 // Comprehensive integration example:
-// 1. Authenticate (REST + Private WebSocket);
-// 2. Fetch system info (metadatas and addresses);
-// 3. Setup sub-accounts deterministically;
-// 4. Request funding from faucet (Gas + Tokens);
-// 5. Subscribe to balance updates;
-// 6. Perform on-chain registration (if needed);
+// 1. Fetch system info (metadatas and addresses);
+// 2. Setup sub-accounts deterministically;
+// 3. Request funding from faucet (Gas + Tokens);
+// 4. Perform on-chain registration;
+// 5. Authenticate (REST + Private WebSocket);
+// 6. Subscribe to balance updates;
 // 7. Deposit funds to funding account;
 // 8. Deposit funds to trading account via transfer;
 // 9. Withdraw from trading to funding (REST API);
@@ -36,6 +36,166 @@ import {
 import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
 import { auth, SDK_CONFIG } from "./auth";
 
+export async function getAptosClient(baseURL: string) {
+	const isLocal = baseURL.includes("localhost");
+	const aptosConfig = new AptosConfig({
+		network: isLocal ? Network.LOCAL : Network.TESTNET,
+	});
+	return new Aptos(aptosConfig);
+}
+
+export async function ensureRegistration(
+	client: EkidenClient,
+	rootAccount: Account,
+	systemInfo: any,
+	fundingAcc: Account,
+	tradingAcc: Account,
+	aptos: Aptos
+) {
+	// Check registration via on-chain view function
+	console.log("\n--- Checking Registration ---");
+	const viewResult = await aptos.view({
+		payload: {
+			function: `${systemInfo.perpetual_addr}::user::is_ekiden_user`,
+			functionArguments: [rootAccount.accountAddress.toString()],
+		},
+	});
+	const isRegistered = viewResult[0] as boolean;
+
+	if (isRegistered) {
+		console.log("User already registered.");
+		return;
+	}
+
+	console.log("User not registered, performing on-chain registration...");
+
+	const fundingLinkProof = buildLinkProof(
+		fundingAcc.publicKey.toUint8Array(),
+		rootAccount.accountAddress.toString(),
+		fundingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
+	);
+
+	const tradingLinkProof = buildLinkProof(
+		tradingAcc.publicKey.toUint8Array(),
+		rootAccount.accountAddress.toString(),
+		tradingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
+	);
+
+	const payload = client.vaultOnChain.createEkidenUser({
+		vaultAddress: systemInfo.perpetual_addr,
+		fundingLinkProof,
+		crossTradingLinkProof: tradingLinkProof,
+	});
+
+	console.log("Submitting registration transaction...");
+	const tx = await aptos.transaction.build.simple({
+		sender: rootAccount.accountAddress,
+		data: payload as any,
+	});
+	const senderAuthenticator = aptos.transaction.sign({
+		signer: rootAccount,
+		transaction: tx,
+	});
+	const committedTx = await aptos.transaction.submit.simple({
+		transaction: tx,
+		senderAuthenticator,
+	});
+	await aptos.waitForTransaction({ transactionHash: committedTx.hash });
+	console.log(`Registration successful: ${committedTx.hash}`);
+}
+
+export async function fundAccount(
+	client: EkidenClient,
+	rootAccount: Account,
+	quoteAsset: string,
+	aptos: Aptos,
+	fundAmount = 500 * 10 ** 6
+) {
+	console.log("\n--- Requesting Funding from Faucet ---");
+	const fundResult = await client.account.fund({
+		receiver: rootAccount.accountAddress.toString(),
+		metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
+		amounts: [fundAmount, 100_000_000], // 500 USDC + 1 APT
+	});
+	console.log(`Requested ${fundAmount / 1e6} USDC and 1 APT from faucet.`);
+
+	if (fundResult.txid === "accepted") {
+		console.log("Funding request accepted by faucet queue. Waiting for balance update...");
+		// Wait for balance to increase (at least 0.5 APT buffer)
+		let funded = false;
+		for (let i = 0; i < 30; i++) {
+			const currentBalance = await aptos.getAccountAPTAmount({
+				accountAddress: rootAccount.accountAddress,
+			});
+			if (Number(currentBalance) >= 50_000_000) {
+				funded = true;
+				break;
+			}
+			await new Promise((resolve) => setTimeout(resolve, 2000));
+		}
+		if (!funded) {
+			throw new Error("Timed out waiting for faucet funding");
+		}
+	} else {
+		console.log("Waiting for funding transaction to be processed...");
+		await aptos.waitForTransaction({ transactionHash: fundResult.txid });
+	}
+	console.log("Funding confirmed.");
+}
+
+export async function depositToTrading(
+	client: EkidenClient,
+	rootAccount: Account,
+	tradingAddress: string,
+	fundingAddress: string,
+	quoteAsset: string,
+	amount: bigint,
+	aptos: Aptos
+) {
+	console.log(`\n--- Depositing ${Number(amount) / 1e6} USDC to Trading Account ---`);
+	const systemInfo = await client.system.getSystemInfo();
+	const depositTradingPayload = client.vaultOnChain.depositIntoFundingWithTransferTo({
+		vaultAddress: systemInfo.perpetual_addr,
+		fundingSubAddress: fundingAddress,
+		tradingSubAddress: tradingAddress,
+		assetMetadata: quoteAsset,
+		amount: amount,
+		vaultToType: "Cross",
+	});
+
+	const tx = await aptos.transaction.build.simple({
+		sender: rootAccount.accountAddress,
+		data: depositTradingPayload as any,
+	});
+	const auth = aptos.transaction.sign({ signer: rootAccount, transaction: tx });
+	const committedTx = await aptos.transaction.submit.simple({
+		transaction: tx,
+		senderAuthenticator: auth,
+	});
+	await aptos.waitForTransaction({ transactionHash: committedTx.hash });
+	console.log(`Deposit to Trading successful: ${committedTx.hash}`);
+
+	// Wait for the vault to be indexed by the gateway
+	console.log("Waiting for vault to be indexed by the gateway...");
+	let indexed = false;
+	for (let i = 0; i < 30; i++) {
+		try {
+			const balances = await client.account.getBalance();
+			const hasVault = balances.list.some((b) => b.sub_account_address === tradingAddress);
+			if (hasVault) {
+				indexed = true;
+				break;
+			}
+		} catch (e) {
+			// Ignore errors and retry
+		}
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+	}
+	if (!indexed) {
+		console.warn("Warning: Vault not yet visible in gateway balances, but proceeding...");
+	}
+}
+
 async function main() {
 	const pk = Bun.env.PK;
 	if (!pk) {
@@ -47,23 +207,11 @@ async function main() {
 	const client = new EkidenClient(SDK_CONFIG);
 
 	// Infer network from baseURL or default to local for this example
-	const isLocal = SDK_CONFIG.baseURL.includes("localhost");
-	const aptosConfig = new AptosConfig({
-		network: isLocal ? Network.LOCAL : Network.TESTNET,
-	});
-	const aptos = new Aptos(aptosConfig);
+	const aptos = await getAptosClient(SDK_CONFIG.baseURL);
 
 	try {
-		// 1. Authenticate
-		console.log("\n--- 1. Authenticating ---");
-		// Format PK to be AIP-80 compliant to avoid SDK warnings/instability
-		const compliantPk = PrivateKey.formatPrivateKey(pk, PrivateKeyVariants.Ed25519);
-		const [token, rootAccount] = await auth(compliantPk, client);
-		await client.setTokens({ rest: token, ws: token, connectPrivateWS: true });
-		console.log("Authenticated and Private WS connected.");
-
-		// 2. Fetch System Info
-		console.log("\n--- 2. Fetching System Info ---");
+		// 1. Fetch System Info
+		console.log("\n--- 1. Fetching System Info ---");
 		const systemInfo = await client.system.getSystemInfo();
 		const quoteAsset = systemInfo.quote_asset_metadata;
 		console.log(`Quote Asset: ${quoteAsset}`);
@@ -72,11 +220,17 @@ async function main() {
 		// Update client with correct contract address for on-chain calls
 		client.config.contractAddress = systemInfo.perpetual_addr;
 
-		// 3. Account Management
-		console.log("\n--- 3. Setting up Sub-Accounts ---");
+		// 2. Account Management & Registration
+		console.log("\n--- 2. Setting up Accounts ---");
+		const compliantPk = PrivateKey.formatPrivateKey(pk, PrivateKeyVariants.Ed25519);
+		const rootAccount = Account.fromPrivateKey({
+			privateKey: new Ed25519PrivateKey(compliantPk),
+		});
+
 		const { funding, trading } = await createSubAccountsDeterministic(
 			rootAccount.accountAddress.toString()
 		);
+		console.log(`Root Account: ${rootAccount.accountAddress}`);
 		console.log(`Funding Sub-Account: ${funding.address}`);
 		console.log(`Trading Sub-Account: ${trading.address}`);
 
@@ -87,38 +241,9 @@ async function main() {
 			privateKey: new Ed25519PrivateKey(trading.privateKey),
 		});
 
-		// Step 1: Faucet Funding (Get gas and tokens before registration)
-		console.log("\n--- 4. Requesting Funding from Faucet ---");
+		// Step 3: Faucet Funding (Get gas and tokens before registration)
 		const fundAmount = 500 * 10 ** 6; // 500 USDC
-		const fundResult = await client.account.fund({
-			receiver: rootAccount.accountAddress.toString(),
-			metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
-			amounts: [fundAmount, 100_000_000], // 500 USDC + 1 APT
-		});
-		console.log(`Requested ${fundAmount / 1e6} USDC and 1 APT from faucet.`);
-
-		if (fundResult.txid === "accepted") {
-			console.log("Funding request accepted by faucet queue. Waiting for balance update...");
-			// Wait for balance to increase (at least 0.5 APT buffer)
-			let funded = false;
-			for (let i = 0; i < 30; i++) {
-				const currentBalance = await aptos.getAccountAPTAmount({
-					accountAddress: rootAccount.accountAddress,
-				});
-				if (Number(currentBalance) >= 50_000_000) {
-					funded = true;
-					break;
-				}
-				await new Promise((resolve) => setTimeout(resolve, 2000));
-			}
-			if (!funded) {
-				throw new Error("Timed out waiting for faucet funding");
-			}
-		} else {
-			console.log("Waiting for funding transaction to be processed...");
-			await aptos.waitForTransaction({ transactionHash: fundResult.txid });
-		}
-		console.log("Funding confirmed.");
+		await fundAccount(client, rootAccount, quoteAsset, aptos, fundAmount);
 
 		// Verify balance
 		const finalBalance = await aptos.getAccountAPTAmount({
@@ -126,64 +251,33 @@ async function main() {
 		});
 		console.log(`Root account balance: ${Number(finalBalance) / 1e8} APT`);
 
-		// Step 5: Subscribe to Balance Updates (Before activity starts)
-		console.log("\n--- 5. Subscribing to Account Balance Updates ---");
+		// Step 4: Registration (On-chain)
+		await ensureRegistration(client, rootAccount, systemInfo, fundingAcc, tradingAcc, aptos);
+
+		// 5. Authenticate (After registration)
+		console.log("\n--- 5. Authenticating ---");
+		console.log("Waiting for indexer to pick up registration...");
+		let token = "";
+		for (let i = 0; i < 30; i++) {
+			try {
+				const [t] = await auth(compliantPk, client);
+				token = t;
+				break;
+			} catch (e) {
+				if (i === 29) throw e;
+				await new Promise((resolve) => setTimeout(resolve, 2000));
+			}
+		}
+		await client.setTokens({ rest: token, ws: token, connectPrivateWS: true });
+		console.log("Authenticated and Private WS connected.");
+
+		// Step 6: Subscribe to Balance Updates (Before activity starts)
+		console.log("\n--- 6. Subscribing to Account Balance Updates ---");
 		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
 			const type = data.account_type || "unknown";
 			const balance = data.available_balance ?? "0";
 			console.log(`[WS] Balance Update for ${type}: ${balance}`);
 		});
-
-		// Check registration via on-chain view function
-		console.log("\n--- 6. Checking Registration ---");
-		const viewResult = await aptos.view({
-			payload: {
-				function: `${systemInfo.perpetual_addr}::user::is_ekiden_user`,
-				functionArguments: [rootAccount.accountAddress.toString()],
-			},
-		});
-		let isRegistered = viewResult[0] as boolean;
-
-		if (isRegistered) {
-			console.log("User already registered.");
-		} else {
-			console.log("User not registered, performing on-chain registration...");
-
-			const fundingLinkProof = buildLinkProof(
-				fundingAcc.publicKey.toUint8Array(),
-				rootAccount.accountAddress.toString(),
-				fundingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
-			);
-
-			const tradingLinkProof = buildLinkProof(
-				tradingAcc.publicKey.toUint8Array(),
-				rootAccount.accountAddress.toString(),
-				tradingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
-			);
-
-			const payload = client.vaultOnChain.createEkidenUser({
-				vaultAddress: systemInfo.perpetual_addr,
-				fundingLinkProof,
-				crossTradingLinkProof: tradingLinkProof,
-			});
-
-			console.log("Submitting registration transaction...");
-			const tx = await aptos.transaction.build.simple({
-				sender: rootAccount.accountAddress,
-				data: payload as any,
-			});
-			const senderAuthenticator = aptos.transaction.sign({
-				signer: rootAccount,
-				transaction: tx,
-			});
-			const committedTx = await aptos.transaction.submit.simple({
-				transaction: tx,
-				senderAuthenticator,
-			});
-			await aptos.waitForTransaction({ transactionHash: committedTx.hash });
-			console.log(`Registration successful: ${committedTx.hash}`);
-			isRegistered = true;
-		}
 
 		// Step 7: Deposit to Funding (half)
 		const depositAmount = BigInt(fundAmount / 2);
@@ -209,51 +303,15 @@ async function main() {
 		console.log(`Deposit to Funding successful: ${committedTx1.hash}`);
 
 		// Step 8: Deposit to Trading (second half)
-		console.log(
-			`\n--- 8. Depositing ${Number(depositAmount) / 1e6} USDC to Trading Account via Transfer ---`
+		await depositToTrading(
+			client,
+			rootAccount,
+			trading.address,
+			funding.address,
+			quoteAsset,
+			depositAmount,
+			aptos
 		);
-		const depositTradingPayload = client.vaultOnChain.depositIntoFundingWithTransferTo({
-			vaultAddress: systemInfo.perpetual_addr,
-			fundingSubAddress: funding.address,
-			tradingSubAddress: trading.address,
-			assetMetadata: quoteAsset,
-			amount: depositAmount,
-			vaultToType: "Cross",
-		});
-
-		const tx2 = await aptos.transaction.build.simple({
-			sender: rootAccount.accountAddress,
-			data: depositTradingPayload as any,
-		});
-		const auth2 = aptos.transaction.sign({ signer: rootAccount, transaction: tx2 });
-		const committedTx2 = await aptos.transaction.submit.simple({
-			transaction: tx2,
-			senderAuthenticator: auth2,
-		});
-		await aptos.waitForTransaction({ transactionHash: committedTx2.hash });
-		console.log(`Deposit to Trading successful: ${committedTx2.hash}`);
-
-		// Wait for the vault to be indexed by the gateway
-		console.log("Waiting for vault to be indexed by the gateway...");
-		let indexed = false;
-		for (let i = 0; i < 30; i++) {
-			try {
-				const balances = await client.account.getBalance();
-				const hasVault = balances.list.some(
-					(b) => b.sub_account_address === trading.address
-				);
-				if (hasVault) {
-					indexed = true;
-					break;
-				}
-			} catch (e) {
-				// Ignore errors and retry
-			}
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-		}
-		if (!indexed) {
-			console.warn("Warning: Vault not yet visible in gateway balances, but proceeding...");
-		}
 
 		// Step 9: Withdraw from Trading back to Funding
 		console.log(

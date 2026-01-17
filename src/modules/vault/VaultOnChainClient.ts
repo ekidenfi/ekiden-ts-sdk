@@ -81,7 +81,7 @@ export class VaultOnChainClient {
 
 	depositIntoFundingWithTransferTo(params: DepositIntoFundingWithTransferToParams) {
 		return {
-			function: `${params.vaultAddress}::vault::deposit_into_funding_with_transfer_to`,
+			function: `${params.vaultAddress}::vault::deposit_into_funding_with_transfer_request_to`,
 			typeArguments: [`${params.vaultAddress}::vault_types::${params.vaultToType}`],
 			functionArguments: [
 				params.fundingSubAddress,
