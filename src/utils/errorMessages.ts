@@ -24,8 +24,7 @@ export const ORDER_ERROR_MESSAGES: Record<RejectReason, string> = {
 	EcUnknownSide: "Invalid order side. Must be buy or sell.",
 	EcUnknownTimeInForce: "Invalid time-in-force setting.",
 	EcMarketOrderCannotBePostOnly: "Market orders cannot be post-only.",
-	EcPostOnlyWillTakeLiquidity:
-		"Post-only order would take liquidity. Please adjust the price.",
+	EcPostOnlyWillTakeLiquidity: "Post-only order would take liquidity. Please adjust the price.",
 	EcMarketOrderNoSupportTif: "Market orders do not support this time-in-force.",
 	EcMarketQuoteNoSuppSell: "Market quote orders do not support sell side.",
 
@@ -38,8 +37,7 @@ export const ORDER_ERROR_MESSAGES: Record<RejectReason, string> = {
 	// Order ID errors
 	EcMissingClOrdId: "Missing client order ID.",
 	EcMissingOrigClOrdId: "Missing original client order ID.",
-	EcClOrdIdOrigClOrdIdAreTheSame:
-		"Client order ID and original ID cannot be the same.",
+	EcClOrdIdOrigClOrdIdAreTheSame: "Client order ID and original ID cannot be the same.",
 	EcDuplicatedClOrdId: "Duplicate client order ID.",
 	EcOrigClOrdIdDoesNotExist: "Original order does not exist.",
 	EcOrderNotExist: "Order does not exist.",
@@ -87,7 +85,7 @@ export const ORDER_ERROR_MESSAGES: Record<RejectReason, string> = {
  * Translates an error code to a user-friendly message
  */
 export const translateOrderError = (
-	errorCode: RejectReason | string | undefined | null,
+	errorCode: RejectReason | string | undefined | null
 ): string | null => {
 	if (!errorCode) return null;
 
