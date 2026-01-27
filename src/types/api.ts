@@ -139,6 +139,9 @@ export type RejectReason =
 	| "EcPerCancelRequest"
 	| "EcMarketOrderCannotBePostOnly"
 	| "EcPostOnlyWillTakeLiquidity"
+	| "EcReduceOnlyNoPosition"
+	| "EcReduceOnlyWouldIncreasePosition"
+	| "EcReduceOnlyExceedsPosition"
 	| "EcCancelReplaceOrder"
 	| "EcInvalidSymbolStatus"
 	| "EcCancelForNoFullFill"
@@ -788,8 +791,10 @@ export interface Position {
 	position_mm: string;
 	position_mm_by_mp: string;
 	unrealized_pnl: string;
+	unrealized_funding: string;
 	realized_pnl_cur: string;
 	realized_pnl_cum: string;
+	cum_funding: string;
 	adl_rank_indicator: AdlRankIndicator;
 	is_reduce_only: boolean;
 	created_time: string;

@@ -25,6 +25,9 @@ export const ORDER_ERROR_MESSAGES: Record<RejectReason, string> = {
 	EcUnknownTimeInForce: "Invalid time-in-force setting.",
 	EcMarketOrderCannotBePostOnly: "Market orders cannot be post-only.",
 	EcPostOnlyWillTakeLiquidity: "Post-only order would take liquidity. Please adjust the price.",
+	EcReduceOnlyNoPosition: "Reduce-only order rejected: no open position to reduce.",
+	EcReduceOnlyWouldIncreasePosition: "Reduce-only order rejected: it would increase your position.",
+	EcReduceOnlyExceedsPosition: "Reduce-only order rejected: quantity exceeds your position size.",
 	EcMarketOrderNoSupportTif: "Market orders do not support this time-in-force.",
 	EcMarketQuoteNoSuppSell: "Market quote orders do not support sell side.",
 
