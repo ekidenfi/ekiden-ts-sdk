@@ -1,6 +1,18 @@
 import type { EkidenClientConfig } from "@/core/config";
 import { APIError, AuthenticationError } from "@/core/errors";
 
+export type UnauthorizedCallback = () => void;
+
+let globalUnauthorizedCallback: UnauthorizedCallback | null = null;
+
+export const setUnauthorizedCallback = (callback: UnauthorizedCallback | null): void => {
+	globalUnauthorizedCallback = callback;
+};
+
+export const getUnauthorizedCallback = (): UnauthorizedCallback | null => {
+	return globalUnauthorizedCallback;
+};
+
 export class BaseHttpClient {
 	protected token?: string;
 
@@ -93,6 +105,11 @@ export class BaseHttpClient {
 				}
 			} catch {
 				// Ignore error parsing failures
+			}
+
+			// Handle 401 Unauthorized - trigger re-sign dialog
+			if (response.status === 401 && globalUnauthorizedCallback) {
+				globalUnauthorizedCallback();
 			}
 
 			throw new APIError(
