@@ -115,19 +115,19 @@ export async function fundAccount(
 	const fundResult = await client.account.fund({
 		receiver: rootAccount.accountAddress.toString(),
 		metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
-		amounts: [fundAmount, 100_000_000], // 500 USDC + 1 APT
+		amounts: [fundAmount, 10_000_000], // 500 USDC + 0.1 APT
 	});
-	console.log(`Requested ${fundAmount / 1e6} USDC and 1 APT from faucet.`);
+	console.log(`Requested ${fundAmount / 1e6} USDC and 0.1 APT from faucet.`);
 
 	if (fundResult.txid === "accepted") {
 		console.log("Funding request accepted by faucet queue. Waiting for balance update...");
-		// Wait for balance to increase (at least 0.5 APT buffer)
+			// Wait for balance to increase (at least 0.05 APT buffer)
 		let funded = false;
 		for (let i = 0; i < 30; i++) {
 			const currentBalance = await aptos.getAccountAPTAmount({
 				accountAddress: rootAccount.accountAddress,
 			});
-			if (Number(currentBalance) >= 50_000_000) {
+				if (Number(currentBalance) >= 5_000_000) {
 				funded = true;
 				break;
 			}
@@ -303,6 +303,11 @@ async function main() {
 		console.log(`Deposit to Funding successful: ${committedTx1.hash}`);
 
 		// Step 8: Deposit to Trading (second half)
+		const balancesBeforeTradingDeposit = await client.account.getBalance();
+		const tradingAvailableBefore =
+			balancesBeforeTradingDeposit.list.find((b) => b.sub_account_address === trading.address)
+				?.available_balance ?? null;
+		console.log(`Trading available_balance (before): ${tradingAvailableBefore ?? "n/a"}`);
 		await depositToTrading(
 			client,
 			rootAccount,
@@ -312,6 +317,33 @@ async function main() {
 			depositAmount,
 			aptos
 		);
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		let tradingBalanceUpdated = false;
+		for (let i = 0; i < 10; i++) {
+			try {
+				const balancesAfter = await client.account.getBalance();
+				const tradingAvailableAfter =
+					balancesAfter.list.find((b) => b.sub_account_address === trading.address)
+						?.available_balance ?? null;
+
+				if (
+					tradingAvailableAfter !== null &&
+					(tradingAvailableBefore === null || tradingAvailableAfter !== tradingAvailableBefore)
+				) {
+					console.log(`Trading available_balance (after): ${tradingAvailableAfter}`);
+					tradingBalanceUpdated = true;
+					break;
+				}
+			} catch (e) {
+				// Ignore errors and retry
+			}
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+		if (!tradingBalanceUpdated) {
+			console.warn(
+				"Warning: Trading balance not observed to change via REST after deposit; proceeding anyway."
+			);
+		}
 
 		// Step 9: Withdraw from Trading back to Funding
 		console.log(
