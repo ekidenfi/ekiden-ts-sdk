@@ -121,13 +121,13 @@ export async function fundAccount(
 
 	if (fundResult.txid === "accepted") {
 		console.log("Funding request accepted by faucet queue. Waiting for balance update...");
-			// Wait for balance to increase (at least 0.05 APT buffer)
+		// Wait for balance to increase (at least 0.05 APT buffer)
 		let funded = false;
 		for (let i = 0; i < 30; i++) {
 			const currentBalance = await aptos.getAccountAPTAmount({
 				accountAddress: rootAccount.accountAddress,
 			});
-				if (Number(currentBalance) >= 5_000_000) {
+			if (Number(currentBalance) >= 5_000_000) {
 				funded = true;
 				break;
 			}
@@ -328,7 +328,8 @@ async function main() {
 
 				if (
 					tradingAvailableAfter !== null &&
-					(tradingAvailableBefore === null || tradingAvailableAfter !== tradingAvailableBefore)
+					(tradingAvailableBefore === null ||
+						tradingAvailableAfter !== tradingAvailableBefore)
 				) {
 					console.log(`Trading available_balance (after): ${tradingAvailableAfter}`);
 					tradingBalanceUpdated = true;
