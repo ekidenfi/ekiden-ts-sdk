@@ -1,6 +1,13 @@
 export * from "@aptos-labs/ts-sdk";
 export * from "./core";
-export { AccountClient } from "./modules/account";
+export {
+	AccountClient,
+	type AccountStatisticsParams,
+	type AccountStatisticsEntry,
+	type AccountStatisticsResponse,
+	type AccountStatisticsStep,
+	type AccountStatisticsSortingOrder,
+} from "./modules/account";
 export { AssetClient } from "./modules/asset";
 export { FundingClient } from "./modules/funding";
 export {

@@ -1,29 +1,43 @@
 import { BaseHttpClient } from "@/core/base";
 
 export interface LeaderboardEntry {
-	place: number;
-	wallet: string;
-	account_value: number;
-	volume: number;
-	pnl: number;
-	roi: number;
+	account_value: string;
+	place: string;
+	pnl: string;
+	ranked: boolean;
+	roi: string;
+	sub_account_address: string;
+	volume: string;
 }
 
+export interface LeaderboardResponse {
+	data: LeaderboardEntry[];
+}
+
+export type LeaderboardTimeframe = "today" | "7d" | "30d" | "all";
+
 export interface LeaderboardParams {
-	time_frame: string;
-	page?: number;
-	per_page?: number;
+	timeframe: LeaderboardTimeframe;
+	offset?: number;
+	limit?: number;
+}
+
+export interface LeaderboardPlacementParams {
+	timeframe: LeaderboardTimeframe;
+	sub_account?: string | null;
 }
 
 export class LeaderboardClient extends BaseHttpClient {
-	async getLeaderboardAll(params: LeaderboardParams): Promise<LeaderboardEntry[]> {
-		return this.request<LeaderboardEntry[]>("/leaderboard/all", {}, { query: params });
+	async getLeaderboard(params: LeaderboardParams): Promise<LeaderboardResponse> {
+		return this.request<LeaderboardResponse>("/user/leaderboard", {}, { query: params });
 	}
 
-	async getLeaderboardMy(params: { time_frame: string }): Promise<LeaderboardEntry | null> {
+	async getLeaderboardPlacement(
+		params: LeaderboardPlacementParams
+	): Promise<LeaderboardResponse> {
 		this.ensureAuth();
-		return this.request<LeaderboardEntry | null>(
-			"/leaderboard/my",
+		return this.request<LeaderboardResponse>(
+			"/user/leaderboard/placement",
 			{},
 			{ auth: true, query: params }
 		);
