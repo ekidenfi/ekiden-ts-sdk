@@ -9,6 +9,7 @@ import { TradeClient } from "@/modules/trade";
 import { UserClient } from "@/modules/user";
 import { VaultClient, VaultOnChainClient } from "@/modules/vault";
 import { PrivateStream, PublicStream } from "@/streams";
+import type { ApiKeyAuthConfig } from "./base";
 import type { EkidenClientConfig } from "./config";
 import { ConfigurationError } from "./errors";
 
@@ -57,6 +58,32 @@ export class EkidenClient {
 		this.position.setToken(token);
 		this.user.setToken(token);
 		this.vault.setToken(token);
+	}
+
+	setApiKeyAuth(config: ApiKeyAuthConfig): void {
+		this.account.setApiKeyAuth(config);
+		this.asset.setApiKeyAuth(config);
+		this.funding.setApiKeyAuth(config);
+		this.leaderboard.setApiKeyAuth(config);
+		this.market.setApiKeyAuth(config);
+		this.trade.setApiKeyAuth(config);
+		this.position.setApiKeyAuth(config);
+		this.system.setApiKeyAuth(config);
+		this.user.setApiKeyAuth(config);
+		this.vault.setApiKeyAuth(config);
+	}
+
+	clearApiKeyAuth(): void {
+		this.account.clearApiKeyAuth();
+		this.asset.clearApiKeyAuth();
+		this.funding.clearApiKeyAuth();
+		this.leaderboard.clearApiKeyAuth();
+		this.market.clearApiKeyAuth();
+		this.trade.clearApiKeyAuth();
+		this.position.clearApiKeyAuth();
+		this.system.clearApiKeyAuth();
+		this.user.clearApiKeyAuth();
+		this.vault.clearApiKeyAuth();
 	}
 
 	async setTokens(tokens: {

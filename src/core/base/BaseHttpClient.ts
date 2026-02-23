@@ -3,6 +3,26 @@ import { APIError, AuthenticationError } from "@/core/errors";
 
 export type UnauthorizedCallback = () => void;
 
+export type ApiKeySignContext = {
+	method: string;
+	pathAndQuery: string;
+	timestampMs: number;
+	nonce: string;
+	message: string;
+};
+
+export type ApiKeySigner = (
+	messageBytes: Uint8Array,
+	context: ApiKeySignContext
+) => string | Promise<string>;
+
+export interface ApiKeyAuthConfig {
+	publicKey: string;
+	sign: ApiKeySigner;
+	nonce?: () => string;
+	timestampMs?: () => number;
+}
+
 let globalUnauthorizedCallback: UnauthorizedCallback | null = null;
 
 export const setUnauthorizedCallback = (callback: UnauthorizedCallback | null): void => {
@@ -15,6 +35,7 @@ export const getUnauthorizedCallback = (): UnauthorizedCallback | null => {
 
 export class BaseHttpClient {
 	protected token?: string;
+	protected apiKeyAuth?: ApiKeyAuthConfig;
 
 	constructor(protected readonly config: EkidenClientConfig) {}
 
@@ -30,18 +51,67 @@ export class BaseHttpClient {
 		this.token = token;
 	}
 
+	public setApiKeyAuth(config: ApiKeyAuthConfig): void {
+		this.apiKeyAuth = config;
+	}
+
+	public clearApiKeyAuth(): void {
+		this.apiKeyAuth = undefined;
+	}
+
 	public getToken(): string | undefined {
 		return this.token;
 	}
 
-	protected authHeader(): Record<string, string> {
-		return this.token ? { Authorization: `Bearer ${this.token}` } : {};
+	protected async authHeaders(
+		method: string,
+		pathAndQuery: string
+	): Promise<Record<string, string>> {
+		if (this.token) {
+			return { Authorization: `Bearer ${this.token}` };
+		}
+
+		if (!this.apiKeyAuth) {
+			return {};
+		}
+
+		const timestampMs = this.apiKeyAuth.timestampMs
+			? this.apiKeyAuth.timestampMs()
+			: Date.now();
+		const nonce = this.apiKeyAuth.nonce ? this.apiKeyAuth.nonce() : this.defaultNonce();
+		const message = `EKIDEN_API|${method}|${pathAndQuery}|${timestampMs}|${nonce}`;
+
+		const signature = await this.apiKeyAuth.sign(new TextEncoder().encode(message), {
+			method,
+			pathAndQuery,
+			timestampMs,
+			nonce,
+			message,
+		});
+
+		return {
+			"X-API-KEY": this.apiKeyAuth.publicKey,
+			"X-SIGNATURE": signature,
+			"X-TIMESTAMP-MS": String(timestampMs),
+			"X-NONCE": nonce,
+		};
 	}
 
 	protected ensureAuth(): void {
-		if (!this.token) {
+		if (!this.token && !this.apiKeyAuth) {
 			throw new AuthenticationError();
 		}
+	}
+
+	private defaultNonce(): string {
+		if (typeof globalThis.crypto?.getRandomValues === "function") {
+			const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+			return Array.from(bytes)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
+		}
+
+		return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 	}
 
 	protected async post<T>(
@@ -73,16 +143,26 @@ export class BaseHttpClient {
 		const { auth = false, query } = config;
 
 		const url = this.buildUrl(path, query);
+		const method = (options.method || "GET").toUpperCase();
+		const parsed = new URL(url);
+		let canonicalPath = parsed.pathname;
+		if (this.apiPrefix && canonicalPath.startsWith(this.apiPrefix)) {
+			canonicalPath = canonicalPath.slice(this.apiPrefix.length);
+			if (!canonicalPath.startsWith("/")) {
+				canonicalPath = `/${canonicalPath}`;
+			}
+		}
+		const pathAndQuery = `${canonicalPath}${parsed.search}`;
+		const authHeaders = auth ? await this.authHeaders(method, pathAndQuery) : {};
 
 		const headers: HeadersInit = {
 			...(options.headers || {}),
-			...(auth ? this.authHeader() : {}),
+			...authHeaders,
 		};
 
 		const response = await fetch(url, { ...options, headers });
 
 		if (!response.ok) {
-			const method = options.method || "GET";
 			let errorResponseContent = "";
 
 			try {
@@ -119,7 +199,20 @@ export class BaseHttpClient {
 			);
 		}
 
-		return response.json();
+		if (response.status === 204) {
+			return undefined as T;
+		}
+
+		const rawText = await response.text();
+		if (!rawText) {
+			return undefined as T;
+		}
+
+		try {
+			return JSON.parse(rawText) as T;
+		} catch {
+			return rawText as T;
+		}
 	}
 
 	protected buildUrl(path: string, query?: Record<string, any>): string {

@@ -4,8 +4,11 @@ import { BaseHttpClient } from "@/core/base";
 import type {
 	AuthorizeRequest,
 	AuthorizeResponse,
+	CreateApiKeyRequest,
+	CreateApiKeyResponse,
 	GetRootAccountResponse,
 	GetSubAccountsResponse,
+	ListApiKeysResponse,
 } from "@/types/api";
 import { generateAuthorizePayload } from "@/utils/account";
 
@@ -37,5 +40,23 @@ export class UserClient extends BaseHttpClient {
 	async getSubAccounts(): Promise<GetSubAccountsResponse> {
 		this.ensureAuth();
 		return this.request<GetSubAccountsResponse>("/user/sub-accounts", {}, { auth: true });
+	}
+
+	async createApiKey(params: CreateApiKeyRequest): Promise<CreateApiKeyResponse> {
+		return this.post<CreateApiKeyResponse>("/user/api-keys", params);
+	}
+
+	async listApiKeys(): Promise<ListApiKeysResponse> {
+		this.ensureAuth();
+		return this.request<ListApiKeysResponse>("/user/api-keys", {}, { auth: true });
+	}
+
+	async revokeApiKey(id: string): Promise<void> {
+		this.ensureAuth();
+		await this.request<void>(
+			`/user/api-keys/${encodeURIComponent(id)}`,
+			{ method: "DELETE" },
+			{ auth: true }
+		);
 	}
 }
