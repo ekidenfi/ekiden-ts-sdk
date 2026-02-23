@@ -242,6 +242,36 @@ export interface AuthorizeResponse {
 	user_id: string;
 }
 
+export type ApiKeyScope = "full" | "read" | "trade" | "withdraw" | "admin";
+
+export interface CreateApiKeyRequest {
+	name: string;
+	public_key: string;
+	scopes: ApiKeyScope[];
+	expires_at?: number | null;
+}
+
+export interface CreateApiKeyResponse {
+	id: string;
+	public_key: string;
+	scopes: ApiKeyScope[];
+	created_at: number;
+	expires_at?: number | null;
+}
+
+export interface ApiKeyInfo {
+	id: string;
+	name: string;
+	public_key: string;
+	scopes: ApiKeyScope[];
+	created_at: number;
+	expires_at?: number | null;
+}
+
+export interface ListApiKeysResponse {
+	keys: ApiKeyInfo[];
+}
+
 export interface AccountBalance {
 	sub_account_address: string;
 	account_type: string;

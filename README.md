@@ -73,6 +73,21 @@ const balance = await ekiden.account.getBalance();
 const positions = await ekiden.position.getPositionInfo({ sub_account_address: "0x...", symbol: "BTCUSDT" });
 ```
 
+## Run Examples
+
+The repository includes runnable examples under `example/`.
+
+```bash
+# Auth + market data
+PK=0x... bun run example/auth.ts
+
+# API key lifecycle (create, use, revoke)
+PK=0x... bun run example/api-keys.ts
+
+# Full faucet + registration integration flow
+PK=0x... bun run example/faucet.ts
+```
+
 ## Module Documentation
 
 ### MarketClient
@@ -419,6 +434,19 @@ const rootAccount = await ekiden.user.getRootAccount();
 
 // Get sub accounts
 const subAccounts = await ekiden.user.getSubAccounts();
+
+// Create API key (root JWT required)
+const createdKey = await ekiden.user.createApiKey({
+  name: "mm-bot-1",
+  public_key: "0x...",
+  scopes: ["read", "trade"],
+});
+
+// List API keys
+const keys = await ekiden.user.listApiKeys();
+
+// Revoke API key
+await ekiden.user.revokeApiKey(createdKey.id);
 ```
 
 ### VaultClient
