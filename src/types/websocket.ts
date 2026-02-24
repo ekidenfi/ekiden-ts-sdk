@@ -137,7 +137,7 @@ export type ExecutionEventMessage = {
 export type AccountBalanceEventMessage = {
 	op: "event";
 	topic: AccountBalanceChannel;
-	data: AccountBalance;
+	data: AccountBalance[];
 };
 
 export type ChannelMap = {

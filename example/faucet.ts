@@ -36,6 +36,18 @@ import {
 import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
 import { auth, SDK_CONFIG } from "./auth";
 
+const LOCAL_APT_FAUCET_MAX = 10_000_000; // 0.1 APT
+const LOCAL_TX_MAX_GAS_AMOUNT = 50_000;
+
+function isLocalGatewayBaseUrl(baseURL: string): boolean {
+	return baseURL.includes("localhost") || baseURL.includes("127.0.0.1");
+}
+
+function txBuildOptionsForBaseUrl(baseURL: string): { maxGasAmount: number } | undefined {
+	if (!isLocalGatewayBaseUrl(baseURL)) return undefined;
+	return { maxGasAmount: LOCAL_TX_MAX_GAS_AMOUNT };
+}
+
 export async function getAptosClient(baseURL: string) {
 	const isLocal = baseURL.includes("localhost");
 	const aptosConfig = new AptosConfig({
@@ -50,7 +62,8 @@ export async function ensureRegistration(
 	systemInfo: any,
 	fundingAcc: Account,
 	tradingAcc: Account,
-	aptos: Aptos
+	aptos: Aptos,
+	txOptions?: { maxGasAmount: number }
 ) {
 	// Check registration via on-chain view function
 	console.log("\n--- Checking Registration ---");
@@ -91,6 +104,7 @@ export async function ensureRegistration(
 	const tx = await aptos.transaction.build.simple({
 		sender: rootAccount.accountAddress,
 		data: payload as any,
+		options: txOptions,
 	});
 	const senderAuthenticator = aptos.transaction.sign({
 		signer: rootAccount,
@@ -109,25 +123,33 @@ export async function fundAccount(
 	rootAccount: Account,
 	quoteAsset: string,
 	aptos: Aptos,
-	fundAmount = 500 * 10 ** 6
+	fundAmount = 500 * 10 ** 6,
+	aptFundAmount = 10_000_000
 ) {
 	console.log("\n--- Requesting Funding from Faucet ---");
+	const beforeBalance = Number(
+		await aptos.getAccountAPTAmount({
+			accountAddress: rootAccount.accountAddress,
+		})
+	);
+
 	const fundResult = await client.account.fund({
 		receiver: rootAccount.accountAddress.toString(),
 		metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
-		amounts: [fundAmount, 10_000_000], // 500 USDC + 0.1 APT
+		amounts: [fundAmount, aptFundAmount],
 	});
-	console.log(`Requested ${fundAmount / 1e6} USDC and 0.1 APT from faucet.`);
+	console.log(`Requested ${fundAmount / 1e6} USDC and ${aptFundAmount / 1e8} APT from faucet.`);
 
 	if (fundResult.txid === "accepted") {
 		console.log("Funding request accepted by faucet queue. Waiting for balance update...");
-		// Wait for balance to increase (at least 0.05 APT buffer)
+		// Wait until we observe a meaningful increase in APT balance.
 		let funded = false;
+		const minIncrease = Math.max(1_000_000, Math.floor(aptFundAmount * 0.5));
 		for (let i = 0; i < 30; i++) {
 			const currentBalance = await aptos.getAccountAPTAmount({
 				accountAddress: rootAccount.accountAddress,
 			});
-			if (Number(currentBalance) >= 5_000_000) {
+			if (Number(currentBalance) >= beforeBalance + minIncrease) {
 				funded = true;
 				break;
 			}
@@ -150,7 +172,8 @@ export async function depositToTrading(
 	fundingAddress: string,
 	quoteAsset: string,
 	amount: bigint,
-	aptos: Aptos
+	aptos: Aptos,
+	txOptions?: { maxGasAmount: number }
 ) {
 	console.log(`\n--- Depositing ${Number(amount) / 1e6} USDC to Trading Account ---`);
 	const systemInfo = await client.system.getSystemInfo();
@@ -166,6 +189,7 @@ export async function depositToTrading(
 	const tx = await aptos.transaction.build.simple({
 		sender: rootAccount.accountAddress,
 		data: depositTradingPayload as any,
+		options: txOptions,
 	});
 	const auth = aptos.transaction.sign({ signer: rootAccount, transaction: tx });
 	const committedTx = await aptos.transaction.submit.simple({
@@ -208,6 +232,7 @@ async function main() {
 
 	// Infer network from baseURL or default to local for this example
 	const aptos = await getAptosClient(SDK_CONFIG.baseURL);
+	const txOptions = txBuildOptionsForBaseUrl(SDK_CONFIG.baseURL);
 
 	try {
 		// 1. Fetch System Info
@@ -243,7 +268,9 @@ async function main() {
 
 		// Step 3: Faucet Funding (Get gas and tokens before registration)
 		const fundAmount = 500 * 10 ** 6; // 500 USDC
-		await fundAccount(client, rootAccount, quoteAsset, aptos, fundAmount);
+		const isLocalGateway = isLocalGatewayBaseUrl(SDK_CONFIG.baseURL);
+		const aptFundAmount = isLocalGateway ? LOCAL_APT_FAUCET_MAX : 10_000_000;
+		await fundAccount(client, rootAccount, quoteAsset, aptos, fundAmount, aptFundAmount);
 
 		// Verify balance
 		const finalBalance = await aptos.getAccountAPTAmount({
@@ -252,7 +279,15 @@ async function main() {
 		console.log(`Root account balance: ${Number(finalBalance) / 1e8} APT`);
 
 		// Step 4: Registration (On-chain)
-		await ensureRegistration(client, rootAccount, systemInfo, fundingAcc, tradingAcc, aptos);
+		await ensureRegistration(
+			client,
+			rootAccount,
+			systemInfo,
+			fundingAcc,
+			tradingAcc,
+			aptos,
+			txOptions
+		);
 
 		// 5. Authenticate (After registration)
 		console.log("\n--- 5. Authenticating ---");
@@ -274,9 +309,13 @@ async function main() {
 		// Step 6: Subscribe to Balance Updates (Before activity starts)
 		console.log("\n--- 6. Subscribing to Account Balance Updates ---");
 		const unsubscribe = client.privateStream?.subscribeAccountBalance((data) => {
-			const type = data.account_type || "unknown";
-			const balance = data.available_balance ?? "0";
-			console.log(`[WS] Balance Update for ${type}: ${balance}`);
+			const updates = Array.isArray(data) ? data : [data];
+			for (const update of updates) {
+				const label =
+					update?.account_type || update?.sub_account_address || "unknown-sub-account";
+				const balance = update?.available_balance ?? "0";
+				console.log(`[WS] Balance Update for ${label}: ${balance}`);
+			}
 		});
 
 		// Step 7: Deposit to Funding (half)
@@ -293,6 +332,7 @@ async function main() {
 		const tx1 = await aptos.transaction.build.simple({
 			sender: rootAccount.accountAddress,
 			data: depositFundingPayload as any,
+			options: txOptions,
 		});
 		const auth1 = aptos.transaction.sign({ signer: rootAccount, transaction: tx1 });
 		const committedTx1 = await aptos.transaction.submit.simple({
@@ -315,7 +355,8 @@ async function main() {
 			funding.address,
 			quoteAsset,
 			depositAmount,
-			aptos
+			aptos,
+			txOptions
 		);
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 		let tradingBalanceUpdated = false;
@@ -419,6 +460,7 @@ async function main() {
 		const tx3 = await aptos.transaction.build.simple({
 			sender: rootAccount.accountAddress,
 			data: withdrawFundingPayload as any,
+			options: txOptions,
 		});
 		const auth3 = aptos.transaction.sign({ signer: rootAccount, transaction: tx3 });
 		const committedTx3 = await aptos.transaction.submit.simple({

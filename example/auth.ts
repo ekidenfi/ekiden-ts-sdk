@@ -74,6 +74,8 @@ export const SDK_CONFIG = {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const LOCAL_TX_MAX_GAS_AMOUNT = 50_000;
+
 function normalizeFullnodeUrl(raw: string): string {
 	const trimmed = raw.trim().replace(/\/+$/, "");
 	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
@@ -142,6 +144,12 @@ async function getAptosClient(baseURL: string, aptosNetwork: string): Promise<Ap
 	return new Aptos(new AptosConfig({ network: mapAptosNetwork(aptosNetwork) }));
 }
 
+function txBuildOptionsForBaseUrl(baseURL: string): { maxGasAmount: number } | undefined {
+	const isLocalGateway = baseURL.includes("localhost") || baseURL.includes("127.0.0.1");
+	if (!isLocalGateway) return undefined;
+	return { maxGasAmount: LOCAL_TX_MAX_GAS_AMOUNT };
+}
+
 function shouldAttemptAutoRegister(error: unknown): boolean {
 	const message = String(error instanceof Error ? error.message : error).toLowerCase();
 	return (
@@ -156,6 +164,7 @@ async function registerEkidenUser(client: EkidenClient, account: Ed25519Account)
 	client.config.contractAddress = systemInfo.perpetual_addr;
 
 	const aptos = await getAptosClient(client.config.baseURL, systemInfo.aptos_network);
+	const txOptions = txBuildOptionsForBaseUrl(client.config.baseURL);
 	const rootAddress = account.accountAddress.toString();
 
 	const registrationCheck = await aptos.view({
@@ -196,6 +205,7 @@ async function registerEkidenUser(client: EkidenClient, account: Ed25519Account)
 	const tx = await aptos.transaction.build.simple({
 		sender: account.accountAddress,
 		data: payload as any,
+		options: txOptions,
 	});
 	const senderAuthenticator = aptos.transaction.sign({
 		signer: account,
