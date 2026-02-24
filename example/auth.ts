@@ -20,6 +20,7 @@ import {
 	Account,
 	Aptos,
 	AptosConfig,
+	type AptosSettings,
 	buildLinkProof,
 	createSubAccountsDeterministic,
 	type Ed25519Account,
@@ -76,6 +77,19 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const LOCAL_TX_MAX_GAS_AMOUNT = 50_000;
 
+async function newAptos(settings: AptosSettings): Promise<Aptos> {
+	if (typeof Bun !== "undefined") {
+		const { default: aptosClientBrowser } = await import(
+			"../node_modules/@aptos-labs/aptos-client/dist/browser/index.browser.mjs"
+		);
+		return new Aptos(
+			new AptosConfig({ ...settings, client: { provider: aptosClientBrowser } })
+		);
+	}
+
+	return new Aptos(new AptosConfig(settings));
+}
+
 function normalizeFullnodeUrl(raw: string): string {
 	const trimmed = raw.trim().replace(/\/+$/, "");
 	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
@@ -121,27 +135,25 @@ async function resolveLocalFullnode(): Promise<string | null> {
 	return null;
 }
 
-async function getAptosClient(baseURL: string, aptosNetwork: string): Promise<Aptos> {
+export async function getAptosClient(baseURL: string, aptosNetwork: string): Promise<Aptos> {
 	const explicit = Bun.env.APTOS_NODE_URL || Bun.env.APTOS_REST_URL;
 	if (explicit) {
-		return new Aptos(
-			new AptosConfig({
-				network: mapAptosNetwork(aptosNetwork),
-				fullnode: normalizeFullnodeUrl(explicit),
-			})
-		);
+		return newAptos({
+			network: mapAptosNetwork(aptosNetwork),
+			fullnode: normalizeFullnodeUrl(explicit),
+		});
 	}
 
 	const isLocalGateway = baseURL.includes("localhost") || baseURL.includes("127.0.0.1");
 	if (isLocalGateway) {
 		const localFullnode = await resolveLocalFullnode();
 		if (localFullnode) {
-			return new Aptos(new AptosConfig({ network: Network.LOCAL, fullnode: localFullnode }));
+			return newAptos({ network: Network.LOCAL, fullnode: localFullnode });
 		}
-		return new Aptos(new AptosConfig({ network: Network.LOCAL }));
+		return newAptos({ network: Network.LOCAL });
 	}
 
-	return new Aptos(new AptosConfig({ network: mapAptosNetwork(aptosNetwork) }));
+	return newAptos({ network: mapAptosNetwork(aptosNetwork) });
 }
 
 function txBuildOptionsForBaseUrl(baseURL: string): { maxGasAmount: number } | undefined {

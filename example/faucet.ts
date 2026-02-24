@@ -27,14 +27,12 @@
 import {
 	Account,
 	Aptos,
-	AptosConfig,
 	Ed25519PrivateKey,
-	Network,
 	PrivateKey,
 	PrivateKeyVariants,
 } from "@aptos-labs/ts-sdk";
 import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
-import { auth, SDK_CONFIG } from "./auth";
+import { auth, getAptosClient, SDK_CONFIG } from "./auth";
 
 const LOCAL_APT_FAUCET_MAX = 10_000_000; // 0.1 APT
 const LOCAL_TX_MAX_GAS_AMOUNT = 50_000;
@@ -48,12 +46,29 @@ function txBuildOptionsForBaseUrl(baseURL: string): { maxGasAmount: number } | u
 	return { maxGasAmount: LOCAL_TX_MAX_GAS_AMOUNT };
 }
 
-export async function getAptosClient(baseURL: string) {
-	const isLocal = baseURL.includes("localhost");
-	const aptosConfig = new AptosConfig({
-		network: isLocal ? Network.LOCAL : Network.TESTNET,
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		const timer = setTimeout(() => {
+			reject(new Error(`${label} timed out after ${Math.floor(timeoutMs / 1000)}s`));
+		}, timeoutMs);
+
+		promise
+			.then((value) => {
+				clearTimeout(timer);
+				resolve(value);
+			})
+			.catch((error) => {
+				clearTimeout(timer);
+				reject(error);
+			});
 	});
-	return new Aptos(aptosConfig);
+}
+
+function envInt(name: string): number | undefined {
+	const raw = Bun.env[name];
+	if (!raw) return undefined;
+	const parsed = Number.parseInt(raw, 10);
+	return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 export async function ensureRegistration(
@@ -124,7 +139,8 @@ export async function fundAccount(
 	quoteAsset: string,
 	aptos: Aptos,
 	fundAmount = 500 * 10 ** 6,
-	aptFundAmount = 10_000_000
+	aptFundAmount = 10_000_000,
+	faucetRequestTimeoutMs = 60_000
 ) {
 	console.log("\n--- Requesting Funding from Faucet ---");
 	const beforeBalance = Number(
@@ -133,11 +149,16 @@ export async function fundAccount(
 		})
 	);
 
-	const fundResult = await client.account.fund({
-		receiver: rootAccount.accountAddress.toString(),
-		metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
-		amounts: [fundAmount, aptFundAmount],
-	});
+	console.log("Submitting faucet request...");
+	const fundResult = await withTimeout(
+		client.account.fund({
+			receiver: rootAccount.accountAddress.toString(),
+			metadatas: [quoteAsset, "0x1::aptos_coin::AptosCoin"],
+			amounts: [fundAmount, aptFundAmount],
+		}),
+		faucetRequestTimeoutMs,
+		"Faucet request"
+	);
 	console.log(`Requested ${fundAmount / 1e6} USDC and ${aptFundAmount / 1e8} APT from faucet.`);
 
 	if (fundResult.txid === "accepted") {
@@ -160,7 +181,11 @@ export async function fundAccount(
 		}
 	} else {
 		console.log("Waiting for funding transaction to be processed...");
-		await aptos.waitForTransaction({ transactionHash: fundResult.txid });
+		await withTimeout(
+			aptos.waitForTransaction({ transactionHash: fundResult.txid }),
+			120_000,
+			"Funding transaction confirmation"
+		);
 	}
 	console.log("Funding confirmed.");
 }
@@ -229,9 +254,6 @@ async function main() {
 
 	// Initialize Clients
 	const client = new EkidenClient(SDK_CONFIG);
-
-	// Infer network from baseURL or default to local for this example
-	const aptos = await getAptosClient(SDK_CONFIG.baseURL);
 	const txOptions = txBuildOptionsForBaseUrl(SDK_CONFIG.baseURL);
 
 	try {
@@ -241,6 +263,7 @@ async function main() {
 		const quoteAsset = systemInfo.quote_asset_metadata;
 		console.log(`Quote Asset: ${quoteAsset}`);
 		console.log(`Perpetual Contract: ${systemInfo.perpetual_addr}`);
+		const aptos = await getAptosClient(SDK_CONFIG.baseURL, systemInfo.aptos_network);
 
 		// Update client with correct contract address for on-chain calls
 		client.config.contractAddress = systemInfo.perpetual_addr;
@@ -270,7 +293,17 @@ async function main() {
 		const fundAmount = 500 * 10 ** 6; // 500 USDC
 		const isLocalGateway = isLocalGatewayBaseUrl(SDK_CONFIG.baseURL);
 		const aptFundAmount = isLocalGateway ? LOCAL_APT_FAUCET_MAX : 10_000_000;
-		await fundAccount(client, rootAccount, quoteAsset, aptos, fundAmount, aptFundAmount);
+		const faucetRequestTimeoutMs =
+			envInt("FAUCET_REQUEST_TIMEOUT_MS") ?? (isLocalGateway ? 30_000 : 90_000);
+		await fundAccount(
+			client,
+			rootAccount,
+			quoteAsset,
+			aptos,
+			fundAmount,
+			aptFundAmount,
+			faucetRequestTimeoutMs
+		);
 
 		// Verify balance
 		const finalBalance = await aptos.getAccountAPTAmount({
