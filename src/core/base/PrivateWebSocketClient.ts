@@ -1,3 +1,4 @@
+import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 import ReconnectingWebSocket from "reconnecting-websocket";
 
 import { HEARTBEAT_INTERVAL_MS } from "@/core/constants";
@@ -6,6 +7,15 @@ import { AuthenticationError, WebSocketError } from "@/core/errors";
 export interface AuthRequest {
 	op: "auth";
 	bearer: string;
+	req_id: string;
+}
+
+export interface ApiKeyAuthRequest {
+	op: "auth_api_key";
+	api_key: string;
+	signature: string;
+	timestamp_ms: number;
+	nonce: string;
 	req_id: string;
 }
 
@@ -77,6 +87,7 @@ type PrivateWSMessage =
 export class PrivateWebSocketClient {
 	private ws?: ReconnectingWebSocket;
 	private token?: string;
+	private apiKeyAccount?: Account;
 	private isAuthenticated = false;
 	private subscriptions = new Set<string>();
 	private handlers = new Map<string, Set<(data: any) => void>>();
@@ -87,6 +98,16 @@ export class PrivateWebSocketClient {
 
 	public setToken(token: string): void {
 		this.token = token;
+	}
+
+	public setApiKeyAccount(account: Account): void {
+		this.apiKeyAccount = account;
+	}
+
+	public setApiKeyPrivateKey(privateKey: string): void {
+		const key = privateKey.startsWith("0x") ? privateKey : `0x${privateKey}`;
+		const pk = new Ed25519PrivateKey(key);
+		this.apiKeyAccount = Account.fromPrivateKey({ privateKey: pk });
 	}
 
 	private generateReqId(): string {
@@ -102,9 +123,23 @@ export class PrivateWebSocketClient {
 
 			this.ws = new ReconnectingWebSocket(this.url);
 
+			let settled = false;
+			const safeResolve = () => {
+				if (settled) return;
+				settled = true;
+				resolve();
+			};
+			const safeReject = (err: unknown) => {
+				if (settled) return;
+				settled = true;
+				reject(err);
+			};
+
 			this.ws.addEventListener("open", () => {
-				if (this.token) {
+				try {
 					this.authenticate();
+				} catch (err) {
+					safeReject(err);
 				}
 			});
 
@@ -114,7 +149,7 @@ export class PrivateWebSocketClient {
 
 			this.ws.addEventListener("error", (error) => {
 				console.error("[PrivateWebSocketClient] WebSocket error:", error);
-				reject(error);
+				safeReject(error);
 			});
 
 			const handleAuth = (message: PrivateWSMessage) => {
@@ -122,13 +157,13 @@ export class PrivateWebSocketClient {
 					if (message.success) {
 						this.isAuthenticated = true;
 						this.startHeartbeat();
-						resolve();
+						safeResolve();
 					} else {
 						console.error(
 							"[PrivateWebSocketClient] Authentication failed:",
 							message.message
 						);
-						reject(new Error(message.message || "Authentication failed"));
+						safeReject(new Error(message.message || "Authentication failed"));
 					}
 				}
 			};
@@ -145,17 +180,71 @@ export class PrivateWebSocketClient {
 	}
 
 	private authenticate(): void {
-		if (!this.token) {
-			throw new AuthenticationError("No token provided");
+		if (this.token) {
+			const authRequest: AuthRequest = {
+				op: "auth",
+				bearer: this.token,
+				req_id: this.generateReqId(),
+			};
+			this.send(authRequest);
+			return;
 		}
 
-		const authRequest: AuthRequest = {
-			op: "auth",
-			bearer: this.token,
-			req_id: this.generateReqId(),
-		};
+		if (this.apiKeyAccount) {
+			const timestamp_ms = Date.now();
+			const nonce = this.generateNonce();
+			const message = `EKIDEN_WS|AUTH|${timestamp_ms}|${nonce}`;
+			const messageBytes = new TextEncoder().encode(message);
+			const signature = this.apiKeyAccount.sign(messageBytes).toString();
+			const apiKey = this.apiKeyAccount.publicKey.toString();
 
-		this.send(authRequest);
+			const authRequest: ApiKeyAuthRequest = {
+				op: "auth_api_key",
+				api_key: apiKey,
+				signature,
+				timestamp_ms,
+				nonce,
+				req_id: this.generateReqId(),
+			};
+			this.send(authRequest);
+			return;
+		}
+
+		throw new AuthenticationError("No token or api key credentials provided");
+	}
+
+	private generateNonce(): string {
+		// URL-safe base64 nonce, aligned with other SDK nonce generation.
+		const bytes = new Uint8Array(16);
+		if (globalThis.crypto?.getRandomValues) {
+			globalThis.crypto.getRandomValues(bytes);
+		} else {
+			for (let i = 0; i < bytes.length; i++) {
+				bytes[i] = Math.floor(Math.random() * 256);
+			}
+		}
+
+		let base64: string;
+		if (typeof btoa === "function") {
+			const raw = Array.from(bytes)
+				.map((b) => String.fromCharCode(b))
+				.join("");
+			base64 = btoa(raw);
+			return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+		}
+
+		const BufferCtor = (globalThis as any).Buffer as
+			| { from: (data: Uint8Array) => { toString: (enc: string) => string } }
+			| undefined;
+		if (BufferCtor) {
+			base64 = BufferCtor.from(bytes).toString("base64");
+			return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+		}
+
+		// Last-resort: hex string (still unique-ish); keep URL-safe.
+		return Array.from(bytes)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
 	}
 
 	private startHeartbeat(): void {

@@ -1,5 +1,6 @@
 import { PrivateWebSocketClient } from "@/core/base";
 import type { ChannelMap } from "@/types/websocket";
+import type { Account } from "@aptos-labs/ts-sdk";
 
 export class PrivateStream {
 	private ws: PrivateWebSocketClient;
@@ -10,6 +11,14 @@ export class PrivateStream {
 
 	setToken(token: string): void {
 		this.ws.setToken(token);
+	}
+
+	setApiKeyAccount(account: Account): void {
+		this.ws.setApiKeyAccount(account);
+	}
+
+	setApiKeyPrivateKey(privateKey: string): void {
+		this.ws.setApiKeyPrivateKey(privateKey);
 	}
 
 	async connect(): Promise<void> {
