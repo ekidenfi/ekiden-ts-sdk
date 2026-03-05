@@ -666,6 +666,7 @@ export interface PlaceOrderResponse {
 
 export interface BatchPlaceOrdersRequest {
 	request: PlaceOrderRequest[];
+	await_outcome?: boolean;
 }
 
 export interface BatchPlaceOrdersResponse {
@@ -693,6 +694,7 @@ export interface AmendOrderResponse {
 
 export interface BatchAmendOrdersRequest {
 	request: AmendOrderRequest[];
+	await_outcome?: boolean;
 }
 
 export interface BatchAmendOrdersResponse {
@@ -715,6 +717,7 @@ export interface CancelOrderResponse {
 
 export interface BatchCancelOrdersRequest {
 	request: CancelOrderRequest[];
+	await_outcome?: boolean;
 }
 
 export interface BatchCancelOrdersResponse {
