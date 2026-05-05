@@ -1,5 +1,6 @@
 import { AccountClient } from "@/modules/account";
 import { AssetClient } from "@/modules/asset";
+import { CompetitionClient } from "@/modules/competitions";
 import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";
 import { MarketClient } from "@/modules/market";
@@ -16,6 +17,7 @@ import { ConfigurationError } from "./errors";
 export class EkidenClient {
 	public readonly account: AccountClient;
 	public readonly asset: AssetClient;
+	public readonly competition: CompetitionClient;
 	public readonly funding: FundingClient;
 	public readonly leaderboard: LeaderboardClient;
 	public readonly market: MarketClient;
@@ -31,6 +33,7 @@ export class EkidenClient {
 	constructor(public readonly config: EkidenClientConfig) {
 		this.account = new AccountClient(config);
 		this.asset = new AssetClient(config);
+		this.competition = new CompetitionClient(config);
 		this.funding = new FundingClient(config);
 		this.leaderboard = new LeaderboardClient(config);
 		this.market = new MarketClient(config);
@@ -53,6 +56,7 @@ export class EkidenClient {
 	setToken(token: string): void {
 		this.account.setToken(token);
 		this.asset.setToken(token);
+		this.competition.setToken(token);
 		this.leaderboard.setToken(token);
 		this.trade.setToken(token);
 		this.position.setToken(token);
@@ -63,6 +67,7 @@ export class EkidenClient {
 	setApiKeyAuth(config: ApiKeyAuthConfig): void {
 		this.account.setApiKeyAuth(config);
 		this.asset.setApiKeyAuth(config);
+		this.competition.setApiKeyAuth(config);
 		this.funding.setApiKeyAuth(config);
 		this.leaderboard.setApiKeyAuth(config);
 		this.market.setApiKeyAuth(config);
@@ -76,6 +81,7 @@ export class EkidenClient {
 	clearApiKeyAuth(): void {
 		this.account.clearApiKeyAuth();
 		this.asset.clearApiKeyAuth();
+		this.competition.clearApiKeyAuth();
 		this.funding.clearApiKeyAuth();
 		this.leaderboard.clearApiKeyAuth();
 		this.market.clearApiKeyAuth();
@@ -96,6 +102,7 @@ export class EkidenClient {
 		if (rest) {
 			this.account.setToken(rest);
 			this.asset.setToken(rest);
+			this.competition.setToken(rest);
 			this.leaderboard.setToken(rest);
 			this.trade.setToken(rest);
 			this.position.setToken(rest);

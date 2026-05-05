@@ -9,6 +9,7 @@ export {
 	type AccountStatisticsStep,
 } from "./modules/account";
 export { AssetClient } from "./modules/asset";
+export * from "./modules/competitions";
 export { FundingClient } from "./modules/funding";
 export {
 	LeaderboardClient,
@@ -19,6 +20,7 @@ export { MarketClient } from "./modules/market";
 export { PositionClient } from "./modules/position";
 export { TradeClient } from "./modules/trade";
 export { UserClient } from "./modules/user";
+export type { PointsLedgerEntry, RewardHistoryParams, RewardSummaryResponse, RewardWeekSummary } from "./modules/user";
 export { VaultClient, VaultOnChainClient } from "./modules/vault";
 export * from "./streams";
 export * from "./types";
