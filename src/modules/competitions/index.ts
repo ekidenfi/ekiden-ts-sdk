@@ -10,9 +10,6 @@ export type {
 	CompetitionScoringConfig,
 	CompetitionStatus,
 	CompetitionSummary,
-	CompetitionUserStatus,
-	JoinCompetitionRequest,
-	JoinCompetitionResponse,
 	ListCompetitionsParams,
 	ListCompetitionsResponse,
 } from "./types";

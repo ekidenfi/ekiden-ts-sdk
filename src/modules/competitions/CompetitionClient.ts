@@ -5,8 +5,6 @@ import type {
 	CompetitionPlacementParams,
 	CompetitionPlacementResponse,
 	CompetitionSummary,
-	JoinCompetitionRequest,
-	JoinCompetitionResponse,
 	ListCompetitionsParams,
 	ListCompetitionsResponse,
 } from "./types";
@@ -49,11 +47,4 @@ export class CompetitionClient extends BaseHttpClient {
 		);
 	}
 
-	async joinCompetition(
-		slug: string,
-		body: JoinCompetitionRequest
-	): Promise<JoinCompetitionResponse> {
-		this.ensureAuth();
-		return this.post<JoinCompetitionResponse>(`${userCompetitionPath(slug)}/join`, body, { auth: true });
-	}
 }

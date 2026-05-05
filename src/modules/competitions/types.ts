@@ -1,6 +1,5 @@
 export type CompetitionStatus = "draft" | "scheduled" | "active" | "ended" | "cancelled";
 export type CompetitionMetric = "volume" | "pnl";
-export type CompetitionUserStatus = "joined" | "disqualified" | "banned";
 
 export interface CompetitionScoringConfig {
 	metric: CompetitionMetric;
@@ -71,15 +70,4 @@ export interface CompetitionPlacementParams {
 export interface CompetitionPlacementResponse {
 	competition: CompetitionSummary;
 	data: CompetitionLeaderboardData[];
-}
-
-export interface JoinCompetitionRequest {
-	sub_account: string;
-}
-
-export interface JoinCompetitionResponse {
-	competition_id: string;
-	sub_account_address: string;
-	status: CompetitionUserStatus;
-	joined_at_ms: number;
 }
