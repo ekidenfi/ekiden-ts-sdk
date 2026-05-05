@@ -8,6 +8,9 @@ export interface LeaderboardEntry {
 	roi: string;
 	sub_account_address: string;
 	volume: string;
+	trading_xp: number;
+	referral_xp: number;
+	total_xp: number;
 }
 
 export interface LeaderboardResponse {

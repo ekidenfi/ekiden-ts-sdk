@@ -53,6 +53,7 @@ export class CompetitionClient extends BaseHttpClient {
 		slug: string,
 		body: JoinCompetitionRequest
 	): Promise<JoinCompetitionResponse> {
-		return this.post<JoinCompetitionResponse>(`${userCompetitionPath(slug)}/join`, body);
+		this.ensureAuth();
+		return this.post<JoinCompetitionResponse>(`${userCompetitionPath(slug)}/join`, body, { auth: true });
 	}
 }
