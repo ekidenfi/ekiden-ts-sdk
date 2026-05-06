@@ -14,9 +14,7 @@ const userCompetitionPath = (slug: string): string =>
 	`/user/competitions/${encodeURIComponent(slug)}`;
 
 export class CompetitionClient extends BaseHttpClient {
-	async listCompetitions(
-		params: ListCompetitionsParams = {}
-	): Promise<ListCompetitionsResponse> {
+	async listCompetitions(params: ListCompetitionsParams = {}): Promise<ListCompetitionsResponse> {
 		return this.request<ListCompetitionsResponse>("/competitions", {}, { query: params });
 	}
 
@@ -46,5 +44,4 @@ export class CompetitionClient extends BaseHttpClient {
 			{ auth: true, query: params }
 		);
 	}
-
 }

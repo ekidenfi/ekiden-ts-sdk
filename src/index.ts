@@ -19,8 +19,13 @@ export {
 export { MarketClient } from "./modules/market";
 export { PositionClient } from "./modules/position";
 export { TradeClient } from "./modules/trade";
+export type {
+	PointsLedgerEntry,
+	RewardHistoryParams,
+	RewardSummaryResponse,
+	RewardWeekSummary,
+} from "./modules/user";
 export { UserClient } from "./modules/user";
-export type { PointsLedgerEntry, RewardHistoryParams, RewardSummaryResponse, RewardWeekSummary } from "./modules/user";
 export { VaultClient, VaultOnChainClient } from "./modules/vault";
 export * from "./streams";
 export * from "./types";

@@ -10,8 +10,8 @@ import type {
 	GetSubAccountsResponse,
 	ListApiKeysResponse,
 } from "@/types/api";
-import type { RewardHistoryParams, RewardSummaryResponse } from "./types";
 import { generateAuthorizePayload } from "@/utils/account";
+import type { RewardHistoryParams, RewardSummaryResponse } from "./types";
 
 export class UserClient extends BaseHttpClient {
 	async authorize(params: AuthorizeRequest): Promise<AuthorizeResponse> {
@@ -63,6 +63,10 @@ export class UserClient extends BaseHttpClient {
 
 	async getRewardsSummary(params: RewardHistoryParams = {}): Promise<RewardSummaryResponse> {
 		this.ensureAuth();
-		return this.request<RewardSummaryResponse>("/user/rewards", {}, { auth: true, query: params });
+		return this.request<RewardSummaryResponse>(
+			"/user/rewards",
+			{},
+			{ auth: true, query: params }
+		);
 	}
 }
