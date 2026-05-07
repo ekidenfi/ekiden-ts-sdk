@@ -296,13 +296,7 @@ async function main() {
 		console.log(`Root account balance: ${Number(finalBalance) / 1e8} APT`);
 
 		// Step 4: Registration (On-chain)
-		await ensureRegistration(
-			client,
-			rootAccount,
-			systemInfo,
-			aptos,
-			txOptions
-		);
+		await ensureRegistration(client, rootAccount, systemInfo, aptos, txOptions);
 
 		// 5. Authenticate (After registration)
 		console.log("\n--- 5. Authenticating ---");

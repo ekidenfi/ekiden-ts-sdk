@@ -185,10 +185,7 @@ export class VaultOnChainClient {
 		};
 	}
 
-	createAndLinkSubAccount(params: {
-		vaultAddress: string;
-		subAccountType?: string;
-	}) {
+	createAndLinkSubAccount(params: { vaultAddress: string; subAccountType?: string }) {
 		// Map VaultType to user module type names
 		// user module has: Funding, CrossTrading, IsolatedTrading
 		const typeMapping: Record<string, string> = {
