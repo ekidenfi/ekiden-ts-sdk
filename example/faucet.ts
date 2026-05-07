@@ -31,7 +31,7 @@ import {
 	PrivateKey,
 	PrivateKeyVariants,
 } from "@aptos-labs/ts-sdk";
-import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
+import { createSubAccountsDeterministic, EkidenClient } from "../src";
 import { auth, getAptosClient, SDK_CONFIG } from "./auth";
 
 const LOCAL_APT_FAUCET_MAX = 10_000_000; // 0.1 APT
@@ -75,8 +75,6 @@ export async function ensureRegistration(
 	client: EkidenClient,
 	rootAccount: Account,
 	systemInfo: any,
-	fundingAcc: Account,
-	tradingAcc: Account,
 	aptos: Aptos,
 	txOptions?: { maxGasAmount: number }
 ) {
@@ -97,22 +95,8 @@ export async function ensureRegistration(
 
 	console.log("User not registered, performing on-chain registration...");
 
-	const fundingLinkProof = buildLinkProof(
-		fundingAcc.publicKey.toUint8Array(),
-		rootAccount.accountAddress.toString(),
-		fundingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
-	);
-
-	const tradingLinkProof = buildLinkProof(
-		tradingAcc.publicKey.toUint8Array(),
-		rootAccount.accountAddress.toString(),
-		tradingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
-	);
-
 	const payload = client.vaultOnChain.createEkidenUser({
 		vaultAddress: systemInfo.perpetual_addr,
-		fundingLinkProof,
-		crossTradingLinkProof: tradingLinkProof,
 	});
 
 	console.log("Submitting registration transaction...");
@@ -316,8 +300,6 @@ async function main() {
 			client,
 			rootAccount,
 			systemInfo,
-			fundingAcc,
-			tradingAcc,
 			aptos,
 			txOptions
 		);

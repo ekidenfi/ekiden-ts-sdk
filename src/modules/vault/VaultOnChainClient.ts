@@ -22,6 +22,15 @@ export interface WithdrawFromFundingParams {
 	amount: bigint;
 }
 
+export interface RequestFromTradingParams {
+	vaultAddress: string;
+	fromSubAddress: string;
+	toSubAddress: string;
+	requestedAmount: bigint;
+	withdrawAvailable: boolean;
+	fromVaultType: VaultType;
+}
+
 export interface TransferParams {
 	vaultAddress: string;
 	vaultFrom: string | null;
@@ -100,6 +109,19 @@ export class VaultOnChainClient {
 		};
 	}
 
+	requestFromTrading(params: RequestFromTradingParams) {
+		return {
+			function: `${params.vaultAddress}::vault::request_from_trading`,
+			typeArguments: [`${params.vaultAddress}::vault_types::${params.fromVaultType}`],
+			functionArguments: [
+				params.fromSubAddress,
+				params.toSubAddress,
+				params.requestedAmount.toString(),
+				params.withdrawAvailable.toString(),
+			],
+		};
+	}
+
 	transfer(params: TransferParams) {
 		return {
 			function: `${params.vaultAddress}::vault::transfer`,
@@ -155,24 +177,16 @@ export class VaultOnChainClient {
 		};
 	}
 
-	createEkidenUser(params: {
-		vaultAddress: string;
-		fundingLinkProof: Uint8Array;
-		crossTradingLinkProof: Uint8Array;
-	}) {
+	createEkidenUser(params: { vaultAddress: string }) {
 		return {
 			function: `${params.vaultAddress}::user::create_ekiden_user`,
 			typeArguments: [],
-			functionArguments: [
-				Array.from(params.fundingLinkProof),
-				Array.from(params.crossTradingLinkProof),
-			],
+			functionArguments: [],
 		};
 	}
 
 	createAndLinkSubAccount(params: {
 		vaultAddress: string;
-		linkProof: Uint8Array;
 		subAccountType?: string;
 	}) {
 		// Map VaultType to user module type names
@@ -188,7 +202,7 @@ export class VaultOnChainClient {
 		return {
 			function: `${params.vaultAddress}::user::create_and_link_sub_account`,
 			typeArguments: [`${params.vaultAddress}::user::${userType}`],
-			functionArguments: [Array.from(params.linkProof)],
+			functionArguments: [],
 		};
 	}
 }
