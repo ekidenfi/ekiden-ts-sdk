@@ -11,6 +11,17 @@ export type {
 	UserId,
 } from "@/types/api";
 
+export interface ReferralSummaryResponse {
+	referral_code: string;
+	referrer_code?: string | null;
+	referrer_user_id?: string | null;
+	downline_count: number;
+}
+
+export interface BindReferralRequest {
+	referral_code: string;
+}
+
 export interface RewardHistoryParams {
 	limit?: number;
 }

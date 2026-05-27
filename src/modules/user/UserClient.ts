@@ -11,7 +11,12 @@ import type {
 	ListApiKeysResponse,
 } from "@/types/api";
 import { generateAuthorizePayload } from "@/utils/account";
-import type { RewardHistoryParams, RewardSummaryResponse } from "./types";
+import type {
+	BindReferralRequest,
+	ReferralSummaryResponse,
+	RewardHistoryParams,
+	RewardSummaryResponse,
+} from "./types";
 
 export class UserClient extends BaseHttpClient {
 	async authorize(params: AuthorizeRequest): Promise<AuthorizeResponse> {
@@ -59,6 +64,16 @@ export class UserClient extends BaseHttpClient {
 			{ method: "DELETE" },
 			{ auth: true }
 		);
+	}
+
+	async getReferralSummary(): Promise<ReferralSummaryResponse> {
+		this.ensureAuth();
+		return this.request<ReferralSummaryResponse>("/user/referral", {}, { auth: true });
+	}
+
+	async bindReferral(params: BindReferralRequest): Promise<ReferralSummaryResponse> {
+		this.ensureAuth();
+		return this.post<ReferralSummaryResponse>("/user/referral", params);
 	}
 
 	async getRewardsSummary(params: RewardHistoryParams = {}): Promise<RewardSummaryResponse> {
