@@ -18,12 +18,12 @@ export const decodeHexToString = (hex: string): string => {
 };
 
 export const parseSubAccountsData = (data: any[]): SubAccountData => {
-	if (data.length >= 6) {
+	if (data.length >= 4) {
 		return {
 			orderIndexes: data[0] || [],
 			types: data[1] || [],
 			subs: data[3] || [],
-			nonces: data[5] || [],
+			nonces: data[2] || [],
 		};
 	}
 	return {
@@ -47,7 +47,6 @@ export interface AccountMessageInput {
  */
 export interface SubAccount {
 	address: string;
-	privateKey: string;
 	publicKey: string;
 	type: "funding" | "trading";
 	nonce: string;
@@ -61,13 +60,6 @@ export interface CreateSubAccountOptions {
 	type: "Funding" | "Trading";
 	version?: string;
 	nonce?: string;
-}
-
-/**
- * Options for creating sub-account from signature
- */
-export interface CreateSubAccountFromSignatureOptions extends CreateSubAccountOptions {
-	signature: string | Uint8Array;
 }
 
 /**
@@ -160,43 +152,6 @@ export const extractPrivateKeyFromSignature = (
 };
 
 /**
- * Create a sub-account from wallet signature
- * Use this for standard wallets that support message signing
- *
- * @param options - Creation options with signature
- * @returns SubAccount with address, keys, type and nonce
- *
- * @example
- * ```typescript
- * const message = createAccountMessage(rootAddress, "Funding");
- * const signResult = await wallet.signMessage(message);
- *
- * const fundingAccount = createSubAccountFromSignature({
- *   rootAddress,
- *   type: "Funding",
- *   signature: signResult.signature,
- * });
- * ```
- */
-export const createSubAccountFromSignature = (
-	options: CreateSubAccountFromSignatureOptions
-): SubAccount => {
-	const { rootAddress, type, version = "v2", nonce = "0", signature } = options;
-
-	const privateKeyBytes = extractPrivateKeyFromSignature(signature);
-	const privateKey = new Ed25519PrivateKey(privateKeyBytes);
-	const account = Account.fromPrivateKey({ privateKey });
-
-	return {
-		address: account.accountAddress.toString(),
-		privateKey: privateKey.toString(),
-		publicKey: account.publicKey.toString(),
-		type: type.toLowerCase() as "funding" | "trading",
-		nonce,
-	};
-};
-
-/**
  * Create a sub-account deterministically from seed
  * Use this for keyless wallets (Google, Apple) and cross-chain wallets
  * that don't support standard message signing
@@ -229,54 +184,10 @@ export const createSubAccountDeterministic = async (
 
 	return {
 		address: account.accountAddress.toString(),
-		privateKey: privateKey.toString(),
 		publicKey: account.publicKey.toString(),
 		type: type.toLowerCase() as "funding" | "trading",
 		nonce,
 	};
-};
-
-/**
- * Create both funding and trading sub-accounts from signatures
- *
- * @param rootAddress - Root wallet address
- * @param fundingSignature - Signature for funding account
- * @param tradingSignature - Signature for trading account
- * @returns Object with funding and trading SubAccounts
- *
- * @example
- * ```typescript
- * const fundingMsg = createAccountMessage(rootAddress, "Funding");
- * const tradingMsg = createAccountMessage(rootAddress, "Trading");
- *
- * const fundingSig = await wallet.signMessage(fundingMsg);
- * const tradingSig = await wallet.signMessage(tradingMsg);
- *
- * const { funding, trading } = createSubAccounts(
- *   rootAddress,
- *   fundingSig.signature,
- *   tradingSig.signature
- * );
- * ```
- */
-export const createSubAccounts = (
-	rootAddress: string,
-	fundingSignature: string | Uint8Array,
-	tradingSignature: string | Uint8Array
-): { funding: SubAccount; trading: SubAccount } => {
-	const funding = createSubAccountFromSignature({
-		rootAddress,
-		type: "Funding",
-		signature: fundingSignature,
-	});
-
-	const trading = createSubAccountFromSignature({
-		rootAddress,
-		type: "Trading",
-		signature: tradingSignature,
-	});
-
-	return { funding, trading };
 };
 
 /**
@@ -306,82 +217,6 @@ export const createSubAccountsDeterministic = async (
 	});
 
 	return { funding, trading };
-};
-
-export interface MasterSignaturePayload {
-	message: string;
-	nonce: string;
-}
-
-export interface DeriveFromMasterSignatureOptions {
-	masterSignature: string | Uint8Array;
-	type: "Funding" | "Trading";
-	nonce?: string;
-}
-
-export const createMasterSignaturePayload = (
-	rootAddress: string,
-	version = 1
-): MasterSignaturePayload => ({
-	message: "Ekiden Account Derivation",
-	nonce: `${rootAddress}:${version}`,
-});
-
-export const deriveSubAccountFromMasterSignature = async (
-	options: DeriveFromMasterSignatureOptions
-): Promise<SubAccount> => {
-	const { masterSignature, type, nonce = "0" } = options;
-
-	const signatureBytes = extractPrivateKeyFromSignature(masterSignature);
-
-	const encoder = new TextEncoder();
-	const typeBytes = encoder.encode(type);
-	const nonceBytes = encoder.encode(nonce);
-
-	const combinedData = new Uint8Array([...signatureBytes, ...typeBytes, ...nonceBytes]);
-
-	const hashBuffer = await crypto.subtle.digest("SHA-256", combinedData);
-	const privateKeyBytes = new Uint8Array(hashBuffer);
-
-	const privateKey = new Ed25519PrivateKey(privateKeyBytes);
-	const account = Account.fromPrivateKey({ privateKey });
-
-	return {
-		address: account.accountAddress.toString(),
-		privateKey: privateKey.toString(),
-		publicKey: account.publicKey.toString(),
-		type: type.toLowerCase() as "funding" | "trading",
-		nonce,
-	};
-};
-
-export const deriveSubAccountsFromMasterSignature = async (
-	masterSignature: string | Uint8Array
-): Promise<{ funding: SubAccount; trading: SubAccount }> => {
-	const funding = await deriveSubAccountFromMasterSignature({
-		masterSignature,
-		type: "Funding",
-		nonce: "0",
-	});
-
-	const trading = await deriveSubAccountFromMasterSignature({
-		masterSignature,
-		type: "Trading",
-		nonce: "0",
-	});
-
-	return { funding, trading };
-};
-
-export const deriveTradingAccountFromMasterSignature = async (
-	masterSignature: string | Uint8Array,
-	nonce: string
-): Promise<SubAccount> => {
-	return deriveSubAccountFromMasterSignature({
-		masterSignature,
-		type: "Trading",
-		nonce,
-	});
 };
 
 /**

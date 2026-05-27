@@ -266,13 +266,6 @@ async function main() {
 		console.log(`Funding Sub-Account: ${funding.address}`);
 		console.log(`Trading Sub-Account: ${trading.address}`);
 
-		const fundingAcc = Account.fromPrivateKey({
-			privateKey: new Ed25519PrivateKey(funding.privateKey),
-		});
-		const tradingAcc = Account.fromPrivateKey({
-			privateKey: new Ed25519PrivateKey(trading.privateKey),
-		});
-
 		// Step 3: Faucet Funding (Get gas and tokens before registration)
 		const fundAmount = 500 * 10 ** 6; // 500 USDC
 		const isLocalGateway = isLocalGatewayBaseUrl(SDK_CONFIG.baseURL);
@@ -446,15 +439,26 @@ async function main() {
 			);
 		}
 
-		const withdrawParams = client.vault.buildWithdrawFromTradingParams(tradingAcc, {
-			addr_to: funding.address,
-			amount: (Number(depositAmount) / 1e6).toString(),
-			asset_metadata: quoteAsset,
-			nonce,
+		const withdrawRequest = client.vaultOnChain.requestFromTrading({
+			fromSubAddress: trading.address,
+			toSubAddress: funding.address,
+			vaultAddress: SDK_CONFIG.contractAddress,
+			requestedAmount: BigInt(depositAmount),
+			fromVaultType: "Cross",
 		});
 
-		await client.vault.withdrawFromTrading(withdrawParams);
-		console.log("Withdrawal from Trading initiated successfully.");
+		const tx3 = await aptos.transaction.build.simple({
+			sender: rootAccount.accountAddress,
+			data: withdrawRequest as any,
+			options: txOptions,
+		});
+		const auth3 = aptos.transaction.sign({ signer: rootAccount, transaction: tx3 });
+		const committedTx = await aptos.transaction.submit.simple({
+			transaction: tx3,
+			senderAuthenticator: auth3,
+		});
+		await aptos.waitForTransaction({ transactionHash: committedTx.hash });
+		console.log(`Withdraw from Trading successful: ${committedTx.hash}`);
 
 		// Step 10: Withdraw from Funding back to Wallet (On-chain)
 		console.log(
@@ -466,18 +470,18 @@ async function main() {
 			amount: depositAmount,
 		});
 
-		const tx3 = await aptos.transaction.build.simple({
+		const tx4 = await aptos.transaction.build.simple({
 			sender: rootAccount.accountAddress,
 			data: withdrawFundingPayload as any,
 			options: txOptions,
 		});
-		const auth3 = aptos.transaction.sign({ signer: rootAccount, transaction: tx3 });
-		const committedTx3 = await aptos.transaction.submit.simple({
-			transaction: tx3,
-			senderAuthenticator: auth3,
+		const auth4 = aptos.transaction.sign({ signer: rootAccount, transaction: tx4 });
+		const committedTx4 = await aptos.transaction.submit.simple({
+			transaction: tx4,
+			senderAuthenticator: auth4,
 		});
-		await aptos.waitForTransaction({ transactionHash: committedTx3.hash });
-		console.log(`Withdraw from Funding successful: ${committedTx3.hash}`);
+		await aptos.waitForTransaction({ transactionHash: committedTx4.hash });
+		console.log(`Withdraw from Funding successful: ${committedTx4.hash}`);
 
 		// Step 11: Verification & Final Balance Updates
 		console.log("\n--- 11. Final Verification ---");

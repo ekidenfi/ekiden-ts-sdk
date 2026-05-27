@@ -27,7 +27,7 @@ export interface RequestFromTradingParams {
 	fromSubAddress: string;
 	toSubAddress: string;
 	requestedAmount: bigint;
-	withdrawAvailable: boolean;
+	withdrawAvailable?: boolean;
 	fromVaultType: VaultType;
 }
 
@@ -117,7 +117,7 @@ export class VaultOnChainClient {
 				params.fromSubAddress,
 				params.toSubAddress,
 				params.requestedAmount.toString(),
-				params.withdrawAvailable.toString(),
+				(params.withdrawAvailable || true).toString(),
 			],
 		};
 	}
