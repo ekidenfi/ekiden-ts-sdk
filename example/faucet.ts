@@ -179,7 +179,7 @@ export async function depositToTrading(
 	rootAccount: Account,
 	tradingAddress: string,
 	fundingAddress: string,
-	quoteAsset: string,
+	_quoteAsset: string,
 	amount: bigint,
 	aptos: Aptos,
 	txOptions?: { maxGasAmount: number }
