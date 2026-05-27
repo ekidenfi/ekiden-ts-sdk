@@ -31,7 +31,7 @@ import {
 	PrivateKey,
 	PrivateKeyVariants,
 } from "@aptos-labs/ts-sdk";
-import { buildLinkProof, createSubAccountsDeterministic, EkidenClient } from "../src";
+import { createSubAccountsDeterministic, EkidenClient } from "../src";
 import { auth, getAptosClient, SDK_CONFIG } from "./auth";
 
 const LOCAL_APT_FAUCET_MAX = 10_000_000; // 0.1 APT
@@ -75,8 +75,6 @@ export async function ensureRegistration(
 	client: EkidenClient,
 	rootAccount: Account,
 	systemInfo: any,
-	fundingAcc: Account,
-	tradingAcc: Account,
 	aptos: Aptos,
 	txOptions?: { maxGasAmount: number }
 ) {
@@ -97,22 +95,8 @@ export async function ensureRegistration(
 
 	console.log("User not registered, performing on-chain registration...");
 
-	const fundingLinkProof = buildLinkProof(
-		fundingAcc.publicKey.toUint8Array(),
-		rootAccount.accountAddress.toString(),
-		fundingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
-	);
-
-	const tradingLinkProof = buildLinkProof(
-		tradingAcc.publicKey.toUint8Array(),
-		rootAccount.accountAddress.toString(),
-		tradingAcc.sign(rootAccount.accountAddress.toUint8Array()).toUint8Array()
-	);
-
 	const payload = client.vaultOnChain.createEkidenUser({
 		vaultAddress: systemInfo.perpetual_addr,
-		fundingLinkProof,
-		crossTradingLinkProof: tradingLinkProof,
 	});
 
 	console.log("Submitting registration transaction...");
@@ -195,7 +179,7 @@ export async function depositToTrading(
 	rootAccount: Account,
 	tradingAddress: string,
 	fundingAddress: string,
-	quoteAsset: string,
+	_quoteAsset: string,
 	amount: bigint,
 	aptos: Aptos,
 	txOptions?: { maxGasAmount: number }
@@ -206,7 +190,6 @@ export async function depositToTrading(
 		vaultAddress: systemInfo.perpetual_addr,
 		fundingSubAddress: fundingAddress,
 		tradingSubAddress: tradingAddress,
-		assetMetadata: quoteAsset,
 		amount: amount,
 		vaultToType: "Cross",
 	});
@@ -282,13 +265,6 @@ async function main() {
 		console.log(`Funding Sub-Account: ${funding.address}`);
 		console.log(`Trading Sub-Account: ${trading.address}`);
 
-		const fundingAcc = Account.fromPrivateKey({
-			privateKey: new Ed25519PrivateKey(funding.privateKey),
-		});
-		const tradingAcc = Account.fromPrivateKey({
-			privateKey: new Ed25519PrivateKey(trading.privateKey),
-		});
-
 		// Step 3: Faucet Funding (Get gas and tokens before registration)
 		const fundAmount = 500 * 10 ** 6; // 500 USDC
 		const isLocalGateway = isLocalGatewayBaseUrl(SDK_CONFIG.baseURL);
@@ -312,15 +288,7 @@ async function main() {
 		console.log(`Root account balance: ${Number(finalBalance) / 1e8} APT`);
 
 		// Step 4: Registration (On-chain)
-		await ensureRegistration(
-			client,
-			rootAccount,
-			systemInfo,
-			fundingAcc,
-			tradingAcc,
-			aptos,
-			txOptions
-		);
+		await ensureRegistration(client, rootAccount, systemInfo, aptos, txOptions);
 
 		// 5. Authenticate (After registration)
 		console.log("\n--- 5. Authenticating ---");
@@ -358,7 +326,6 @@ async function main() {
 		);
 		const depositFundingPayload = client.vaultOnChain.depositIntoFunding({
 			subAddress: funding.address,
-			assetMetadata: quoteAsset,
 			amount: depositAmount,
 		});
 
@@ -470,15 +437,26 @@ async function main() {
 			);
 		}
 
-		const withdrawParams = client.vault.buildWithdrawFromTradingParams(tradingAcc, {
-			addr_to: funding.address,
-			amount: (Number(depositAmount) / 1e6).toString(),
-			asset_metadata: quoteAsset,
-			nonce,
+		const withdrawRequest = client.vaultOnChain.requestFromTrading({
+			fromSubAddress: trading.address,
+			toSubAddress: funding.address,
+			vaultAddress: SDK_CONFIG.contractAddress,
+			requestedAmount: BigInt(depositAmount),
+			fromVaultType: "Cross",
 		});
 
-		await client.vault.withdrawFromTrading(withdrawParams);
-		console.log("Withdrawal from Trading initiated successfully.");
+		const tx3 = await aptos.transaction.build.simple({
+			sender: rootAccount.accountAddress,
+			data: withdrawRequest as any,
+			options: txOptions,
+		});
+		const auth3 = aptos.transaction.sign({ signer: rootAccount, transaction: tx3 });
+		const committedTx = await aptos.transaction.submit.simple({
+			transaction: tx3,
+			senderAuthenticator: auth3,
+		});
+		await aptos.waitForTransaction({ transactionHash: committedTx.hash });
+		console.log(`Withdraw from Trading successful: ${committedTx.hash}`);
 
 		// Step 10: Withdraw from Funding back to Wallet (On-chain)
 		console.log(
@@ -486,22 +464,21 @@ async function main() {
 		);
 		const withdrawFundingPayload = client.vaultOnChain.withdrawFromFunding({
 			subAddress: funding.address,
-			assetMetadata: quoteAsset,
 			amount: depositAmount,
 		});
 
-		const tx3 = await aptos.transaction.build.simple({
+		const tx4 = await aptos.transaction.build.simple({
 			sender: rootAccount.accountAddress,
 			data: withdrawFundingPayload as any,
 			options: txOptions,
 		});
-		const auth3 = aptos.transaction.sign({ signer: rootAccount, transaction: tx3 });
-		const committedTx3 = await aptos.transaction.submit.simple({
-			transaction: tx3,
-			senderAuthenticator: auth3,
+		const auth4 = aptos.transaction.sign({ signer: rootAccount, transaction: tx4 });
+		const committedTx4 = await aptos.transaction.submit.simple({
+			transaction: tx4,
+			senderAuthenticator: auth4,
 		});
-		await aptos.waitForTransaction({ transactionHash: committedTx3.hash });
-		console.log(`Withdraw from Funding successful: ${committedTx3.hash}`);
+		await aptos.waitForTransaction({ transactionHash: committedTx4.hash });
+		console.log(`Withdraw from Funding successful: ${committedTx4.hash}`);
 
 		// Step 11: Verification & Final Balance Updates
 		console.log("\n--- 11. Final Verification ---");

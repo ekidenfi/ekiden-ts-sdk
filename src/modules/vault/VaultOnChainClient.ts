@@ -3,7 +3,6 @@ import type { VaultType } from "@/types/common";
 
 export interface DepositIntoFundingParams {
 	subAddress: string;
-	assetMetadata: string;
 	amount: bigint;
 }
 
@@ -11,15 +10,22 @@ export interface DepositIntoFundingWithTransferToParams {
 	vaultAddress: string;
 	fundingSubAddress: string;
 	tradingSubAddress: string;
-	assetMetadata: string;
 	amount: bigint;
 	vaultToType: VaultType;
 }
 
 export interface WithdrawFromFundingParams {
 	subAddress: string;
-	assetMetadata: string;
 	amount: bigint;
+}
+
+export interface RequestFromTradingParams {
+	vaultAddress: string;
+	fromSubAddress: string;
+	toSubAddress: string;
+	requestedAmount: bigint;
+	withdrawAvailable?: boolean;
+	fromVaultType: VaultType;
 }
 
 export interface TransferParams {
@@ -75,7 +81,7 @@ export class VaultOnChainClient {
 		return {
 			function: `${this.contractAddress}::vault::deposit_into_funding`,
 			typeArguments: [],
-			functionArguments: [params.subAddress, params.assetMetadata, params.amount.toString()],
+			functionArguments: [params.subAddress, params.amount.toString()],
 		};
 	}
 
@@ -86,7 +92,6 @@ export class VaultOnChainClient {
 			functionArguments: [
 				params.fundingSubAddress,
 				params.tradingSubAddress,
-				params.assetMetadata,
 				params.amount.toString(),
 			],
 		};
@@ -96,7 +101,20 @@ export class VaultOnChainClient {
 		return {
 			function: `${this.contractAddress}::vault::withdraw_from_funding`,
 			typeArguments: [],
-			functionArguments: [params.subAddress, params.assetMetadata, params.amount.toString()],
+			functionArguments: [params.subAddress, params.amount.toString()],
+		};
+	}
+
+	requestFromTrading(params: RequestFromTradingParams) {
+		return {
+			function: `${params.vaultAddress}::approved_withdrawal::request_from_trading`,
+			typeArguments: [`${params.vaultAddress}::vault_types::${params.fromVaultType}`],
+			functionArguments: [
+				params.fromSubAddress,
+				params.toSubAddress,
+				params.requestedAmount.toString(),
+				(params.withdrawAvailable || true).toString(),
+			],
 		};
 	}
 
@@ -155,26 +173,15 @@ export class VaultOnChainClient {
 		};
 	}
 
-	createEkidenUser(params: {
-		vaultAddress: string;
-		fundingLinkProof: Uint8Array;
-		crossTradingLinkProof: Uint8Array;
-	}) {
+	createEkidenUser(params: { vaultAddress: string }) {
 		return {
 			function: `${params.vaultAddress}::user::create_ekiden_user`,
 			typeArguments: [],
-			functionArguments: [
-				Array.from(params.fundingLinkProof),
-				Array.from(params.crossTradingLinkProof),
-			],
+			functionArguments: [],
 		};
 	}
 
-	createAndLinkSubAccount(params: {
-		vaultAddress: string;
-		linkProof: Uint8Array;
-		subAccountType?: string;
-	}) {
+	createAndLinkSubAccount(params: { vaultAddress: string; subAccountType?: string }) {
 		// Map VaultType to user module type names
 		// user module has: Funding, CrossTrading, IsolatedTrading
 		const typeMapping: Record<string, string> = {
@@ -188,7 +195,7 @@ export class VaultOnChainClient {
 		return {
 			function: `${params.vaultAddress}::user::create_and_link_sub_account`,
 			typeArguments: [`${params.vaultAddress}::user::${userType}`],
-			functionArguments: [Array.from(params.linkProof)],
+			functionArguments: [],
 		};
 	}
 }

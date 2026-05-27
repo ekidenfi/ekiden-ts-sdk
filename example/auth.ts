@@ -21,8 +21,6 @@ import {
 	Aptos,
 	AptosConfig,
 	type AptosSettings,
-	buildLinkProof,
-	createSubAccountsDeterministic,
 	type Ed25519Account,
 	Ed25519PrivateKey,
 	EkidenClient,
@@ -188,30 +186,8 @@ async function registerEkidenUser(client: EkidenClient, account: Ed25519Account)
 	const isRegistered = Boolean(registrationCheck[0]);
 	if (isRegistered) return;
 
-	const { funding, trading } = await createSubAccountsDeterministic(rootAddress);
-	const fundingAccount = Account.fromPrivateKey({
-		privateKey: new Ed25519PrivateKey(funding.privateKey),
-	});
-	const tradingAccount = Account.fromPrivateKey({
-		privateKey: new Ed25519PrivateKey(trading.privateKey),
-	});
-
-	const rootAddressBytes = account.accountAddress.toUint8Array();
-	const fundingLinkProof = buildLinkProof(
-		fundingAccount.publicKey.toUint8Array(),
-		rootAddress,
-		fundingAccount.sign(rootAddressBytes).toUint8Array()
-	);
-	const tradingLinkProof = buildLinkProof(
-		tradingAccount.publicKey.toUint8Array(),
-		rootAddress,
-		tradingAccount.sign(rootAddressBytes).toUint8Array()
-	);
-
 	const payload = client.vaultOnChain.createEkidenUser({
 		vaultAddress: systemInfo.perpetual_addr,
-		fundingLinkProof,
-		crossTradingLinkProof: tradingLinkProof,
 	});
 
 	const tx = await aptos.transaction.build.simple({
