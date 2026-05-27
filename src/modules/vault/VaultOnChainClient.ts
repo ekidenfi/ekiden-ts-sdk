@@ -16,7 +16,6 @@ export interface DepositIntoFundingWithTransferToParams {
 
 export interface WithdrawFromFundingParams {
 	subAddress: string;
-	assetMetadata: string;
 	amount: bigint;
 }
 
@@ -102,7 +101,7 @@ export class VaultOnChainClient {
 		return {
 			function: `${this.contractAddress}::vault::withdraw_from_funding`,
 			typeArguments: [],
-			functionArguments: [params.subAddress, params.assetMetadata, params.amount.toString()],
+			functionArguments: [params.subAddress, params.amount.toString()],
 		};
 	}
 

@@ -464,7 +464,6 @@ async function main() {
 		);
 		const withdrawFundingPayload = client.vaultOnChain.withdrawFromFunding({
 			subAddress: funding.address,
-			assetMetadata: quoteAsset,
 			amount: depositAmount,
 		});
 
