@@ -190,7 +190,6 @@ export async function depositToTrading(
 		vaultAddress: systemInfo.perpetual_addr,
 		fundingSubAddress: fundingAddress,
 		tradingSubAddress: tradingAddress,
-		assetMetadata: quoteAsset,
 		amount: amount,
 		vaultToType: "Cross",
 	});
@@ -327,7 +326,6 @@ async function main() {
 		);
 		const depositFundingPayload = client.vaultOnChain.depositIntoFunding({
 			subAddress: funding.address,
-			assetMetadata: quoteAsset,
 			amount: depositAmount,
 		});
 

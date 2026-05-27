@@ -3,7 +3,6 @@ import type { VaultType } from "@/types/common";
 
 export interface DepositIntoFundingParams {
 	subAddress: string;
-	assetMetadata: string;
 	amount: bigint;
 }
 
@@ -11,7 +10,6 @@ export interface DepositIntoFundingWithTransferToParams {
 	vaultAddress: string;
 	fundingSubAddress: string;
 	tradingSubAddress: string;
-	assetMetadata: string;
 	amount: bigint;
 	vaultToType: VaultType;
 }
@@ -84,7 +82,7 @@ export class VaultOnChainClient {
 		return {
 			function: `${this.contractAddress}::vault::deposit_into_funding`,
 			typeArguments: [],
-			functionArguments: [params.subAddress, params.assetMetadata, params.amount.toString()],
+			functionArguments: [params.subAddress, params.amount.toString()],
 		};
 	}
 
@@ -95,7 +93,6 @@ export class VaultOnChainClient {
 			functionArguments: [
 				params.fundingSubAddress,
 				params.tradingSubAddress,
-				params.assetMetadata,
 				params.amount.toString(),
 			],
 		};
@@ -111,7 +108,7 @@ export class VaultOnChainClient {
 
 	requestFromTrading(params: RequestFromTradingParams) {
 		return {
-			function: `${params.vaultAddress}::vault::request_from_trading`,
+			function: `${params.vaultAddress}::approved_withdrawal::request_from_trading`,
 			typeArguments: [`${params.vaultAddress}::vault_types::${params.fromVaultType}`],
 			functionArguments: [
 				params.fromSubAddress,
