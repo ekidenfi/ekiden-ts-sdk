@@ -26,7 +26,9 @@ export const submitCantonCommands = async ({
 	const payload = (await response.json()) as CantonSubmitResponse;
 	if (!response.ok) {
 		throw new Error(
-			payload.message || payload.error || `Canton command submission failed (${response.status})`
+			payload.message ||
+				payload.error ||
+				`Canton command submission failed (${response.status})`
 		);
 	}
 	if (payload.error) {

@@ -23,12 +23,7 @@
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=dev bun run example/faucet.ts`
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=local bun run example/faucet.ts`
 
-import {
-	Account,
-	createSubAccountsDeterministic,
-	Ed25519PrivateKey,
-	EkidenClient,
-} from "../src";
+import { Account, createSubAccountsDeterministic, Ed25519PrivateKey, EkidenClient } from "../src";
 import { auth, SDK_CONFIG } from "./auth";
 
 function isLocalGatewayBaseUrl(baseURL: string): boolean {

@@ -1,6 +1,6 @@
 import { ed25519 } from "@noble/curves/ed25519.js";
-import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 import { sha3_256 } from "@noble/hashes/sha3.js";
+import { bytesToHex, hexToBytes } from "@noble/hashes/utils.js";
 
 const PRIVATE_KEY_LENGTH = 32;
 const AIP80_ED25519_PREFIX = "ed25519-priv-";

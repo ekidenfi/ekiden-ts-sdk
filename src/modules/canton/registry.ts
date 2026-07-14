@@ -53,9 +53,7 @@ export class CantonRegistryClient {
 					templateId,
 					contractId,
 					createdEventBlob,
-					synchronizerId: String(
-						contract.synchronizerId || this.config.synchronizerId
-					),
+					synchronizerId: String(contract.synchronizerId || this.config.synchronizerId),
 				};
 			})
 			.filter((contract): contract is CantonDisclosedContract => contract != null);
@@ -104,9 +102,7 @@ export class CantonRegistryClient {
 
 		if (!response.ok) {
 			const errorBody = await response.text();
-			throw new Error(
-				`Failed to fetch transfer factory (${response.status}): ${errorBody}`
-			);
+			throw new Error(`Failed to fetch transfer factory (${response.status}): ${errorBody}`);
 		}
 
 		const payload = readObj(await response.json());
@@ -126,15 +122,11 @@ export class CantonRegistryClient {
 				context: { values: readObj(choiceContextData.values) },
 				meta: { values: {} },
 			},
-			disclosedContracts: this.normalizeDisclosedContracts(
-				choiceContext.disclosedContracts
-			),
+			disclosedContracts: this.normalizeDisclosedContracts(choiceContext.disclosedContracts),
 		};
 	}
 
-	async fetchTransferOfferAcceptContext(
-		contractId: string
-	): Promise<TransferOfferAcceptContext> {
+	async fetchTransferOfferAcceptContext(contractId: string): Promise<TransferOfferAcceptContext> {
 		const response = await fetch(
 			`${this.baseUrl}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/accept`,
 			{

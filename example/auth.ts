@@ -82,9 +82,7 @@ export async function auth(
 	} catch (error) {
 		// TODO(canton): user registration was previously performed on-chain via
 		// create_ekiden_user; it will be reimplemented with Canton commands.
-		throw new Error(
-			`Authentication failed: ${error instanceof Error ? error.message : error}`
-		);
+		throw new Error(`Authentication failed: ${error instanceof Error ? error.message : error}`);
 	}
 }
 
