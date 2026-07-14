@@ -1,6 +1,6 @@
 import { BaseHttpClient } from "@/core/base";
-import type { Account } from "@/crypto";
 import { APIError } from "@/core/errors";
+import type { Account } from "@/crypto";
 import type {
 	AuthorizeRequest,
 	AuthorizeResponse,

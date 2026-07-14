@@ -201,9 +201,10 @@ export class BaseHttpClient {
 
 			// Handle 401 Unauthorized on an AUTHENTICATED request - trigger the re-sign
 			// dialog. Public/pre-auth calls (auth === false) — e.g. /authorize, whose 401
-			// means "these login credentials were refused", not "your session expired" —
-			// must NOT drive the app's re-login flow; retrying such a call would otherwise
-			// fire the callback on every attempt. Their 401 surfaces only as the APIError.
+			// means "these login credentials were refused", not "your session expired", or
+			// /access/activate, whose 401 means "bad signature" — must NOT drive the app's
+			// re-login flow; retrying such a call would otherwise fire the callback on
+			// every attempt. Their 401 surfaces only as the APIError.
 			if (auth && response.status === 401 && globalUnauthorizedCallback) {
 				globalUnauthorizedCallback();
 			}
