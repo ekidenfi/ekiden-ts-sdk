@@ -21,10 +21,26 @@ export { MarketClient } from "./modules/market";
 export { PositionClient } from "./modules/position";
 export { TradeClient } from "./modules/trade";
 export type {
-	PointsLedgerEntry,
-	RewardHistoryParams,
+	AccessActivateRequest,
+	AccessActivateResponse,
+	AccessStatusResponse,
+	AffiliateDashboardDownline,
+	AffiliateDashboardPerks,
+	AffiliateDashboardRates,
+	AffiliateDashboardResponse,
+	AffiliateDashboardWeek,
+	BindReferralRequest,
+	ClaimQuestResponse,
+	RankStatus,
+	ReferralStatus,
+	ReferralSummaryResponse,
 	RewardSummaryResponse,
-	RewardWeekSummary,
+	RewardsLedgerEntry,
+	RewardsLedgerParams,
+	SeasonStatus,
+	UserQuestSummary,
+	UserQuestsResponse,
+	XpBreakdown,
 } from "./modules/user";
 export { UserClient } from "./modules/user";
 export { VaultClient } from "./modules/vault";

@@ -1,4 +1,6 @@
 import { Account, Ed25519PrivateKey } from "@/crypto";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import { addressToBytes } from "./address";
 
 export interface SubAccountData {
@@ -233,4 +235,33 @@ export const generateAuthorizePayload = (): {
 	const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
 
 	return { timestamp_ms, nonce, message, full_message };
+};
+
+/**
+ * Build the canonical Stage-1 access-code activation message the wallet must
+ * sign. The code is normalized (`trim` + `UPPERCASE`) and hashed to lowercase
+ * hex; the message binds that hash, the wallet's root address and `signed_at`
+ * (unix SECONDS):
+ * `ekiden-stage1-activate:{sha256(normalized code)}:{root_address}:{signed_at}`
+ *
+ * @param code - Plaintext access code as entered by the user.
+ * @param rootAddress - Wallet root address (same derivation as `/authorize`).
+ * @returns The normalized code, its hash, the `signed_at` seconds and the
+ *   message string to sign.
+ */
+export const generateAccessActivatePayload = (
+	code: string,
+	rootAddress: string
+): {
+	normalizedCode: string;
+	codeHash: string;
+	signedAt: number;
+	message: string;
+} => {
+	const normalizedCode = code.trim().toUpperCase();
+	const codeHash = bytesToHex(sha256(new TextEncoder().encode(normalizedCode)));
+	const signedAt = Math.floor(Date.now() / 1000);
+	const message = `ekiden-stage1-activate:${codeHash}:${rootAddress}:${signedAt}`;
+
+	return { normalizedCode, codeHash, signedAt, message };
 };
