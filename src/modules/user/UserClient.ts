@@ -82,6 +82,12 @@ export class UserClient extends BaseHttpClient {
 		return this.post<ReferralSummaryResponse>("/user/referral", params);
 	}
 
+	/**
+	 * Fetch the reward summary: XP balance, rank, per-source breakdown and one
+	 * cursor-paginated page of the instant-XP ledger (newest first). Pass
+	 * `cursor` (from a previous response's `next_cursor`) to page; `next_cursor`
+	 * is `null` on the last page.
+	 */
 	async getRewardsSummary(params: RewardsLedgerParams = {}): Promise<RewardSummaryResponse> {
 		this.ensureAuth();
 		return this.request<RewardSummaryResponse>(
@@ -91,11 +97,17 @@ export class UserClient extends BaseHttpClient {
 		);
 	}
 
+	/** List the viewer's active quests, each with its current claim state. */
 	async getQuests(): Promise<UserQuestsResponse> {
 		this.ensureAuth();
 		return this.request<UserQuestsResponse>("/user/quests", {}, { auth: true });
 	}
 
+	/**
+	 * Claim a `manual_claim` quest by id; resolves with the credited reward.
+	 * Throws {@link APIError} with `statusCode` 400 on repeat / inactive /
+	 * ineligible claims.
+	 */
 	async claimQuest(questId: string): Promise<ClaimQuestResponse> {
 		this.ensureAuth();
 		return this.post<ClaimQuestResponse>(
@@ -104,6 +116,7 @@ export class UserClient extends BaseHttpClient {
 		);
 	}
 
+	/** Fetch the wallet's Stage-1 standing: activation, badge and multiplier. */
 	async getAccessStatus(): Promise<AccessStatusResponse> {
 		this.ensureAuth();
 		return this.request<AccessStatusResponse>("/user/access", {}, { auth: true });
@@ -137,7 +150,15 @@ export class UserClient extends BaseHttpClient {
 	 * Submit a pre-signed Stage-1 access-code activation request.
 	 *
 	 * PUBLIC endpoint (no JWT — the caller cannot have one yet). Prefer
-	 * {@link activateAccessCode} to build and sign the request from an account.
+	 * {@link activateAccessCode} when you hold an in-memory {@link Account}. Use
+	 * this lower-level method for browser / wallet-adapter signing: build the
+	 * canonical message with {@link generateAccessActivatePayload}, have the
+	 * wallet sign its `message`, then submit `{ code, public_key, signed_at,
+	 * signature }` (use the payload's `signedAt` for `signed_at`).
+	 *
+	 * On rejection throws {@link APIError} with the server `statusCode`: 401 bad
+	 * signature, 400 invalid/expired/revoked code, 409 already used/activated,
+	 * 429 rate limited.
 	 */
 	async activateAccess(params: AccessActivateRequest): Promise<AccessActivateResponse> {
 		return this.post<AccessActivateResponse>("/access/activate", params, { auth: false });

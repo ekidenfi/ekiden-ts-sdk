@@ -28,7 +28,12 @@ export interface BindReferralRequest {
 
 // -------------------------------------------------------------------------
 // Rewards (`GET /user/rewards`) — reshaped: instant XP, ranks, cursor ledger.
-// XP amounts are string-encoded integers; rates/multipliers are integer bps.
+//
+// Wire conventions: XP amounts are string-encoded integers — consume them with
+// the exported `BN` helper (e.g. `new BN(reward.xp_balance)`) rather than
+// `Number()` to avoid precision loss. Rates/multipliers are integer basis
+// points (bps) where 10000 = 100%: `multiplier_bps: 5000` means +50% (x1.5),
+// and a progress fraction is `progress_bps / 10000`.
 // -------------------------------------------------------------------------
 
 /**
