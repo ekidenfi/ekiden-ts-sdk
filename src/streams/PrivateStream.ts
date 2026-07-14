@@ -1,5 +1,5 @@
-import type { Account } from "@aptos-labs/ts-sdk";
 import { PrivateWebSocketClient } from "@/core/base";
+import type { Account } from "@/crypto";
 import type { ChannelMap } from "@/types/websocket";
 
 export class PrivateStream {

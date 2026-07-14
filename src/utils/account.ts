@@ -1,4 +1,4 @@
-import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
+import { Account, Ed25519PrivateKey } from "@/crypto";
 import { addressToBytes } from "./address";
 
 export interface SubAccountData {
@@ -105,12 +105,6 @@ export const createAccountMessage = (
  *   rootAddress,
  *   subAccount.sign(rootAddress).toUint8Array()
  * );
- *
- * const payload = vaultOnChain.createEkidenUser({
- *   vaultAddress: CONTRACT.VAULT,
- *   fundingLinkProof: linkProof,
- *   crossTradingLinkProof: tradingLinkProof,
- * });
  * ```
  */
 export const buildLinkProof = (

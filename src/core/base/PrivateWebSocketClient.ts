@@ -1,8 +1,8 @@
-import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk";
 import ReconnectingWebSocket from "reconnecting-websocket";
 
 import { HEARTBEAT_INTERVAL_MS } from "@/core/constants";
 import { AuthenticationError, WebSocketError } from "@/core/errors";
+import { Account, Ed25519PrivateKey } from "@/crypto";
 
 export interface AuthRequest {
 	op: "auth";

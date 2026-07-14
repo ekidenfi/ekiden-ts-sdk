@@ -1,6 +1,5 @@
-import { Account } from "@aptos-labs/ts-sdk";
-
 import { BaseHttpClient } from "@/core/base";
+import type { Account } from "@/crypto";
 import type {
 	AuthorizeRequest,
 	AuthorizeResponse,

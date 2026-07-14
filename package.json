@@ -1,8 +1,8 @@
 {
 	"name": "@ekidenfi/ts-sdk",
-	"version": "2.0.25",
+	"version": "3.0.0-canton",
 	"keywords": [
-		"aptos",
+		"canton",
 		"ekiden",
 		"sdk"
 	],
@@ -15,10 +15,10 @@
 	"type": "module",
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.js",
-	"types": "./dist/src/index.d.ts",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"types": "./dist/src/index.d.ts",
+			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js",
 			"require": "./dist/index.cjs"
 		}
@@ -30,7 +30,7 @@
 		"build": "bun run build:cjs && bun run build:esm && bun run build:types",
 		"build:cjs": "bun build ./src/index.ts --outdir ./dist --root ./src --format cjs --sourcemap=linked --minify && mv ./dist/index.js ./dist/index.cjs && mv ./dist/index.js.map ./dist/index.cjs.map",
 		"build:esm": "bun build ./src/index.ts --outdir ./dist --root ./src --format esm --sourcemap=external --minify",
-		"build:types": "tsc --emitDeclarationOnly --declaration --outDir dist && tsc-alias --outDir dist",
+		"build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly --declaration --outDir dist && tsc-alias -p tsconfig.build.json --outDir dist",
 		"dev": "bun build ./src/index.ts --outdir ./dist --root ./src --watch",
 		"fix": "bun pkgs:fix && bun i && bun format && bun fix-biome",
 		"fix-biome": "biome check --write --unsafe",
@@ -43,7 +43,6 @@
 		"update-hooks": "simple-git-hooks"
 	},
 	"dependencies": {
-		"@aptos-labs/ts-sdk": "5.2.0",
 		"@noble/curves": "2.0.1",
 		"@noble/hashes": "2.0.1",
 		"bignumber.js": "9.3.1",

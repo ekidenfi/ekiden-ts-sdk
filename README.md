@@ -1,6 +1,8 @@
 # Ekiden TypeScript SDK
 
-Professional TypeScript SDK for interacting with Ekiden Gateway and Aptos DeFi protocol.
+Professional TypeScript SDK for interacting with Ekiden Gateway.
+
+> Migrating from the Aptos-based SDK (v2.x)? See [MIGRATION.md](./MIGRATION.md).
 
 ## Installation
 
@@ -26,7 +28,7 @@ EkidenClient
 ├── leaderboard     - Leaderboard data
 ├── user            - User authentication
 ├── vault           - Vault operations (REST API)
-├── vaultOnChain    - Aptos on-chain vault operations
+├── canton          - Canton (DAML) command builders (optional, via config.canton)
 ├── system          - System information
 ├── publicStream    - Public WebSocket streams
 └── privateStream   - Private WebSocket streams
@@ -42,15 +44,13 @@ EkidenClient
 ## Quick Start
 
 ```typescript
-import { EkidenClient, TESTNET } from "@ekidenfi/ts-sdk";
-import { Ed25519Account, Ed25519PrivateKey, PrivateKey } from "@aptos-labs/ts-sdk";
+import { Account, Ed25519PrivateKey, EkidenClient, TESTNET } from "@ekidenfi/ts-sdk";
 
 const ekiden = new EkidenClient(TESTNET);
 
 // Setup account
-const formatted = PrivateKey.formatPrivateKey(process.env.PRIVATE_KEY!, "ed25519");
-const privateKey = new Ed25519PrivateKey(formatted);
-const account = new Ed25519Account({ privateKey });
+const privateKey = new Ed25519PrivateKey(process.env.PRIVATE_KEY!);
+const account = Account.fromPrivateKey({ privateKey });
 
 // Authenticate
 const timestamp_ms = Date.now();
@@ -461,39 +461,41 @@ await ekiden.vault.deposit(params);
 await ekiden.vault.withdraw(params);
 ```
 
-### VaultOnChainClient
+### CantonCommands
 
-Aptos on-chain vault operations.
+Canton (DAML) command builders. Available as `ekiden.canton` when `config.canton` is provided.
+Ledger state (vault/holding/contract ids) is supplied by the caller; the builders never
+query the gateway themselves.
 
 ```typescript
-// Deposit into user account
-const depositPayload = ekiden.vaultOnChain.depositIntoUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000),
+// Register Ekiden user
+const registerBatch = ekiden.canton.registerUser({ partyId });
+
+// Deposit into funding vault
+const factory = await ekiden.cantonRegistry.fetchTransferFactory({
+  sender: partyId,
+  receiver: cantonConfig.adminPartyId,
+  amount,
+  inputHoldingCids: holdingCids,
+});
+const depositBatch = ekiden.canton.depositIntoFunding({
+  partyId,
+  amount,
+  fundingVaultCid,
+  holdingCids,
+  transferFactory: factory,
 });
 
-// Request withdrawal
-const withdrawPayload = ekiden.vaultOnChain.requestWithdrawFromUser({
-  vaultAddress: "0x...",
-  assetMetadata: "0x...",
-  amount: BigInt(1000000),
+// Request withdrawal from trading to funding
+const withdrawalBatch = ekiden.canton.createWithdrawalRequest({
+  partyId,
+  requestedAmount,
+  fundingVaultCid,
+  tradingVaultCid,
 });
 
-// Get vault balance
-const balance = ekiden.vaultOnChain.vaultBalance({
-  vaultAddress: "0x...",
-  userAddress: "0x...",
-  assetMetadata: "0x...",
-  vaultType: "Cross",
-});
-
-// Create Ekiden user
-const createUserPayload = ekiden.vaultOnChain.createEkidenUser({
-  vaultAddress: "0x...",
-  fundingLinkProof: fundingLinkProof,
-  crossTradingLinkProof: tradingLinkProof,
-});
+// Submit to a Canton validator
+await submitCantonCommands({ url: validatorUrl, accessToken, batch: depositBatch });
 ```
 
 ### SystemClient
@@ -597,19 +599,12 @@ const fundingAccount = await createSubAccountDeterministic({
 // Or create both at once
 const { funding, trading } = await createSubAccountsDeterministic(rootAddress);
 
-// 3. Build link proof for blockchain registration
+// 3. Build link proof for on-chain registration
 const linkProof = buildLinkProof(
   account.publicKey.toUint8Array(),
   rootAddress,
   account.sign(rootAddress).toUint8Array()
 );
-
-// 4. Register on blockchain
-const payload = ekiden.vaultOnChain.createEkidenUser({
-  vaultAddress: VAULT_ADDRESS,
-  fundingLinkProof: fundingLinkProof,
-  crossTradingLinkProof: tradingLinkProof,
-});
 ```
 
 ### BN (BigNumber)
