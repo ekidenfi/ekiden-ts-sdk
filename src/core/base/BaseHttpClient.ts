@@ -187,8 +187,12 @@ export class BaseHttpClient {
 				// Ignore error parsing failures
 			}
 
-			// Handle 401 Unauthorized - trigger re-sign dialog
-			if (response.status === 401 && globalUnauthorizedCallback) {
+			// Handle 401 Unauthorized on an AUTHENTICATED request - trigger the
+			// re-sign dialog. Public/pre-auth calls (auth === false) — e.g.
+			// /access/activate ("bad signature") or /authorize ("bad login
+			// creds") — must NOT trigger the app's re-login flow; their 401 is
+			// surfaced only as the typed APIError below.
+			if (auth && response.status === 401 && globalUnauthorizedCallback) {
 				globalUnauthorizedCallback();
 			}
 
