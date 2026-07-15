@@ -229,12 +229,30 @@ export interface ExitMessageSuccess {
 
 export type ExitMessage = ExitMessageError | ExitMessageSuccess;
 
+/**
+ * `POST /authorize` request body. One flat shape covers the three login flows
+ * the backend accepts; each flow populates a different subset of fields:
+ *
+ * - **Wallet signature (self-signed):** `signature`, `public_key`,
+ *   `timestamp_ms`, `nonce` (+ optional `full_message`).
+ * - **Canton Console / self-custody:** the above plus `party_id` — the wallet
+ *   signs the base64 challenge and the backend verifies a party↔key binding.
+ * - **OIDC (Auth0):** `id_token`, `nonce`, `timestamp_ms` only — no signature
+ *   or public key.
+ *
+ * `signature` and `public_key` are optional so the OIDC body type-checks; the
+ * two signature flows still send both, so existing callers are unaffected.
+ */
 export interface AuthorizeRequest {
-	signature: string;
-	public_key: string;
+	signature?: string;
+	public_key?: string;
 	timestamp_ms: number;
 	nonce: string;
 	full_message?: string | null;
+	/** Canton Console / self-custody flow: the wallet's Canton party id. */
+	party_id?: string | null;
+	/** OIDC (Auth0) flow: the id_token exchanged for a session. */
+	id_token?: string | null;
 }
 
 export interface AuthorizeResponse {

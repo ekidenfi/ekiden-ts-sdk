@@ -214,6 +214,16 @@ export const createSubAccountsDeterministic = async (
 };
 
 /**
+ * Base64-encode an ASCII string using the standard alphabet (with padding).
+ *
+ * Used to wrap the canonical `AUTHORIZE|…` challenge before handing it to a
+ * Canton wallet's `signMessage`, which decodes the base64 back to raw bytes
+ * and signs those with plain Ed25519. The challenge is plain ASCII, so `btoa`
+ * is safe on every isomorphic target (browser + node/bun).
+ */
+export const encodeBase64Ascii = (input: string): string => btoa(input);
+
+/**
  * Generate a nonce and message for authorization
  */
 export const generateAuthorizePayload = (): {

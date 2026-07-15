@@ -21,6 +21,7 @@ export { MarketClient } from "./modules/market";
 export { PositionClient } from "./modules/position";
 export { TradeClient } from "./modules/trade";
 export type {
+	CantonWalletProvider,
 	PointsLedgerEntry,
 	RewardHistoryParams,
 	RewardSummaryResponse,

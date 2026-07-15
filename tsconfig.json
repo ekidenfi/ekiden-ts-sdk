@@ -26,6 +26,6 @@
 		"target": "ES2020",
 		"types": ["bun"]
 	},
-	"include": ["src/**/*", "example/**/*"],
-	"exclude": ["dist", "node_modules", "tests"]
+	"include": ["src/**/*", "example/**/*", "tests/**/*"],
+	"exclude": ["dist", "node_modules"]
 }
