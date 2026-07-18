@@ -27,6 +27,44 @@ export interface BindReferralRequest {
 }
 
 // -------------------------------------------------------------------------
+// Referral codes (`GET`/`POST /user/referral-codes`, `DELETE .../{id}`) and the
+// public click funnel (`POST /referral/click`). Multiple vanity codes per user,
+// each carrying its own click/bind funnel counts.
+// -------------------------------------------------------------------------
+
+/** Create a vanity referral code. `label` is an optional owner-facing note. */
+export interface CreateReferralCodeRequest {
+	code: string;
+	label?: string | null;
+}
+
+/** Record a referral-link click for a code (public, anti-enumeration). */
+export interface RecordReferralClickRequest {
+	code: string;
+}
+
+/** A single referral code owned by the user, with its per-code funnel counts. */
+export interface ReferralCodeInfo {
+	code_id: string;
+	code: string;
+	label: string | null;
+	/** The user's auto-generated default code; cannot be deleted. */
+	is_default: boolean;
+	/** Creation time, epoch (integer). */
+	created_at: number;
+	/** Recorded clicks that resolved to this code. */
+	clicks: number;
+	/** Users who bound through this specific code. */
+	binds: number;
+	/** Owner's total direct downline — identical across all of the owner's codes. */
+	downline_count: number;
+}
+
+export interface ListReferralCodesResponse {
+	codes: ReferralCodeInfo[];
+}
+
+// -------------------------------------------------------------------------
 // Rewards (`GET /user/rewards`) — reshaped: instant XP, ranks, cursor ledger.
 //
 // Wire conventions: XP amounts are string-encoded integers — consume them with
