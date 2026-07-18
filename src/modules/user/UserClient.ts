@@ -18,6 +18,10 @@ import type {
 	AffiliateDashboardResponse,
 	BindReferralRequest,
 	ClaimQuestResponse,
+	CreateReferralCodeRequest,
+	ListReferralCodesResponse,
+	RecordReferralClickRequest,
+	ReferralCodeInfo,
 	ReferralSummaryResponse,
 	RewardSummaryResponse,
 	RewardsLedgerParams,
@@ -80,6 +84,54 @@ export class UserClient extends BaseHttpClient {
 	async bindReferral(params: BindReferralRequest): Promise<ReferralSummaryResponse> {
 		this.ensureAuth();
 		return this.post<ReferralSummaryResponse>("/user/referral", params);
+	}
+
+	/**
+	 * Create a vanity referral code for the authenticated user.
+	 *
+	 * Requires a full-scope root session; bound sub-accounts are rejected
+	 * (`APIError` `statusCode` 403). Throws `APIError` 400 on a malformed /
+	 * reserved / duplicate code or when the per-user cap is reached.
+	 */
+	async createReferralCode(params: CreateReferralCodeRequest): Promise<ReferralCodeInfo> {
+		this.ensureAuth();
+		return this.post<ReferralCodeInfo>("/user/referral-codes", params);
+	}
+
+	/**
+	 * List the authenticated user's referral codes with per-code funnel counts
+	 * (clicks / binds / downline). Requires a root session; bound sub-accounts
+	 * are rejected (`APIError` `statusCode` 403).
+	 */
+	async listReferralCodes(): Promise<ListReferralCodesResponse> {
+		this.ensureAuth();
+		return this.request<ListReferralCodesResponse>("/user/referral-codes", {}, { auth: true });
+	}
+
+	/**
+	 * Delete one of the user's referral codes by id. The default code cannot be
+	 * deleted (`APIError` 400); an unknown id 404s. Requires a full-scope root
+	 * session; bound sub-accounts are rejected (403).
+	 */
+	async deleteReferralCode(codeId: string): Promise<void> {
+		this.ensureAuth();
+		await this.request<void>(
+			`/user/referral-codes/${encodeURIComponent(codeId)}`,
+			{ method: "DELETE" },
+			{ auth: true }
+		);
+	}
+
+	/**
+	 * Record a referral-link click for `code`.
+	 *
+	 * PUBLIC endpoint (no JWT) — callable on an unauthenticated client from the
+	 * `/r/{code}` capture page. Anti-enumeration: a well-formed code always
+	 * succeeds whether or not it exists; throws `APIError` 400 only on a
+	 * structurally malformed code.
+	 */
+	async trackReferralClick(params: RecordReferralClickRequest): Promise<void> {
+		await this.post<void>("/referral/click", params, { auth: false });
 	}
 
 	/**
