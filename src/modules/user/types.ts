@@ -227,6 +227,20 @@ export interface AccessActivateRequest {
 	signed_at: number;
 	/** Wallet signature over the canonical activation message. */
 	signature: string;
+	/**
+	 * Canton Console (self-custody) party id (`<hint>::<fingerprint>`). Present on
+	 * the Console path; the server verifies `signature` over the code-bound
+	 * `EKIDEN-CANTON-ACTIVATE` challenge and that `public_key` controls it.
+	 */
+	party_id?: string;
+	/** Anti-replay nonce bound into the Canton Console activation challenge. */
+	nonce?: string;
+	/**
+	 * Auth0/Google OIDC `id_token` for the custodial path. When present the server
+	 * reads the Canton party from the token — no client signature is required
+	 * (`public_key`/`signature` are ignored on this path).
+	 */
+	id_token?: string;
 }
 
 export interface AccessActivateResponse {
