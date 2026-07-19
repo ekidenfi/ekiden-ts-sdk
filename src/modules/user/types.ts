@@ -257,8 +257,12 @@ export interface AccessStatusResponse {
 	stage1_badge: boolean;
 	/** Granted activation multiplier in bps; `null` when never activated. */
 	multiplier_bps: number | null;
-	/** Whether a future airdrop allocation is reserved for this wallet. */
-	allocation_reserved: boolean;
+	/**
+	 * Whether a future airdrop allocation is reserved for this wallet. Added by
+	 * Stage-2 (Season-1 conversion); **absent** on the Stage-1-only access-gate
+	 * deploy, so treat as optional and default to `false` when missing.
+	 */
+	allocation_reserved?: boolean;
 }
 
 // -------------------------------------------------------------------------
