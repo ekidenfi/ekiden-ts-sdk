@@ -21,6 +21,9 @@ export { MarketClient } from "./modules/market";
 export { PositionClient } from "./modules/position";
 export { TradeClient } from "./modules/trade";
 export type {
+	AccessActivateRequest,
+	AccessActivateResponse,
+	AccessStatusResponse,
 	PointsLedgerEntry,
 	RewardHistoryParams,
 	RewardSummaryResponse,

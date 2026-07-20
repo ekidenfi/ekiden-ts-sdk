@@ -1,3 +1,5 @@
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex } from "@noble/hashes/utils.js";
 import { Account, Ed25519PrivateKey } from "@/crypto";
 import { addressToBytes } from "./address";
 
@@ -233,4 +235,70 @@ export const generateAuthorizePayload = (): {
 	const full_message = ["APTOS", `message: ${message}`, `nonce: ${nonce}`].join("\n");
 
 	return { timestamp_ms, nonce, message, full_message };
+};
+
+/**
+ * Build the canonical Stage-1 access-code activation message the wallet must
+ * sign. The code is normalized (`trim` + `UPPERCASE`) and hashed to lowercase
+ * hex; the message binds that hash, the wallet's root address and `signed_at`
+ * (unix SECONDS):
+ * `ekiden-stage1-activate:{sha256(normalized code)}:{root_address}:{signed_at}`
+ *
+ * @param code - Plaintext access code as entered by the user.
+ * @param rootAddress - Wallet root address (same derivation as `/authorize`).
+ * @returns The normalized code, its hash, the `signed_at` seconds and the
+ *   message string to sign.
+ */
+export const generateAccessActivatePayload = (
+	code: string,
+	rootAddress: string
+): {
+	normalizedCode: string;
+	codeHash: string;
+	signedAt: number;
+	message: string;
+} => {
+	const normalizedCode = code.trim().toUpperCase();
+	const codeHash = bytesToHex(sha256(new TextEncoder().encode(normalizedCode)));
+	const signedAt = Math.floor(Date.now() / 1000);
+	const message = `ekiden-stage1-activate:${codeHash}:${rootAddress}:${signedAt}`;
+
+	return { normalizedCode, codeHash, signedAt, message };
+};
+
+/**
+ * Build the canonical Canton Stage-1 activation challenge for the Console
+ * (self-custody) path. Domain-separated (`EKIDEN-CANTON-ACTIVATE`) and bound to
+ * the party, the sha256 code hash, `signed_at` (unix SECONDS) and a fresh nonce,
+ * so an `/authorize` signature can never be replayed to activate:
+ * `EKIDEN-CANTON-ACTIVATE|{party_id}|{sha256(normalized code)}|{signed_at}|{nonce}`
+ *
+ * Sign `message` with the Console wallet (e.g. `consoleWallet.signMessage`), then
+ * submit `{ code, party_id, nonce, signed_at, public_key, signature }` to
+ * {@link UserClient.activateAccess}.
+ *
+ * @param partyId - Canton party id (`<hint>::<fingerprint>`).
+ * @param code - Plaintext access code as entered by the user.
+ */
+export const generateCantonActivatePayload = (
+	partyId: string,
+	code: string
+): {
+	normalizedCode: string;
+	codeHash: string;
+	signedAt: number;
+	nonce: string;
+	message: string;
+} => {
+	const normalizedCode = code.trim().toUpperCase();
+	const codeHash = bytesToHex(sha256(new TextEncoder().encode(normalizedCode)));
+	const signedAt = Math.floor(Date.now() / 1000);
+	const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+	const raw = Array.from(bytes)
+		.map((b) => String.fromCharCode(b))
+		.join("");
+	const nonce = btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+	const message = `EKIDEN-CANTON-ACTIVATE|${partyId}|${codeHash}|${signedAt}|${nonce}`;
+
+	return { normalizedCode, codeHash, signedAt, nonce, message };
 };
