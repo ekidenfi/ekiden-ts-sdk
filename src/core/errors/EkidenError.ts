@@ -26,7 +26,14 @@ export class APIError extends EkidenSDKError {
 	constructor(
 		message: string,
 		public statusCode?: number,
-		public endpoint?: string
+		public endpoint?: string,
+		/**
+		 * Stable machine-readable discriminator from the error body — the gateway's `code`
+		 * (e.g. `CANTON_PARTY_NOT_PROVISIONED`, `ROOT_ADDRESS_NOT_WHITELISTED`) or another
+		 * service's `error`. Branch on this rather than matching `message`, which is prose
+		 * and may be reworded at any time.
+		 */
+		public code?: string
 	) {
 		super(message);
 		this.name = "APIError";
