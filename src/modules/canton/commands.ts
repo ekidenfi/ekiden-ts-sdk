@@ -310,7 +310,7 @@ export class CantonCommands {
 		transferFactory,
 	}: WithdrawFromFundingParams): CantonCommandBatch {
 		if (!bankHoldings.length) {
-			throw new Error("No platform holdings provided for withdrawal");
+			throw new Error("No bank holdings provided for withdrawal");
 		}
 		if (transferFactory.transferKind !== "direct") {
 			throw new Error(
