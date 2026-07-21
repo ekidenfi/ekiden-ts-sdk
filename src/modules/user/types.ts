@@ -85,20 +85,6 @@ export interface RewardsLedgerParams {
 	cursor?: string;
 }
 
-/** Rank computed from the XP balance against config thresholds. */
-export interface RankStatus {
-	name: string;
-	/** 0-based index into the configured rank table. */
-	index: number;
-	/** XP required for the next rank; `null` at the max rank. */
-	next_threshold: string | null;
-	/**
-	 * Progress from the current rank threshold to the next, in bps
-	 * (10000 at the max rank). Progress bar = `progress_bps / 10000`.
-	 */
-	progress_bps: number;
-}
-
 /** Lifetime XP per source group. String-encoded integers. */
 export interface XpBreakdown {
 	taker: string;
@@ -147,11 +133,16 @@ export interface SeasonStatus {
 	source: string;
 }
 
-/** `GET /user/rewards` response. */
+/**
+ * `GET /user/rewards` response.
+ *
+ * Ranks/titles were removed 2026-07-20 (no `rank`). The Stage-1 badge and
+ * activation multiplier are NOT on this payload — read them from
+ * `GET /user/access` ({@link AccessStatusResponse}) instead.
+ */
 export interface RewardSummaryResponse {
 	xp_balance: string;
-	rank: RankStatus;
-	/** Vanguard rank and above. */
+	/** XP at/above the configured closed-tournament floor. */
 	closed_tournament_eligible: boolean;
 	breakdown: XpBreakdown;
 	/** One ledger page, newest first. */
@@ -159,13 +150,6 @@ export interface RewardSummaryResponse {
 	/** Cursor for the next ledger page; `null` when this page is the last. */
 	next_cursor: string | null;
 	referral: ReferralStatus;
-	/**
-	 * Stage 1 closed-launch badge: true once the wallet has activated an
-	 * access code. Cosmetic; false for un-activated wallets.
-	 */
-	stage1_badge: boolean;
-	/** Granted Stage-1 activation multiplier in bps; `null` when un-activated. */
-	multiplier_bps: number | null;
 	/** Season-1 starting multiplier; omitted entirely at 1.0x. */
 	season?: SeasonStatus;
 }
@@ -276,15 +260,6 @@ export interface AffiliateDashboardRates {
 	l3: number;
 }
 
-/**
- * Affiliate XP-perk multipliers in bps: the perk on the affiliate's own
- * trading XP (`self`) and on their L1 referrals' trading XP (`referrals`).
- */
-export interface AffiliateDashboardPerks {
-	self: number;
-	referrals: number;
-}
-
 /** Downline user counts at referral levels 1/2/3 below the affiliate. */
 export interface AffiliateDashboardDownline {
 	l1: number;
@@ -304,12 +279,15 @@ export interface AffiliateDashboardWeek {
 	breakdown: unknown;
 }
 
-/** `GET /user/affiliate` response. Returned only for an affiliate. */
+/**
+ * `GET /user/affiliate` response. Returned only for an approved affiliate (the
+ * endpoint 404s otherwise). XP perks were removed 2026-07-20 — the referral
+ * commission rail is universal; there is no `xp_perks_bps`.
+ */
 export interface AffiliateDashboardResponse {
 	/** Lifecycle status: `active` or `suspended`. */
 	status: string;
 	rates_bps: AffiliateDashboardRates;
-	xp_perks_bps: AffiliateDashboardPerks;
 	downline: AffiliateDashboardDownline;
 	/** Weekly commission history, newest week first. */
 	weeks: AffiliateDashboardWeek[];
