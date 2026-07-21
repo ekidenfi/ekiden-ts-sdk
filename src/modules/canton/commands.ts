@@ -85,7 +85,7 @@ export interface WithdrawFromFundingParams {
 	amount: string;
 	fundingVaultCid: string;
 	/** Platform (admin party) holdings, disclosed to the user for the payout */
-	platformHoldings: CantonHolding[];
+	bankHoldings: CantonHolding[];
 	transferFactory: TransferFactoryResult;
 }
 
@@ -306,10 +306,10 @@ export class CantonCommands {
 		partyId,
 		amount,
 		fundingVaultCid,
-		platformHoldings,
+		bankHoldings,
 		transferFactory,
 	}: WithdrawFromFundingParams): CantonCommandBatch {
-		if (!platformHoldings.length) {
+		if (!bankHoldings.length) {
 			throw new Error("No platform holdings provided for withdrawal");
 		}
 		if (transferFactory.transferKind !== "direct") {
@@ -326,7 +326,7 @@ export class CantonCommands {
 				user: partyId,
 				fundingVault: fundingVaultCid,
 				amount,
-				platformHoldings: platformHoldings.map((holding) => holding.contractId),
+				bankHoldings: bankHoldings.map((holding) => holding.contractId),
 				transferFactoryCid: transferFactory.factoryId,
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
@@ -334,7 +334,7 @@ export class CantonCommands {
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
 				transferFactory.disclosedContracts,
-				platformHoldings.map((holding) => ({
+				bankHoldings.map((holding) => ({
 					templateId: holding.templateId,
 					contractId: holding.contractId,
 					createdEventBlob: holding.createdEventBlob,
