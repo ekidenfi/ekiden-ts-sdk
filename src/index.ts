@@ -1,5 +1,5 @@
-export * from "@aptos-labs/ts-sdk";
 export * from "./core";
+export * from "./crypto";
 export {
 	AccountClient,
 	type AccountStatisticsEntry,
@@ -9,6 +9,7 @@ export {
 	type AccountStatisticsStep,
 } from "./modules/account";
 export { AssetClient } from "./modules/asset";
+export * from "./modules/canton";
 export * from "./modules/competitions";
 export { FundingClient } from "./modules/funding";
 export {
@@ -26,7 +27,7 @@ export type {
 	RewardWeekSummary,
 } from "./modules/user";
 export { UserClient } from "./modules/user";
-export { VaultClient, VaultOnChainClient } from "./modules/vault";
+export { VaultClient } from "./modules/vault";
 export * from "./streams";
 export * from "./types";
 export * from "./utils";

@@ -1,5 +1,5 @@
-import { type Account, AccountAddress, Bool, U64 } from "@aptos-labs/ts-sdk";
 import { BaseHttpClient } from "@/core/base";
+import { type Account, AccountAddress, Bool, U64 } from "@/crypto";
 
 export interface WithdrawFromTradingParams {
 	addr_from: string;
@@ -16,7 +16,7 @@ export class VaultClient extends BaseHttpClient {
 	/**
 	 * Build and sign withdrawal from trading parameters.
 	 *
-	 * @param account - Aptos account (sub-account) to sign the request
+	 * @param account - Ed25519 account (sub-account) to sign the request
 	 * @param params - Withdrawal parameters (excluding signature and timestamp)
 	 * @returns Signed parameters for withdrawFromTrading
 	 */

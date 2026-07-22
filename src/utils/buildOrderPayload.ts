@@ -1,5 +1,4 @@
-import { Serializer } from "@aptos-labs/ts-sdk";
-
+import { Serializer } from "@/crypto";
 import type { ActionPayload } from "@/types";
 
 // Encode enums the way Rust BCS does (by variant index using ULEB128),

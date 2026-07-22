@@ -1,5 +1,6 @@
 import { AccountClient } from "@/modules/account";
 import { AssetClient } from "@/modules/asset";
+import { CantonCommands, CantonRegistryClient } from "@/modules/canton";
 import { CompetitionClient } from "@/modules/competitions";
 import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";
@@ -8,7 +9,7 @@ import { PositionClient } from "@/modules/position";
 import { SystemClient } from "@/modules/system";
 import { TradeClient } from "@/modules/trade";
 import { UserClient } from "@/modules/user";
-import { VaultClient, VaultOnChainClient } from "@/modules/vault";
+import { VaultClient } from "@/modules/vault";
 import { PrivateStream, PublicStream } from "@/streams";
 import type { ApiKeyAuthConfig } from "./base";
 import type { EkidenClientConfig } from "./config";
@@ -26,9 +27,12 @@ export class EkidenClient {
 	public readonly system: SystemClient;
 	public readonly user: UserClient;
 	public readonly vault: VaultClient;
-	public readonly vaultOnChain: VaultOnChainClient;
 	public readonly publicStream?: PublicStream;
 	public readonly privateStream?: PrivateStream;
+	/** Canton command builders; available when `config.canton` is provided */
+	public readonly canton?: CantonCommands;
+	/** Utility registry client; available when `config.canton` is provided */
+	public readonly cantonRegistry?: CantonRegistryClient;
 
 	constructor(public readonly config: EkidenClientConfig) {
 		this.account = new AccountClient(config);
@@ -42,7 +46,6 @@ export class EkidenClient {
 		this.system = new SystemClient(config);
 		this.user = new UserClient(config);
 		this.vault = new VaultClient(config);
-		this.vaultOnChain = new VaultOnChainClient(config);
 
 		if (config.wsURL) {
 			this.publicStream = new PublicStream(config);
@@ -50,6 +53,11 @@ export class EkidenClient {
 
 		if (config.privateWSURL) {
 			this.privateStream = new PrivateStream(config.privateWSURL);
+		}
+
+		if (config.canton) {
+			this.canton = new CantonCommands(config.canton);
+			this.cantonRegistry = new CantonRegistryClient(config.canton);
 		}
 	}
 

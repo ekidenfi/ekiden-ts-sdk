@@ -16,16 +16,7 @@
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=dev bun run example/basic.ts`
 // - `PK=0x960ab8db01222f7307122e4a3284f926e8c06a99a01903eb0b907538829aa7f1 NETWORK=local bun run example/basic.ts`
 
-import {
-	Account,
-	Aptos,
-	AptosConfig,
-	type AptosSettings,
-	type Ed25519Account,
-	Ed25519PrivateKey,
-	EkidenClient,
-	Network,
-} from "../src";
+import { Account, type Ed25519Account, Ed25519PrivateKey, EkidenClient } from "../src";
 
 /**
  * Common configuration for the SDK examples.
@@ -71,141 +62,6 @@ export const SDK_CONFIG = {
 	contractAddress: "0x1", // Placeholder for local dev
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const LOCAL_TX_MAX_GAS_AMOUNT = 50_000;
-
-async function newAptos(settings: AptosSettings): Promise<Aptos> {
-	if (typeof Bun !== "undefined") {
-		const { default: aptosClientBrowser } = await import(
-			"../node_modules/@aptos-labs/aptos-client/dist/browser/index.browser.mjs"
-		);
-		return new Aptos(
-			new AptosConfig({ ...settings, client: { provider: aptosClientBrowser } })
-		);
-	}
-
-	return new Aptos(new AptosConfig(settings));
-}
-
-function normalizeFullnodeUrl(raw: string): string {
-	const trimmed = raw.trim().replace(/\/+$/, "");
-	return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
-}
-
-function mapAptosNetwork(name: string): Network {
-	const normalized = name.toLowerCase();
-	if (normalized.includes("mainnet")) return Network.MAINNET;
-	if (normalized.includes("devnet")) return Network.DEVNET;
-	if (normalized.includes("local")) return Network.LOCAL;
-	return Network.TESTNET;
-}
-
-async function canQueryAptosLedger(fullnode: string): Promise<boolean> {
-	try {
-		const response = await fetch(fullnode, { method: "GET" });
-		if (!response.ok) return false;
-		const body = (await response.json()) as Record<string, unknown>;
-		return typeof body.chain_id !== "undefined";
-	} catch {
-		return false;
-	}
-}
-
-async function resolveLocalFullnode(): Promise<string | null> {
-	const envUrl = Bun.env.APTOS_NODE_URL || Bun.env.APTOS_REST_URL;
-	if (envUrl) {
-		const normalized = normalizeFullnodeUrl(envUrl);
-		if (await canQueryAptosLedger(normalized)) return normalized;
-	}
-
-	const candidates = [
-		"http://localhost:8080/v1",
-		"http://127.0.0.1:8080/v1",
-		"http://localhost:8090/v1",
-		"http://127.0.0.1:8090/v1",
-	];
-
-	for (const candidate of candidates) {
-		if (await canQueryAptosLedger(candidate)) return candidate;
-	}
-
-	return null;
-}
-
-export async function getAptosClient(baseURL: string, aptosNetwork: string): Promise<Aptos> {
-	const explicit = Bun.env.APTOS_NODE_URL || Bun.env.APTOS_REST_URL;
-	if (explicit) {
-		return newAptos({
-			network: mapAptosNetwork(aptosNetwork),
-			fullnode: normalizeFullnodeUrl(explicit),
-		});
-	}
-
-	const isLocalGateway = baseURL.includes("localhost") || baseURL.includes("127.0.0.1");
-	if (isLocalGateway) {
-		const localFullnode = await resolveLocalFullnode();
-		if (localFullnode) {
-			return newAptos({ network: Network.LOCAL, fullnode: localFullnode });
-		}
-		return newAptos({ network: Network.LOCAL });
-	}
-
-	return newAptos({ network: mapAptosNetwork(aptosNetwork) });
-}
-
-function txBuildOptionsForBaseUrl(baseURL: string): { maxGasAmount: number } | undefined {
-	const isLocalGateway = baseURL.includes("localhost") || baseURL.includes("127.0.0.1");
-	if (!isLocalGateway) return undefined;
-	return { maxGasAmount: LOCAL_TX_MAX_GAS_AMOUNT };
-}
-
-function shouldAttemptAutoRegister(error: unknown): boolean {
-	const message = String(error instanceof Error ? error.message : error).toLowerCase();
-	return (
-		message.includes("register in the ekiden contract") ||
-		message.includes("create_ekiden_user") ||
-		message.includes("to obtain a jwt")
-	);
-}
-
-async function registerEkidenUser(client: EkidenClient, account: Ed25519Account): Promise<void> {
-	const systemInfo = await client.system.getSystemInfo();
-	client.config.contractAddress = systemInfo.perpetual_addr;
-
-	const aptos = await getAptosClient(client.config.baseURL, systemInfo.aptos_network);
-	const txOptions = txBuildOptionsForBaseUrl(client.config.baseURL);
-	const rootAddress = account.accountAddress.toString();
-
-	const registrationCheck = await aptos.view({
-		payload: {
-			function: `${systemInfo.perpetual_addr}::user::is_ekiden_user`,
-			functionArguments: [rootAddress],
-		},
-	});
-	const isRegistered = Boolean(registrationCheck[0]);
-	if (isRegistered) return;
-
-	const payload = client.vaultOnChain.createEkidenUser({
-		vaultAddress: systemInfo.perpetual_addr,
-	});
-
-	const tx = await aptos.transaction.build.simple({
-		sender: account.accountAddress,
-		data: payload as any,
-		options: txOptions,
-	});
-	const senderAuthenticator = aptos.transaction.sign({
-		signer: account,
-		transaction: tx,
-	});
-	const committedTx = await aptos.transaction.submit.simple({
-		transaction: tx,
-		senderAuthenticator,
-	});
-	await aptos.waitForTransaction({ transactionHash: committedTx.hash });
-}
-
 /**
  * Authenticates with the Ekiden backend and returns a JWT token.
  * Reusable across different example scripts.
@@ -224,48 +80,9 @@ export async function auth(
 		const response = await client.user.authorizeWithAccount(account);
 		return [response.token, account];
 	} catch (error) {
-		if (!shouldAttemptAutoRegister(error)) {
-			throw new Error(
-				`Authentication failed: ${error instanceof Error ? error.message : error}`
-			);
-		}
-
-		console.log(
-			"Auth failed because user is not registered. Running create_ekiden_user on Aptos..."
-		);
-		try {
-			await registerEkidenUser(client, account);
-		} catch (registerError) {
-			const registerMessage = String(
-				registerError instanceof Error ? registerError.message : registerError
-			);
-			if (
-				registerMessage.includes("ECONNREFUSED") ||
-				registerMessage.includes("ENOTFOUND") ||
-				registerMessage.includes("fetch failed")
-			) {
-				throw new Error(
-					`Authentication failed: auto-register error: cannot reach Aptos fullnode. Set APTOS_REST_URL (or APTOS_NODE_URL), e.g. APTOS_REST_URL=http://localhost:8080/v1`
-				);
-			}
-			throw new Error(`Authentication failed: auto-register error: ${registerMessage}`);
-		}
-
-		for (let attempt = 0; attempt < 30; attempt++) {
-			try {
-				const response = await client.user.authorizeWithAccount(account);
-				return [response.token, account];
-			} catch (retryError) {
-				if (attempt === 29) {
-					throw new Error(
-						`Authentication failed after auto-register: ${retryError instanceof Error ? retryError.message : retryError}`
-					);
-				}
-				await sleep(2000);
-			}
-		}
-
-		throw new Error("Authentication failed after auto-register: unknown error");
+		// TODO(canton): user registration was previously performed on-chain via
+		// create_ekiden_user; it will be reimplemented with Canton commands.
+		throw new Error(`Authentication failed: ${error instanceof Error ? error.message : error}`);
 	}
 }
 

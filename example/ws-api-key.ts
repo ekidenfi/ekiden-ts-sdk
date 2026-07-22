@@ -19,7 +19,7 @@
 // - `API_KEY_PRIVATE_KEY=0x... NETWORK=local bun run example/ws-api-key-wscat.ts`
 // - `API_KEY_PRIVATE_KEY=0x... PRIVATE_WS_URL=ws://localhost:4020/ws/private bun run example/ws-api-key-wscat.ts`
 
-import { Account, Ed25519PrivateKey, PrivateKey, PrivateKeyVariants } from "../src";
+import { Account, Ed25519PrivateKey } from "../src";
 import { SDK_CONFIG } from "./auth";
 
 const wsUrl = Bun.env.WS_URL || Bun.env.PRIVATE_WS_URL || SDK_CONFIG.privateWSURL;
@@ -35,7 +35,7 @@ function normalizePrivateKey(value: string): string {
 			"API_KEY_PRIVATE_KEY must be 32 bytes hex (64 chars), e.g. `ed25519-priv-<hex>` or `<hex>`"
 		);
 	}
-	return PrivateKey.formatPrivateKey(hex, PrivateKeyVariants.Ed25519);
+	return hex;
 }
 
 function urlSafeBase64(bytes: Uint8Array): string {
@@ -55,7 +55,7 @@ async function main() {
 	}
 
 	const normalizedPk = normalizePrivateKey(privateKeyRaw);
-	const privateKey = new Ed25519PrivateKey(normalizedPk, true);
+	const privateKey = new Ed25519PrivateKey(normalizedPk);
 	const account = Account.fromPrivateKey({ privateKey });
 
 	const nonceBytes = new Uint8Array(16);
