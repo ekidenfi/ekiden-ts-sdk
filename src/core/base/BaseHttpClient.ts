@@ -164,6 +164,7 @@ export class BaseHttpClient {
 
 		if (!response.ok) {
 			let errorResponseContent = "";
+			let errorCode: string | undefined;
 
 			try {
 				const rawText = await response.text();
@@ -173,10 +174,21 @@ export class BaseHttpClient {
 					if (errorData.error) parts.push(errorData.error);
 					if (errorData.message) parts.push(errorData.message);
 
+					// The gateway sends `{ code, message }`; other services send
+					// `{ error, message }`. Carry whichever is present so callers can branch
+					// on a stable value instead of matching the prose in `message`.
+					if (typeof errorData.code === "string") {
+						errorCode = errorData.code;
+					} else if (typeof errorData.error === "string") {
+						errorCode = errorData.error;
+					}
+
 					if (parts.length > 0) {
 						errorResponseContent = parts.join(": ");
 					} else if (typeof errorData === "string") {
 						errorResponseContent = errorData;
+					} else if (typeof errorData.code === "string") {
+						errorResponseContent = errorData.code;
 					}
 				} catch {
 					if (rawText) {
@@ -187,15 +199,20 @@ export class BaseHttpClient {
 				// Ignore error parsing failures
 			}
 
-			// Handle 401 Unauthorized - trigger re-sign dialog
-			if (response.status === 401 && globalUnauthorizedCallback) {
+			// Handle 401 Unauthorized on an AUTHENTICATED request - trigger the re-sign
+			// dialog. Public/pre-auth calls (auth === false) — e.g. /authorize, whose 401
+			// means "these login credentials were refused", not "your session expired" —
+			// must NOT drive the app's re-login flow; retrying such a call would otherwise
+			// fire the callback on every attempt. Their 401 surfaces only as the APIError.
+			if (auth && response.status === 401 && globalUnauthorizedCallback) {
 				globalUnauthorizedCallback();
 			}
 
 			throw new APIError(
 				errorResponseContent || `${method} ${path} failed`,
 				response.status,
-				path
+				path,
+				errorCode
 			);
 		}
 

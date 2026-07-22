@@ -230,11 +230,32 @@ export interface ExitMessageSuccess {
 export type ExitMessage = ExitMessageError | ExitMessageSuccess;
 
 export interface AuthorizeRequest {
+	/**
+	 * Encoding depends on the rail: standard padded Base64 for Canton Console (Ed25519),
+	 * `0x`-hex for Aptos. Unused on the Canton OIDC rail — send `id_token` instead.
+	 */
 	signature: string;
+	/** Hex (optional `0x`) on every rail. Ignored on the Canton OIDC rail. */
 	public_key: string;
 	timestamp_ms: number;
 	nonce: string;
+	/** Aptos Wallet Standard envelope. Aptos only; ignored on both Canton rails. */
 	full_message?: string | null;
+	/**
+	 * Canton party id (`<hint>::<fingerprint>`) — selects the Console rail. The signed
+	 * message is `EKIDEN-CANTON-AUTHORIZE|{party_id}|{timestamp_ms}|{nonce}`.
+	 */
+	party_id?: string;
+	/**
+	 * Auth0/OIDC `id_token` (RS256) — selects the custodial Canton rail and takes precedence
+	 * over the Console fields.
+	 *
+	 * A 401 with code `CANTON_PARTY_NOT_PROVISIONED` means the token verified but the party
+	 * has not been provisioned yet (it is created asynchronously right after signup). Retry
+	 * with a **freshly minted** token — re-sending the cached one will keep failing, because
+	 * the claim is baked into the token at issue time.
+	 */
+	id_token?: string;
 }
 
 export interface AuthorizeResponse {
