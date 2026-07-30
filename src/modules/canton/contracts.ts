@@ -102,6 +102,7 @@ const readTransferFromDamlFields = (
 		receiver: readDamlParty(readDamlFieldValue(transferFields, "receiver")),
 		amount: readDamlNumeric(readDamlFieldValue(transferFields, "amount")),
 		executeBefore: readDamlTimestamp(readDamlFieldValue(transferFields, "executeBefore")),
+		provider: readDamlParty(readDamlFieldValue(transferFields, "provider")),
 	};
 };
 
@@ -115,6 +116,7 @@ export const extractTransferInstructionFromCreateArgument = (
 			receiver: String(instruction.receiver || createArgument.receiver || ""),
 			amount: String(instruction.amount || createArgument.amount || "0"),
 			executeBefore: String(instruction.executeBefore || createArgument.executeBefore || ""),
+			provider: String(instruction.provider || createArgument.provider || ""),
 		};
 	}
 
@@ -125,6 +127,7 @@ export const extractTransferInstructionFromCreateArgument = (
 			receiver: String(directTransfer.receiver || ""),
 			amount: String(directTransfer.amount || "0"),
 			executeBefore: String(directTransfer.executeBefore || ""),
+			provider: String(createArgument.provider || ""),
 		};
 	}
 
@@ -148,6 +151,7 @@ export const extractTransferInstructionFromCreateArgument = (
 			receiver: rootReceiver,
 			amount: readDamlNumeric(readDamlFieldValue(rootFields, "amount")),
 			executeBefore: readDamlTimestamp(readDamlFieldValue(rootFields, "executeBefore")),
+			provider: readDamlParty(readDamlFieldValue(rootFields, "provider")),
 		};
 	}
 
@@ -211,6 +215,7 @@ export const findTransferOffersInContracts = (
 			amount: transfer.amount,
 			sender: transfer.sender,
 			receiver: transfer.receiver,
+			provider: transfer.provider,
 			createdAt: String(createdEvent.createdAt || ""),
 		});
 	}
