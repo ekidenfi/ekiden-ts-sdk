@@ -103,6 +103,7 @@ export interface TransferInstructionPayload {
 	receiver: string;
 	amount: string;
 	executeBefore: string;
+	provider: string;
 }
 
 export interface CantonTransferOffer {
@@ -111,6 +112,7 @@ export interface CantonTransferOffer {
 	amount: string;
 	sender: string;
 	receiver: string;
+	provider: string;
 	createdAt: string;
 }
 
