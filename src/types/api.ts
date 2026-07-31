@@ -442,6 +442,10 @@ export interface InstrumentInfo {
 	quote_addr: string;
 	maker_fee_rate: string;
 	taker_fee_rate: string;
+	/** Flat maker base fee in raw quote units (not humanized). */
+	maker_base_fee: string;
+	/** Flat taker base fee in raw quote units (not humanized). */
+	taker_base_fee: string;
 	base_scale: number;
 	quote_scale: number;
 }
@@ -799,6 +803,11 @@ export interface Execution {
 	exec_time: string;
 	is_maker: boolean;
 	fee_rate: string;
+	/**
+	 * Flat base fee in raw quote units (not humanized).
+	 * Charged once per order on the first fill; later fills are `"0"`.
+	 */
+	base_fee: string;
 	mark_price: string;
 	index_price: string;
 	seq: string;
