@@ -10,7 +10,7 @@ import type {
 	GetSubAccountsResponse,
 	ListApiKeysResponse,
 } from "@/types/api";
-import { generateAccessActivatePayload, generateAuthorizePayload } from "@/utils/account";
+import { generateAuthorizePayload } from "@/utils/account";
 import type {
 	AccessActivateRequest,
 	AccessActivateResponse,
@@ -199,43 +199,18 @@ export class UserClient extends BaseHttpClient {
 	}
 
 	/**
-	 * Submit a pre-signed Stage-1 access-code activation request.
+	 * Redeem a Stage-1 closed-launch access code for the authenticated wallet.
 	 *
-	 * PUBLIC endpoint (no JWT — the caller cannot have one yet). Prefer
-	 * {@link activateAccessCode} when you hold an in-memory {@link Account}. Use
-	 * this lower-level method for browser / wallet-adapter signing: build the
-	 * canonical message with {@link generateAccessActivatePayload}, have the
-	 * wallet sign its `message`, then submit `{ code, public_key, signed_at,
-	 * signature }` (use the payload's `signedAt` for `signed_at`).
+	 * AUTHENTICATED: identity comes from the session, so the body is just the
+	 * code. This replaced a pre-auth signed challenge that custodial (Auth0)
+	 * wallets could not produce — they hold no signing key — which is why the
+	 * signing helpers and the account-based convenience wrapper are gone.
 	 *
-	 * On rejection throws {@link APIError} with the server `statusCode`: 401 bad
-	 * signature, 400 invalid/expired/revoked code, 409 already used/activated,
-	 * 429 rate limited.
+	 * On rejection throws {@link APIError} with the server `statusCode`: 400
+	 * invalid/expired/revoked code, 403 a bound sub-account session, 404 access
+	 * module disabled, 409 already used/activated, 429 rate limited.
 	 */
 	async activateAccess(params: AccessActivateRequest): Promise<AccessActivateResponse> {
-		return this.post<AccessActivateResponse>("/access/activate", params, { auth: false });
-	}
-
-	/**
-	 * Activate a Stage-1 access code with a wallet account.
-	 *
-	 * Signs the canonical activation message
-	 * `ekiden-stage1-activate:{sha256(normalized code)}:{root_address}:{signed_at}`
-	 * with the account (same wallet-signature scheme as {@link authorize}) and
-	 * submits it to the PUBLIC `POST /access/activate` endpoint. The body sends
-	 * `public_key`, not the address — the server derives the address itself.
-	 */
-	async activateAccessCode(account: Account, code: string): Promise<AccessActivateResponse> {
-		const rootAddress = account.accountAddress.toString();
-		const { signedAt, message } = generateAccessActivatePayload(code, rootAddress);
-		const messageBytes = new TextEncoder().encode(message);
-		const signature = account.sign(messageBytes).toString();
-
-		return this.activateAccess({
-			code,
-			public_key: account.publicKey.toString(),
-			signed_at: signedAt,
-			signature,
-		});
+		return this.post<AccessActivateResponse>("/user/access/activate", params);
 	}
 }
