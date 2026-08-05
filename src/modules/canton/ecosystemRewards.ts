@@ -18,6 +18,9 @@ const FUND_KINDS: EcosystemFundKind[] = [
 	"MarketMakingFund",
 ];
 
+const DEFAULT_HOLDING_TEMPLATE_ID =
+	"#utility-registry-holding-v0:Utility.Registry.Holding.V0.Holding:Holding";
+
 const readObj = (value: unknown): Record<string, unknown> => {
 	if (!value || typeof value !== "object") return {};
 	return value as Record<string, unknown>;
@@ -41,6 +44,7 @@ const unwrapDamlValue = (value: unknown): unknown => {
 	if (!value || typeof value !== "object") return value;
 	const obj = value as Record<string, unknown>;
 	if ("party" in obj) return obj.party;
+	if ("contractId" in obj) return obj.contractId;
 	if ("text" in obj) return obj.text;
 	if ("numeric" in obj) return obj.numeric;
 	if ("int64" in obj) return obj.int64;
@@ -94,7 +98,8 @@ const asFundKind = (tag: string): EcosystemFundKind | null =>
 
 const readInstrumentId = (value: unknown): HoldingInstrumentId | null => {
 	const fields = readCreateArgument(unwrapDamlValue(value));
-	const admin = readString(fields.admin);
+	// Config assets use `admin`; utility Holding uses `source`.
+	const admin = readString(fields.admin) || readString(fields.source);
 	const id = readString(fields.id);
 	if (!admin || !id) return null;
 	return { admin, id };
@@ -102,6 +107,36 @@ const readInstrumentId = (value: unknown): HoldingInstrumentId | null => {
 
 const instrumentEq = (a: HoldingInstrumentId, b: HoldingInstrumentId): boolean =>
 	a.admin === b.admin && a.id === b.id;
+
+const holdingsFromGatewayContracts = (
+	contracts: CantonGatewayContract[],
+	ownerPartyId: string,
+	instrumentId: HoldingInstrumentId
+): CantonHolding[] => {
+	const holdings: CantonHolding[] = [];
+	for (const contract of contracts) {
+		const createdEvent = contract.createdEvent;
+		const contractId = createdEvent.contractId;
+		const createdEventBlob = createdEvent.createdEventBlob;
+		const templateId = createdEvent.templateId;
+		if (!contractId || !createdEventBlob || !templateId) continue;
+
+		const fields = readCreateArgument(createdEvent.createArgument);
+		const owner = readString(fields.owner);
+		if (owner && owner !== ownerPartyId) continue;
+
+		const holdingInstrument = readInstrumentId(fields.instrument);
+		if (!holdingInstrument || !instrumentEq(holdingInstrument, instrumentId)) continue;
+
+		holdings.push({
+			contractId,
+			amount: readString(fields.amount) || "0",
+			createdEventBlob,
+			templateId,
+		});
+	}
+	return holdings;
+};
 
 interface RewardAssetSpecParsed {
 	instrumentId: HoldingInstrumentId;
@@ -272,17 +307,6 @@ const selectCoveringHoldings = (holdings: CantonHolding[], need: number): Canton
 	return covered >= need ? selected : [];
 };
 
-const filterHoldingsByInstrument = (
-	holdings: CantonHolding[],
-	instrumentId: HoldingInstrumentId
-): CantonHolding[] => {
-	// Gateway holdings typically omit instrument in the flat payload; keep all
-	// and let CIP-56 factory / ledger soft-skip mismatches. If template/id hints
-	// appear in contractId metadata later, tighten here.
-	void instrumentId;
-	return holdings;
-};
-
 /**
  * Resolve optional ecosystem rewards hook for a User choice.
  * Returns `hook: null` when gateway/config is missing or rewards are disabled.
@@ -371,7 +395,22 @@ export const resolveEcosystemRewardsHook = async ({
 				disclosedContracts: baseDisclosures,
 			};
 		}
-		const distributorHoldings = await gateway.getHoldings(distributorParty);
+
+		const holdingsByAdmin = new Map<string, CantonGatewayContract[]>();
+		const loadHoldingsForAdmin = async (
+			instrumentAdmin: string
+		): Promise<CantonGatewayContract[]> => {
+			const cached = holdingsByAdmin.get(instrumentAdmin);
+			if (cached) return cached;
+			const response = await gateway.getContracts({
+				partyId: distributorParty,
+				templateId: DEFAULT_HOLDING_TEMPLATE_ID,
+				signatories: instrumentAdmin,
+			});
+			holdingsByAdmin.set(instrumentAdmin, response.contracts);
+			return response.contracts;
+		};
+
 		const disclosedContracts: CantonDisclosedContract[] = [...baseDisclosures];
 		const inputs: RewardDistributionInput[] = [];
 		const usedHoldingCids = new Set<string>();
@@ -394,8 +433,10 @@ export const resolveEcosystemRewardsHook = async ({
 			const share = asset.amount / recipients.length;
 			if (share <= 0) continue;
 
-			const instrumentHoldings = filterHoldingsByInstrument(
-				distributorHoldings,
+			const holdingContracts = await loadHoldingsForAdmin(asset.instrumentId.admin);
+			const instrumentHoldings = holdingsFromGatewayContracts(
+				holdingContracts,
+				distributorParty,
 				asset.instrumentId
 			).filter((holding) => !usedHoldingCids.has(holding.contractId));
 
