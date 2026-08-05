@@ -282,3 +282,22 @@ export interface AffiliateDashboardResponse {
 	/** Total computed-but-unpaid commission across all weeks, decimal USDT. */
 	pending_usdt: string;
 }
+
+// -------------------------------------------------------------------------
+// Season claim (`POST /user/season-claim/voucher`, `POST /user/season-claim/redeem`)
+// -------------------------------------------------------------------------
+
+export interface SeasonClaimVoucherResponse {
+	voucher: string;
+	expires_at_ms: number;
+}
+export interface RedeemSeasonClaimRequest {
+	voucher: string;
+	preview: boolean;
+}
+export interface RedeemSeasonClaimResponse {
+	/** "preview" | "granted" | "already_claimed" */
+	status: string;
+	merged_xp: number;
+	multiplier_bps: number;
+}

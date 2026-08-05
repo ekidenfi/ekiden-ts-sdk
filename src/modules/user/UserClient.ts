@@ -21,10 +21,13 @@ import type {
 	CreateReferralCodeRequest,
 	ListReferralCodesResponse,
 	RecordReferralClickRequest,
+	RedeemSeasonClaimRequest,
+	RedeemSeasonClaimResponse,
 	ReferralCodeInfo,
 	ReferralSummaryResponse,
 	RewardSummaryResponse,
 	RewardsLedgerParams,
+	SeasonClaimVoucherResponse,
 	UserQuestsResponse,
 } from "./types";
 
@@ -212,5 +215,16 @@ export class UserClient extends BaseHttpClient {
 	 */
 	async activateAccess(params: AccessActivateRequest): Promise<AccessActivateResponse> {
 		return this.post<AccessActivateResponse>("/user/access/activate", params);
+	}
+
+	async seasonClaimVoucher(): Promise<SeasonClaimVoucherResponse> {
+		this.ensureAuth();
+		// Empty body: pass {}, never undefined (post() JSON.stringifies params).
+		return this.post<SeasonClaimVoucherResponse>("/user/season-claim/voucher", {});
+	}
+
+	async seasonClaimRedeem(params: RedeemSeasonClaimRequest): Promise<RedeemSeasonClaimResponse> {
+		this.ensureAuth();
+		return this.post<RedeemSeasonClaimResponse>("/user/season-claim/redeem", params);
 	}
 }
