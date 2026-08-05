@@ -176,6 +176,8 @@ interface EcosystemRewardsDistributionParsed {
 	synchronizerId: string;
 	distributor: string;
 	configCid: string;
+	/** CIP-56 send consent; Distribute fetches then exercises AuthorizeRewardTransfer. */
+	spendAuthorityCid: string;
 	funds: EcosystemFundPartiesParsed;
 }
 
@@ -254,8 +256,11 @@ const parseDistribution = (
 	const funds = parseFundParties(fields.funds);
 	const distributor = readString(fields.distributor);
 	const configCid = readString(fields.configCid);
+	const spendAuthorityCid = readString(fields.spendAuthorityCid);
 	const createdEventBlob = contract.createdEvent.createdEventBlob;
-	if (!funds || !distributor || !configCid || !createdEventBlob) return null;
+	if (!funds || !distributor || !configCid || !spendAuthorityCid || !createdEventBlob) {
+		return null;
+	}
 	return {
 		contractId: contract.createdEvent.contractId,
 		templateId: contract.createdEvent.templateId,
@@ -263,6 +268,7 @@ const parseDistribution = (
 		synchronizerId: contract.synchronizerId || synchronizerIdFallback,
 		distributor,
 		configCid,
+		spendAuthorityCid,
 		funds,
 	};
 };
@@ -329,7 +335,7 @@ export const resolveEcosystemRewardsHook = async ({
 		return empty;
 	}
 	try {
-		const [configResponse, distributionResponse] = await Promise.all([
+		const [configResponse, distributionResponse, spendAuthorityResponse] = await Promise.all([
 			gateway.getContracts({
 				templateId: gatewayTemplateId(
 					config.packageName,
@@ -344,6 +350,13 @@ export const resolveEcosystemRewardsHook = async ({
 					"EcosystemRewardsDistribution"
 				),
 			}),
+			gateway.getContracts({
+				templateId: gatewayTemplateId(
+					config.packageName,
+					"EcosystemRewards",
+					"EcosystemRewardSpendAuthority"
+				),
+			}),
 		]);
 		const distributionContract = distributionResponse.contracts.at(-1);
 		if (!distributionContract) {
@@ -354,13 +367,19 @@ export const resolveEcosystemRewardsHook = async ({
 			return empty;
 		}
 
-		// Ledger `fetch`es distribution.configCid during distribute; the submitting
-		// user party does not see that config on ACS, so it must be disclosed.
-		// Prefer the exact CID referenced by the active distribution (not "latest").
+		// Ledger `fetch`es configCid + spendAuthorityCid during Distribute; the submitting
+		// user party does not see those on ACS, so they must be disclosed (same as tests'
+		// rewardDisclosures). Prefer exact CIDs referenced by the active distribution.
 		const configContract = configResponse.contracts.find(
 			(contract) => contract.createdEvent.contractId === distribution.configCid
 		);
-		if (!configContract?.createdEvent.createdEventBlob) {
+		const spendAuthorityContract = spendAuthorityResponse.contracts.find(
+			(contract) => contract.createdEvent.contractId === distribution.spendAuthorityCid
+		);
+		if (
+			!configContract?.createdEvent.createdEventBlob ||
+			!spendAuthorityContract?.createdEvent.createdEventBlob
+		) {
 			return empty;
 		}
 		const parsedConfig = parseConfig(configContract.createdEvent.createArgument);
@@ -381,7 +400,17 @@ export const resolveEcosystemRewardsHook = async ({
 			createdEventBlob: configContract.createdEvent.createdEventBlob,
 			synchronizerId: configContract.synchronizerId || config.synchronizerId,
 		};
-		const baseDisclosures = [distributionDisclosure, configDisclosure];
+		const spendAuthorityDisclosure: CantonDisclosedContract = {
+			templateId: spendAuthorityContract.createdEvent.templateId,
+			contractId: spendAuthorityContract.createdEvent.contractId,
+			createdEventBlob: spendAuthorityContract.createdEvent.createdEventBlob,
+			synchronizerId: spendAuthorityContract.synchronizerId || config.synchronizerId,
+		};
+		const baseDisclosures = [
+			distributionDisclosure,
+			configDisclosure,
+			spendAuthorityDisclosure,
+		];
 
 		const actionRule = parsedConfig.actionRules.find((rule) => rule.action === action);
 		const enabledAssets = actionRule?.enabled
@@ -438,14 +467,22 @@ export const resolveEcosystemRewardsHook = async ({
 				holdingContracts,
 				distributorParty,
 				asset.instrumentId
-			).filter((holding) => !usedHoldingCids.has(holding.contractId));
+			);
 
 			for (const fund of recipients) {
 				const receiver = fundParty(distribution.funds, fund);
-				const covering = selectCoveringHoldings(instrumentHoldings, share);
+				const availableHoldings = instrumentHoldings.filter(
+					(holding) => !usedHoldingCids.has(holding.contractId)
+				);
+				const covering = selectCoveringHoldings(availableHoldings, share);
 				if (!covering.length) continue;
 
 				const holdingCids = covering.map((h) => h.contractId);
+				// Reserve immediately so the next fund cannot reuse the same UTXO.
+				for (const holding of covering) {
+					usedHoldingCids.add(holding.contractId);
+				}
+
 				try {
 					const transferFactory = await registry.fetchTransferFactory({
 						sender: distributorParty,
@@ -457,11 +494,13 @@ export const resolveEcosystemRewardsHook = async ({
 					});
 
 					if (transferFactory.transferKind !== "direct") {
+						for (const holding of covering) {
+							usedHoldingCids.delete(holding.contractId);
+						}
 						continue;
 					}
 
 					for (const holding of covering) {
-						usedHoldingCids.add(holding.contractId);
 						if (holding.createdEventBlob) {
 							disclosedContracts.push({
 								templateId: holding.templateId,
@@ -475,7 +514,7 @@ export const resolveEcosystemRewardsHook = async ({
 
 					inputs.push({
 						instrumentId: asset.instrumentId,
-						fund: { tag: fund, value: {} },
+						fund,
 						holdings: holdingCids,
 						transferFactoryCid: transferFactory.factoryId,
 						transferExtraArgs: transferFactory.transferExtraArgs,
@@ -483,6 +522,9 @@ export const resolveEcosystemRewardsHook = async ({
 					});
 				} catch {
 					// Soft-skip this payout input; parent User choice must still succeed.
+					for (const holding of covering) {
+						usedHoldingCids.delete(holding.contractId);
+					}
 				}
 			}
 		}

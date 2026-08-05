@@ -118,7 +118,8 @@ export interface TransferExtraArgs {
 
 export interface RewardDistributionInput {
 	instrumentId: HoldingInstrumentId;
-	fund: { tag: EcosystemFundKind; value: Record<string, never> };
+	/** Ledger JSON API enum encoding — plain string, not `{ tag, value }`. */
+	fund: EcosystemFundKind;
 	holdings: string[];
 	transferFactoryCid: string;
 	transferExtraArgs: TransferExtraArgs;

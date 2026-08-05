@@ -121,15 +121,15 @@ export class CantonCommands {
 	) {}
 
 	private get userTemplateId(): string {
-		return `${this.config.packageId}:User:User`;
+		return `${this.config.packageName || this.config.packageId}:User:User`;
 	}
 
 	get ekidenUserTemplateId(): string {
-		return `${this.config.packageId}:User:EkidenUser`;
+		return `${this.config.packageName || this.config.packageId}:User:EkidenUser`;
 	}
 
 	get fundingVaultTemplateId(): string {
-		return `${this.config.packageId}:User:FundingVault`;
+		return `${this.config.packageName || this.config.packageId}:User:FundingVault`;
 	}
 
 	private get transferInstructionInterfaceTemplateId(): string {
@@ -142,7 +142,7 @@ export class CantonCommands {
 	/** Disclosure of the Ekiden `User:User` contract, required by most choices */
 	buildUserDisclosedContract(): CantonDisclosedContract {
 		return {
-			templateId: this.userTemplateId,
+			templateId: `${this.config.packageId}:User:User`,
 			contractId: this.config.userContractCid,
 			createdEventBlob: this.config.userContractEventBlob,
 			synchronizerId: this.config.synchronizerId,
