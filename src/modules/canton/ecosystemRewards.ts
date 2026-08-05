@@ -1,5 +1,5 @@
-import type { CantonRegistryClient } from "./registry";
 import type { CantonGatewayClient, CantonGatewayContract } from "./gateway";
+import type { CantonRegistryClient } from "./registry";
 import type {
 	CantonConfig,
 	CantonDisclosedContract,
@@ -232,10 +232,7 @@ const parseDistribution = (
 	};
 };
 
-const fundParty = (
-	funds: EcosystemFundPartiesParsed,
-	kind: EcosystemFundKind
-): string => {
+const fundParty = (funds: EcosystemFundPartiesParsed, kind: EcosystemFundKind): string => {
 	switch (kind) {
 		case "DevFund":
 			return funds.dev;
@@ -258,10 +255,7 @@ const selectRecipients = <T>(items: T[]): T[] => {
 const gatewayTemplateId = (packageName: string, module: string, entity: string): string =>
 	`${packageName}:${module}:${entity}`;
 
-const selectCoveringHoldings = (
-	holdings: CantonHolding[],
-	need: number
-): CantonHolding[] => {
+const selectCoveringHoldings = (holdings: CantonHolding[], need: number): CantonHolding[] => {
 	if (need <= 0) return [];
 	const ranked = [...holdings]
 		.map((h) => ({ holding: h, amount: Number(h.amount) || 0 }))
@@ -366,12 +360,11 @@ export const resolveEcosystemRewardsHook = async ({
 		const baseDisclosures = [distributionDisclosure, configDisclosure];
 
 		const actionRule = parsedConfig.actionRules.find((rule) => rule.action === action);
-		const enabledAssets =
-			actionRule?.enabled
-				? parsedConfig.assets
-						.filter((asset) => asset.enabled && asset.amount > 0)
-						.slice(0, parsedConfig.maxAssetsPerTx || 0)
-				: [];
+		const enabledAssets = actionRule?.enabled
+			? parsedConfig.assets
+					.filter((asset) => asset.enabled && asset.amount > 0)
+					.slice(0, parsedConfig.maxAssetsPerTx || 0)
+			: [];
 		if (!actionRule?.enabled || !enabledAssets.length) {
 			return {
 				hook: { distributionCid: distribution.contractId, inputs: [] },
@@ -386,7 +379,9 @@ export const resolveEcosystemRewardsHook = async ({
 		for (const asset of enabledAssets) {
 			const optedFunds = actionRule.fundReceives
 				.filter((spec) =>
-					spec.instruments.some((instrument) => instrumentEq(instrument, asset.instrumentId))
+					spec.instruments.some((instrument) =>
+						instrumentEq(instrument, asset.instrumentId)
+					)
 				)
 				.map((spec) => spec.fund);
 			// Deduplicate fund kinds preserving order

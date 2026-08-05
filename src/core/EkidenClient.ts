@@ -1,10 +1,6 @@
 import { AccountClient } from "@/modules/account";
 import { AssetClient } from "@/modules/asset";
-import {
-	CantonCommands,
-	CantonGatewayClient,
-	CantonRegistryClient,
-} from "@/modules/canton";
+import { CantonCommands, CantonGatewayClient, CantonRegistryClient } from "@/modules/canton";
 import { CompetitionClient } from "@/modules/competitions";
 import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";

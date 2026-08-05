@@ -149,9 +149,7 @@ export class CantonCommands {
 		};
 	}
 
-	private async attachEcosystemRewards(
-		action: EcosystemRewardAction
-	): Promise<{
+	private async attachEcosystemRewards(action: EcosystemRewardAction): Promise<{
 		ecosystemRewards: EcosystemRewardsHook | null;
 		disclosedContracts: CantonDisclosedContract[];
 	}> {
@@ -218,9 +216,7 @@ export class CantonCommands {
 		ekidenUserCid,
 		subType = "STCrossTrading",
 	}: CreateSubAccountWithVaultParams): Promise<CantonCommandBatch> {
-		const rewards = await this.attachEcosystemRewards(
-			"RewardAction_CreateSubAccountWithVault"
-		);
+		const rewards = await this.attachEcosystemRewards("RewardAction_CreateSubAccountWithVault");
 		return this.exerciseUserChoice(
 			"create-sub-account-with-vault",
 			partyId,
@@ -349,9 +345,7 @@ export class CantonCommands {
 		tradingVaultCid,
 		withdrawAvailable = true,
 	}: CreateWithdrawalRequestParams): Promise<CantonCommandBatch> {
-		const rewards = await this.attachEcosystemRewards(
-			"RewardAction_CreateWithdrawalRequest"
-		);
+		const rewards = await this.attachEcosystemRewards("RewardAction_CreateWithdrawalRequest");
 		return this.exerciseUserChoice(
 			"create-withdrawal-request",
 			partyId,
