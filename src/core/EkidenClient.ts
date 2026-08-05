@@ -1,6 +1,10 @@
 import { AccountClient } from "@/modules/account";
 import { AssetClient } from "@/modules/asset";
-import { CantonCommands, CantonRegistryClient } from "@/modules/canton";
+import {
+	CantonCommands,
+	CantonGatewayClient,
+	CantonRegistryClient,
+} from "@/modules/canton";
 import { CompetitionClient } from "@/modules/competitions";
 import { FundingClient } from "@/modules/funding";
 import { LeaderboardClient } from "@/modules/leaderboard";
@@ -33,6 +37,8 @@ export class EkidenClient {
 	public readonly canton?: CantonCommands;
 	/** Utility registry client; available when `config.canton` is provided */
 	public readonly cantonRegistry?: CantonRegistryClient;
+	/** Canton Gateway ACS client; available when `config.canton.gatewayBaseUrl` is set */
+	public readonly cantonGateway?: CantonGatewayClient;
 
 	constructor(public readonly config: EkidenClientConfig) {
 		this.account = new AccountClient(config);
@@ -56,8 +62,15 @@ export class EkidenClient {
 		}
 
 		if (config.canton) {
-			this.canton = new CantonCommands(config.canton);
 			this.cantonRegistry = new CantonRegistryClient(config.canton);
+			if (config.canton.gatewayBaseUrl) {
+				this.cantonGateway = new CantonGatewayClient(config.canton.gatewayBaseUrl);
+			}
+			this.canton = new CantonCommands(
+				config.canton,
+				this.cantonRegistry,
+				this.cantonGateway
+			);
 		}
 	}
 

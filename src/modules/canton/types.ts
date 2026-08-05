@@ -5,6 +5,11 @@
 export interface CantonConfig {
 	/** Ekiden DAML package id */
 	packageId: string;
+	/**
+	 * Package-name form for gateway template filters (e.g. `#ekiden-daml-contracts-v15`).
+	 * Required for ecosystem rewards config/distribution ACS lookups.
+	 */
+	packageName?: string;
 	/** Ekiden `User:User` contract id */
 	userContractCid: string;
 	/** Created-event blob of the Ekiden `User:User` contract (for disclosure) */
@@ -27,8 +32,33 @@ export interface CantonConfig {
 	transferOfferTemplateId?: string;
 	/** Defaults to the splice token-standard TransferInstruction interface */
 	transferInstructionInterfaceTemplateId?: string;
+	/**
+	 * Canton Gateway base URL (…/v1). When set, User choices auto-attach
+	 * `ecosystemRewards` from ACS config + distributor holdings.
+	 */
+	gatewayBaseUrl?: string;
 	/** Bridge onboarding parties; required only for bridge onboarding commands */
 	bridge?: CantonBridgeConfig;
+}
+
+/** Logical reward funds (matches Daml `EcosystemFundKind`). */
+export type EcosystemFundKind = "DevFund" | "GrowthFund" | "UserRewardFund" | "MarketMakingFund";
+
+/** User/platform action that triggers distribute (matches Daml `EcosystemRewardAction`). */
+export type EcosystemRewardAction =
+	| "RewardAction_CreateUser"
+	| "RewardAction_CreateSubAccountWithVault"
+	| "RewardAction_DepositIntoFunding"
+	| "RewardAction_DepositIntoFundingWithTransferRequest"
+	| "RewardAction_WithdrawFromFunding"
+	| "RewardAction_CreateTransferRequest"
+	| "RewardAction_CreateWithdrawalRequest"
+	| "RewardAction_SettleBatch"
+	| "RewardAction_SettleBatchWithMaybeMarketUpdate";
+
+export interface HoldingInstrumentId {
+	admin: string;
+	id: string;
 }
 
 export interface CantonBridgeConfig {
@@ -84,6 +114,21 @@ export interface CantonHolding {
 export interface TransferExtraArgs {
 	context: { values: Record<string, unknown> };
 	meta: { values: Record<string, unknown> };
+}
+
+export interface RewardDistributionInput {
+	instrumentId: HoldingInstrumentId;
+	fund: { tag: EcosystemFundKind; value: Record<string, never> };
+	holdings: string[];
+	transferFactoryCid: string;
+	transferExtraArgs: TransferExtraArgs;
+	transferMeta: { values: Record<string, unknown> };
+}
+
+/** Optional CIP-56 inputs for nested distribute from User choices. */
+export interface EcosystemRewardsHook {
+	distributionCid: string;
+	inputs: RewardDistributionInput[];
 }
 
 export interface TransferFactoryResult {

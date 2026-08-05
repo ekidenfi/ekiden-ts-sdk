@@ -21,6 +21,17 @@ export {
 	findTransferPreapprovalInContracts,
 	isTransferOfferExpired,
 } from "./contracts";
+export {
+	type ResolveEcosystemRewardsHookResult,
+	resolveEcosystemRewardsHook,
+} from "./ecosystemRewards";
+export {
+	CantonGatewayClient,
+	type CantonGatewayContract,
+	type CantonGatewayContractsResponse,
+	type CantonGatewayCreatedEvent,
+	type GetContractsParams,
+} from "./gateway";
 export { CantonRegistryClient, type FetchTransferFactoryParams } from "./registry";
 export { type SubmitCantonCommandsParams, submitCantonCommands } from "./submit";
 export type {
@@ -35,6 +46,11 @@ export type {
 	CantonSubmitResponse,
 	CantonTransferOffer,
 	CantonTransferPreapproval,
+	EcosystemFundKind,
+	EcosystemRewardAction,
+	EcosystemRewardsHook,
+	HoldingInstrumentId,
+	RewardDistributionInput,
 	TransferExtraArgs,
 	TransferFactoryResult,
 	TransferInstructionPayload,
