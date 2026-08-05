@@ -202,29 +202,17 @@ export interface ClaimQuestResponse {
  * with the same wallet-signature scheme JWT login uses. The body carries the
  * `public_key` (not the address) — the server derives the address itself.
  */
+/**
+ * `POST /user/access/activate` — redeem a closed-launch access code for the
+ * authenticated wallet.
+ *
+ * Identity is the session, so the body carries nothing but the code. This
+ * replaced a pre-auth signature ceremony that custodial (Auth0) wallets could
+ * never satisfy: they hold no signing key.
+ */
 export interface AccessActivateRequest {
 	/** Plaintext access code; normalized (trim + uppercase) server-side. */
 	code: string;
-	/** Wallet public key, same encoding as `/authorize`'s `public_key`. */
-	public_key: string;
-	/** Unix seconds at which the message was signed (server window: +/-300s). */
-	signed_at: number;
-	/** Wallet signature over the canonical activation message. */
-	signature: string;
-	/**
-	 * Canton Console (self-custody) party id (`<hint>::<fingerprint>`). Present on
-	 * the Console path; the server verifies `signature` over the code-bound
-	 * `EKIDEN-CANTON-ACTIVATE` challenge and that `public_key` controls it.
-	 */
-	party_id?: string;
-	/** Anti-replay nonce bound into the Canton Console activation challenge. */
-	nonce?: string;
-	/**
-	 * Auth0/Google OIDC `id_token` for the custodial path. When present the server
-	 * reads the Canton party from the token — no client signature is required
-	 * (`public_key`/`signature` are ignored on this path).
-	 */
-	id_token?: string;
 }
 
 export interface AccessActivateResponse {
