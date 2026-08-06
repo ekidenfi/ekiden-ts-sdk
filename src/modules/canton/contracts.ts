@@ -68,13 +68,16 @@ const readDamlFieldValue = (
 
 const readDamlParty = (value: Record<string, unknown> | undefined): string => {
 	if (!value) return "";
-	return String(value.party || "");
+	if (typeof value.party === "string") return value.party;
+	if (typeof value.text === "string" && value.text.includes("::")) return value.text;
+	return "";
 };
 
 const readDamlNumeric = (value: Record<string, unknown> | undefined): string => {
 	if (!value) return "0";
 	if ("numeric" in value) return String(value.numeric || "0");
 	if ("int64" in value) return String(value.int64 || "0");
+	if (typeof value.text === "string" && value.text.trim()) return value.text;
 	return "0";
 };
 
@@ -85,30 +88,86 @@ const readDamlTimestamp = (value: Record<string, unknown> | undefined): string =
 	return "";
 };
 
+const readPartyLike = (value: unknown): string => {
+	if (typeof value === "string") return value;
+	if (value && typeof value === "object") {
+		return readDamlParty(value as Record<string, unknown>);
+	}
+	return "";
+};
+
+const readAmountLike = (value: unknown): string => {
+	if (typeof value === "number" && Number.isFinite(value)) return String(value);
+	if (typeof value === "string" && value.trim()) return value;
+	if (value && typeof value === "object") {
+		return readDamlNumeric(value as Record<string, unknown>);
+	}
+	return "0";
+};
+
+const readTimestampLike = (value: unknown): string => {
+	if (typeof value === "string") return value;
+	if (typeof value === "number" && Number.isFinite(value)) return String(value);
+	if (value && typeof value === "object") {
+		return readDamlTimestamp(value as Record<string, unknown>);
+	}
+	return "";
+};
+
 const readDamlRecordFields = (value: Record<string, unknown> | undefined): DamlField[] => {
 	if (!value) return [];
 	return readDamlFields(readObj(value.record ?? value));
 };
 
-const readTransferFromDamlFields = (
-	fields: DamlField[]
+/** TransferOffer / TransferInstruction payload from a flat JSON object. */
+const readTransferFromFlatObject = (
+	transfer: Record<string, unknown>,
+	providerFallback = ""
 ): TransferInstructionPayload | undefined => {
-	const transferValue = readDamlFieldValue(fields, "transfer");
-	const transferFields = readDamlRecordFields(transferValue);
-	if (!transferFields.length) return undefined;
+	const sender = readPartyLike(transfer.sender);
+	const receiver = readPartyLike(transfer.receiver);
+	if (!sender && !receiver) return undefined;
 
 	return {
-		sender: readDamlParty(readDamlFieldValue(transferFields, "sender")),
-		receiver: readDamlParty(readDamlFieldValue(transferFields, "receiver")),
-		amount: readDamlNumeric(readDamlFieldValue(transferFields, "amount")),
-		executeBefore: readDamlTimestamp(readDamlFieldValue(transferFields, "executeBefore")),
-		provider: readDamlParty(readDamlFieldValue(transferFields, "provider")),
+		sender,
+		receiver,
+		amount: readAmountLike(transfer.amount),
+		executeBefore: readTimestampLike(transfer.executeBefore),
+		provider: readPartyLike(transfer.provider) || providerFallback,
 	};
+};
+
+const readTransferFromDamlFields = (
+	fields: DamlField[],
+	providerFallback = ""
+): TransferInstructionPayload | undefined => {
+	const transferValue = readDamlFieldValue(fields, "transfer");
+	if (!transferValue) return undefined;
+
+	// Nested Daml encoding: { record: { fields: [...] } } or { fields: [...] }
+	const transferFields = readDamlRecordFields(transferValue);
+	if (transferFields.length) {
+		return {
+			sender: readDamlParty(readDamlFieldValue(transferFields, "sender")),
+			receiver: readDamlParty(readDamlFieldValue(transferFields, "receiver")),
+			amount: readDamlNumeric(readDamlFieldValue(transferFields, "amount")),
+			executeBefore: readDamlTimestamp(readDamlFieldValue(transferFields, "executeBefore")),
+			provider:
+				readDamlParty(readDamlFieldValue(transferFields, "provider")) || providerFallback,
+		};
+	}
+
+	// Gateway sometimes unwraps nested records to a flat object inside `value`.
+	return readTransferFromFlatObject(transferValue, providerFallback);
 };
 
 export const extractTransferInstructionFromCreateArgument = (
 	createArgument: Record<string, unknown>
 ): TransferInstructionPayload | undefined => {
+	const rootProvider =
+		readPartyLike(createArgument.provider) ||
+		readDamlParty(readDamlFieldValue(readDamlFields(createArgument), "provider"));
+
 	const instruction = readObj(createArgument.instruction);
 	if (instruction.receiver || instruction.sender) {
 		return {
@@ -116,30 +175,24 @@ export const extractTransferInstructionFromCreateArgument = (
 			receiver: String(instruction.receiver || createArgument.receiver || ""),
 			amount: String(instruction.amount || createArgument.amount || "0"),
 			executeBefore: String(instruction.executeBefore || createArgument.executeBefore || ""),
-			provider: String(instruction.provider || createArgument.provider || ""),
+			provider: String(instruction.provider || createArgument.provider || rootProvider || ""),
 		};
 	}
 
-	const directTransfer = readObj(createArgument.transfer);
-	if (directTransfer.receiver || directTransfer.sender) {
-		return {
-			sender: String(directTransfer.sender || ""),
-			receiver: String(directTransfer.receiver || ""),
-			amount: String(directTransfer.amount || "0"),
-			executeBefore: String(directTransfer.executeBefore || ""),
-			provider: String(createArgument.provider || ""),
-		};
+	const directTransfer = readTransferFromFlatObject(readObj(createArgument.transfer), rootProvider);
+	if (directTransfer) {
+		return directTransfer;
 	}
 
 	const rootFields = readDamlFields(createArgument);
-	const transferFromRoot = readTransferFromDamlFields(rootFields);
+	const transferFromRoot = readTransferFromDamlFields(rootFields, rootProvider);
 	if (transferFromRoot?.receiver || transferFromRoot?.sender) {
 		return transferFromRoot;
 	}
 
 	const instructionValue = readDamlFieldValue(rootFields, "instruction");
 	const instructionFields = readDamlRecordFields(instructionValue);
-	const transferFromInstruction = readTransferFromDamlFields(instructionFields);
+	const transferFromInstruction = readTransferFromDamlFields(instructionFields, rootProvider);
 	if (transferFromInstruction?.receiver || transferFromInstruction?.sender) {
 		return transferFromInstruction;
 	}
@@ -151,7 +204,7 @@ export const extractTransferInstructionFromCreateArgument = (
 			receiver: rootReceiver,
 			amount: readDamlNumeric(readDamlFieldValue(rootFields, "amount")),
 			executeBefore: readDamlTimestamp(readDamlFieldValue(rootFields, "executeBefore")),
-			provider: readDamlParty(readDamlFieldValue(rootFields, "provider")),
+			provider: rootProvider,
 		};
 	}
 
@@ -183,25 +236,49 @@ export const findCreateArgumentReceiver = (
 export const isTransferOfferExpired = (executeBefore: string, now = Date.now()): boolean => {
 	if (!executeBefore.trim()) return false;
 
-	return Number(executeBefore) / 1000 <= now;
+	// Daml JSON API timestamps are usually microseconds since epoch.
+	const asNumber = Number(executeBefore);
+	if (Number.isFinite(asNumber) && asNumber > 0) {
+		const millis = asNumber > 1e14 ? asNumber / 1000 : asNumber;
+		return millis <= now;
+	}
+
+	// Some gateways return ISO-8601 strings.
+	const asDate = Date.parse(executeBefore);
+	if (Number.isFinite(asDate)) {
+		return asDate <= now;
+	}
+
+	return false;
 };
 
 /** Map raw active-contract entries to non-expired transfer offers for a party */
+export type TransferOfferRole = "receiver" | "sender" | "any";
+
 export const findTransferOffersInContracts = (
 	contracts: Record<string, unknown>[],
-	partyId: string
+	partyId: string,
+	options: { role?: TransferOfferRole } = {}
 ): CantonTransferOffer[] => {
+	const role = options.role ?? "receiver";
 	const offers: CantonTransferOffer[] = [];
 
 	for (const contract of contracts) {
 		const createdEvent = extractActiveContractCreatedEvent(contract);
 		const createArgument = readObj(createdEvent.createArgument);
 		const transfer = extractTransferInstructionFromCreateArgument(createArgument);
-		if (
-			!transfer ||
-			transfer.receiver !== partyId ||
-			isTransferOfferExpired(transfer.executeBefore)
-		) {
+		if (!transfer || isTransferOfferExpired(transfer.executeBefore)) {
+			continue;
+		}
+
+		const matchesRole =
+			role === "any"
+				? transfer.receiver === partyId || transfer.sender === partyId
+				: role === "sender"
+					? transfer.sender === partyId
+					: transfer.receiver === partyId;
+
+		if (!matchesRole) {
 			continue;
 		}
 

@@ -3,14 +3,17 @@ export {
 	type ArchivePreapproveTransfersParams,
 	CantonCommands,
 	type CreateSubAccountWithVaultParams,
+	type CreateTransferParams,
 	type CreateTransferRequestParams,
 	type CreateWithdrawalRequestParams,
 	type DepositIntoFundingParams as CantonDepositIntoFundingParams,
 	type DepositIntoFundingWithTransferRequestParams,
 	mergeDisclosedContracts,
 	type RegisterUserParams,
+	type RejectTransferOfferParams,
 	type SubAccountType,
 	type WithdrawFromFundingParams as CantonWithdrawFromFundingParams,
+	type WithdrawTransferOfferParams,
 } from "./commands";
 export {
 	extractActiveContractCreatedEvent,
@@ -20,6 +23,7 @@ export {
 	findTransferOffersInContracts,
 	findTransferPreapprovalInContracts,
 	isTransferOfferExpired,
+	type TransferOfferRole,
 } from "./contracts";
 export {
 	type ResolveEcosystemRewardsHookResult,

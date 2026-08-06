@@ -32,6 +32,8 @@ export interface CantonConfig {
 	transferOfferTemplateId?: string;
 	/** Defaults to the splice token-standard TransferInstruction interface */
 	transferInstructionInterfaceTemplateId?: string;
+	/** Defaults to the splice token-standard TransferFactory interface */
+	transferFactoryInterfaceTemplateId?: string;
 	/**
 	 * Canton Gateway base URL (…/v1). When set, User choices auto-attach
 	 * `ecosystemRewards` from ACS config + distributor holdings.

@@ -14,8 +14,12 @@ import type {
 
 const DEFAULT_TRANSFER_INSTRUCTION_INTERFACE_TEMPLATE_ID =
 	"#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferInstruction";
+const DEFAULT_TRANSFER_FACTORY_INTERFACE_TEMPLATE_ID =
+	"#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferFactory";
 const DEFAULT_BRIDGE_USER_AGREEMENT_REQUEST_TEMPLATE =
 	"#utility-bridge-v0:Utility.Bridge.V0.Agreement.User:BridgeUserAgreementRequest";
+
+const defaultExecuteBefore = (): string => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 const commandId = (name: string): string => `${name}-${Math.floor(Date.now() / 1000)}`;
 
@@ -106,6 +110,34 @@ export interface AcceptTransferOfferParams {
 	acceptContext: TransferOfferAcceptContext;
 }
 
+export interface RejectTransferOfferParams {
+	partyId: string;
+	contractId: string;
+	/** Result of a reject-context lookup (see `fetchTransferOfferRejectContext`) */
+	rejectContext: TransferOfferAcceptContext;
+}
+
+export interface WithdrawTransferOfferParams {
+	partyId: string;
+	contractId: string;
+	/** Result of a withdraw-context lookup (see `fetchTransferOfferWithdrawContext`) */
+	withdrawContext: TransferOfferAcceptContext;
+}
+
+export interface CreateTransferParams {
+	partyId: string;
+	receiver: string;
+	amount: string;
+	inputHoldingCids: string[];
+	/** Result of a transfer-factory lookup (see `fetchTransferFactory`) */
+	transferFactory: TransferFactoryResult;
+	/** Must match the timestamps used when fetching the transfer factory */
+	requestedAt?: string;
+	executeBefore?: string;
+	/** Optional CIP-56 reason metadata */
+	reason?: string;
+}
+
 /**
  * Builders for Canton (DAML) command batches.
  *
@@ -136,6 +168,13 @@ export class CantonCommands {
 		return (
 			this.config.transferInstructionInterfaceTemplateId ||
 			DEFAULT_TRANSFER_INSTRUCTION_INTERFACE_TEMPLATE_ID
+		);
+	}
+
+	private get transferFactoryInterfaceTemplateId(): string {
+		return (
+			this.config.transferFactoryInterfaceTemplateId ||
+			DEFAULT_TRANSFER_FACTORY_INTERFACE_TEMPLATE_ID
 		);
 	}
 
@@ -471,6 +510,117 @@ export class CantonCommands {
 				},
 			],
 			disclosedContracts: acceptContext.disclosedContracts,
+			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	rejectTransferOffer({
+		partyId,
+		contractId,
+		rejectContext,
+	}: RejectTransferOfferParams): CantonCommandBatch {
+		return {
+			commandId: commandId("reject-transfer-offer"),
+			actAs: [partyId],
+			commands: [
+				{
+					ExerciseCommand: {
+						templateId: this.transferInstructionInterfaceTemplateId,
+						contractId,
+						choice: "TransferInstruction_Reject",
+						choiceArgument: {
+							extraArgs: rejectContext.extraArgs,
+						},
+					},
+				},
+			],
+			disclosedContracts: rejectContext.disclosedContracts,
+			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	withdrawTransferOffer({
+		partyId,
+		contractId,
+		withdrawContext,
+	}: WithdrawTransferOfferParams): CantonCommandBatch {
+		return {
+			commandId: commandId("withdraw-transfer-offer"),
+			actAs: [partyId],
+			commands: [
+				{
+					ExerciseCommand: {
+						templateId: this.transferInstructionInterfaceTemplateId,
+						contractId,
+						choice: "TransferInstruction_Withdraw",
+						choiceArgument: {
+							extraArgs: withdrawContext.extraArgs,
+						},
+					},
+				},
+			],
+			disclosedContracts: withdrawContext.disclosedContracts,
+			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	/**
+	 * Peer-to-peer USDCx (or other CIP-56 instrument) transfer via TransferFactory_Transfer.
+	 * Pass the same requestedAt/executeBefore used for `fetchTransferFactory`.
+	 */
+	createTransfer({
+		partyId,
+		receiver,
+		amount,
+		inputHoldingCids,
+		transferFactory,
+		requestedAt = new Date().toISOString(),
+		executeBefore = defaultExecuteBefore(),
+		reason,
+	}: CreateTransferParams): CantonCommandBatch {
+		if (!inputHoldingCids.length) {
+			throw new Error("At least one holding CID is required for a transfer");
+		}
+		if (!transferFactory.factoryId) {
+			throw new Error("Transfer factory id is required");
+		}
+
+		const metaValues: Record<string, unknown> = {};
+		if (reason?.trim()) {
+			metaValues["splice.lfdecentralizedtrust.org/reason"] = reason.trim();
+		}
+
+		return {
+			commandId: commandId("create-transfer"),
+			actAs: [partyId],
+			commands: [
+				{
+					ExerciseCommand: {
+						templateId: this.transferFactoryInterfaceTemplateId,
+						contractId: transferFactory.factoryId,
+						choice: "TransferFactory_Transfer",
+						choiceArgument: {
+							expectedAdmin: this.config.instrumentAdmin,
+							transfer: {
+								sender: partyId,
+								receiver,
+								amount,
+								instrumentId: {
+									admin: this.config.instrumentAdmin,
+									id: this.config.instrumentId,
+								},
+								lock: null,
+								requestedAt,
+								executeBefore,
+								inputHoldingCids,
+								meta: { values: metaValues },
+							},
+							extraArgs: transferFactory.transferExtraArgs,
+						},
+					},
+				},
+			],
+			disclosedContracts: transferFactory.disclosedContracts,
 			synchronizerId: this.config.synchronizerId,
 		};
 	}

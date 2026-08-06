@@ -23,7 +23,7 @@ export interface FetchTransferFactoryParams {
 	instrumentId?: string;
 }
 
-const defaultExecuteBefore = (): string => new Date(Date.now() + 60 * 60 * 1000).toISOString();
+const defaultExecuteBefore = (): string => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 /**
  * Client for the utility registry (token registrar) API.
@@ -143,9 +143,12 @@ export class CantonRegistryClient {
 		};
 	}
 
-	async fetchTransferOfferAcceptContext(contractId: string): Promise<TransferOfferAcceptContext> {
+	private async fetchTransferInstructionChoiceContext(
+		contractId: string,
+		choice: "accept" | "reject" | "withdraw"
+	): Promise<TransferOfferAcceptContext> {
 		const response = await fetch(
-			`${this.registrarBaseUrl(this.config.instrumentAdmin)}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/accept`,
+			`${this.registrarBaseUrl(this.config.instrumentAdmin)}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/${choice}`,
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -156,7 +159,7 @@ export class CantonRegistryClient {
 		if (!response.ok) {
 			const errorBody = await response.text();
 			throw new Error(
-				`Failed to fetch transfer offer accept context (${response.status}): ${errorBody}`
+				`Failed to fetch transfer offer ${choice} context (${response.status}): ${errorBody}`
 			);
 		}
 
@@ -184,5 +187,17 @@ export class CantonRegistryClient {
 				choiceContext.disclosedContracts ?? payload.disclosedContracts
 			),
 		};
+	}
+
+	async fetchTransferOfferAcceptContext(contractId: string): Promise<TransferOfferAcceptContext> {
+		return this.fetchTransferInstructionChoiceContext(contractId, "accept");
+	}
+
+	async fetchTransferOfferRejectContext(contractId: string): Promise<TransferOfferAcceptContext> {
+		return this.fetchTransferInstructionChoiceContext(contractId, "reject");
+	}
+
+	async fetchTransferOfferWithdrawContext(contractId: string): Promise<TransferOfferAcceptContext> {
+		return this.fetchTransferInstructionChoiceContext(contractId, "withdraw");
 	}
 }
