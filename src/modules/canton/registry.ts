@@ -197,7 +197,9 @@ export class CantonRegistryClient {
 		return this.fetchTransferInstructionChoiceContext(contractId, "reject");
 	}
 
-	async fetchTransferOfferWithdrawContext(contractId: string): Promise<TransferOfferAcceptContext> {
+	async fetchTransferOfferWithdrawContext(
+		contractId: string
+	): Promise<TransferOfferAcceptContext> {
 		return this.fetchTransferInstructionChoiceContext(contractId, "withdraw");
 	}
 }

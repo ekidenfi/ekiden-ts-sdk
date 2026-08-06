@@ -179,7 +179,10 @@ export const extractTransferInstructionFromCreateArgument = (
 		};
 	}
 
-	const directTransfer = readTransferFromFlatObject(readObj(createArgument.transfer), rootProvider);
+	const directTransfer = readTransferFromFlatObject(
+		readObj(createArgument.transfer),
+		rootProvider
+	);
 	if (directTransfer) {
 		return directTransfer;
 	}
