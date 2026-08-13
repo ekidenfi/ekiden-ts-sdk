@@ -17,9 +17,13 @@ export interface FetchTransferFactoryParams {
 	inputHoldingCids: string[];
 	requestedAt?: string;
 	executeBefore?: string;
+	/** Override default config instrument admin (for multi-asset rewards). */
+	instrumentAdmin?: string;
+	/** Override default config instrument id (for multi-asset rewards). */
+	instrumentId?: string;
 }
 
-const defaultExecuteBefore = (): string => new Date(Date.now() + 60 * 60 * 1000).toISOString();
+const defaultExecuteBefore = (): string => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 /**
  * Client for the utility registry (token registrar) API.
@@ -34,8 +38,18 @@ export class CantonRegistryClient {
 		>
 	) {}
 
-	private get baseUrl(): string {
-		return this.config.utilityRegistryBaseUrl.replace(/\/$/, "");
+	private registrarBaseUrl(instrumentAdmin: string): string {
+		const configured = this.config.utilityRegistryBaseUrl.replace(/\/$/, "");
+		if (instrumentAdmin === this.config.instrumentAdmin) {
+			return configured;
+		}
+		// Rewrite `/registrars/{admin}` suffix when present; otherwise append.
+		const marker = "/registrars/";
+		const idx = configured.lastIndexOf(marker);
+		if (idx >= 0) {
+			return `${configured.slice(0, idx + marker.length)}${encodeURIComponent(instrumentAdmin)}`;
+		}
+		return `${configured}/${encodeURIComponent(instrumentAdmin)}`;
 	}
 
 	private normalizeDisclosedContracts(value: unknown): CantonDisclosedContract[] {
@@ -66,26 +80,29 @@ export class CantonRegistryClient {
 		inputHoldingCids,
 		requestedAt = new Date().toISOString(),
 		executeBefore = defaultExecuteBefore(),
+		instrumentAdmin = this.config.instrumentAdmin,
+		instrumentId = this.config.instrumentId,
 	}: FetchTransferFactoryParams): Promise<TransferFactoryResult> {
 		if (!inputHoldingCids.length) {
 			throw new Error("At least one holding CID is required to fetch a transfer factory");
 		}
 
+		const baseUrl = this.registrarBaseUrl(instrumentAdmin);
 		const response = await fetch(
-			`${this.baseUrl}/registry/transfer-instruction/v1/transfer-factory`,
+			`${baseUrl}/registry/transfer-instruction/v1/transfer-factory`,
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					choiceArguments: {
-						expectedAdmin: this.config.instrumentAdmin,
+						expectedAdmin: instrumentAdmin,
 						transfer: {
 							sender,
 							receiver,
 							amount,
 							instrumentId: {
-								admin: this.config.instrumentAdmin,
-								id: this.config.instrumentId,
+								admin: instrumentAdmin,
+								id: instrumentId,
 							},
 							lock: null,
 							requestedAt,
@@ -126,9 +143,12 @@ export class CantonRegistryClient {
 		};
 	}
 
-	async fetchTransferOfferAcceptContext(contractId: string): Promise<TransferOfferAcceptContext> {
+	private async fetchTransferInstructionChoiceContext(
+		contractId: string,
+		choice: "accept" | "reject" | "withdraw"
+	): Promise<TransferOfferAcceptContext> {
 		const response = await fetch(
-			`${this.baseUrl}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/accept`,
+			`${this.registrarBaseUrl(this.config.instrumentAdmin)}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/${choice}`,
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -139,7 +159,7 @@ export class CantonRegistryClient {
 		if (!response.ok) {
 			const errorBody = await response.text();
 			throw new Error(
-				`Failed to fetch transfer offer accept context (${response.status}): ${errorBody}`
+				`Failed to fetch transfer offer ${choice} context (${response.status}): ${errorBody}`
 			);
 		}
 
@@ -167,5 +187,19 @@ export class CantonRegistryClient {
 				choiceContext.disclosedContracts ?? payload.disclosedContracts
 			),
 		};
+	}
+
+	async fetchTransferOfferAcceptContext(contractId: string): Promise<TransferOfferAcceptContext> {
+		return this.fetchTransferInstructionChoiceContext(contractId, "accept");
+	}
+
+	async fetchTransferOfferRejectContext(contractId: string): Promise<TransferOfferAcceptContext> {
+		return this.fetchTransferInstructionChoiceContext(contractId, "reject");
+	}
+
+	async fetchTransferOfferWithdrawContext(
+		contractId: string
+	): Promise<TransferOfferAcceptContext> {
+		return this.fetchTransferInstructionChoiceContext(contractId, "withdraw");
 	}
 }

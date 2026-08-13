@@ -1,16 +1,25 @@
+import { resolveEcosystemRewardsHook } from "./ecosystemRewards";
+import type { CantonGatewayClient } from "./gateway";
+import type { CantonRegistryClient } from "./registry";
 import type {
 	CantonCommandBatch,
 	CantonConfig,
 	CantonDisclosedContract,
 	CantonHolding,
+	EcosystemRewardAction,
+	EcosystemRewardsHook,
 	TransferFactoryResult,
 	TransferOfferAcceptContext,
 } from "./types";
 
 const DEFAULT_TRANSFER_INSTRUCTION_INTERFACE_TEMPLATE_ID =
 	"#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferInstruction";
+const DEFAULT_TRANSFER_FACTORY_INTERFACE_TEMPLATE_ID =
+	"#splice-api-token-transfer-instruction-v1:Splice.Api.Token.TransferInstructionV1:TransferFactory";
 const DEFAULT_BRIDGE_USER_AGREEMENT_REQUEST_TEMPLATE =
 	"#utility-bridge-v0:Utility.Bridge.V0.Agreement.User:BridgeUserAgreementRequest";
+
+const defaultExecuteBefore = (): string => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
 const commandId = (name: string): string => `${name}-${Math.floor(Date.now() / 1000)}`;
 
@@ -101,25 +110,58 @@ export interface AcceptTransferOfferParams {
 	acceptContext: TransferOfferAcceptContext;
 }
 
+export interface RejectTransferOfferParams {
+	partyId: string;
+	contractId: string;
+	/** Result of a reject-context lookup (see `fetchTransferOfferRejectContext`) */
+	rejectContext: TransferOfferAcceptContext;
+}
+
+export interface WithdrawTransferOfferParams {
+	partyId: string;
+	contractId: string;
+	/** Result of a withdraw-context lookup (see `fetchTransferOfferWithdrawContext`) */
+	withdrawContext: TransferOfferAcceptContext;
+}
+
+export interface CreateTransferParams {
+	partyId: string;
+	receiver: string;
+	amount: string;
+	inputHoldingCids: string[];
+	/** Result of a transfer-factory lookup (see `fetchTransferFactory`) */
+	transferFactory: TransferFactoryResult;
+	/** Must match the timestamps used when fetching the transfer factory */
+	requestedAt?: string;
+	executeBefore?: string;
+	/** Optional CIP-56 reason metadata */
+	reason?: string;
+}
+
 /**
  * Builders for Canton (DAML) command batches.
  *
- * All ledger state (vault/holding/contract ids) must be provided by the caller;
- * the builders never query the gateway themselves.
+ * Ledger state for deposits/withdrawals (vault/holding ids) must be provided by the
+ * caller. Ecosystem rewards hooks are resolved internally from Canton Gateway ACS
+ * when configured — callers cannot omit `ecosystemRewards` on User choices.
  */
 export class CantonCommands {
-	constructor(private readonly config: CantonConfig) {}
+	constructor(
+		private readonly config: CantonConfig,
+		private readonly registry?: CantonRegistryClient,
+		private readonly gateway?: CantonGatewayClient
+	) {}
 
 	private get userTemplateId(): string {
-		return `${this.config.packageId}:User:User`;
+		return `${this.config.packageName || this.config.packageId}:User:User`;
 	}
 
 	get ekidenUserTemplateId(): string {
-		return `${this.config.packageId}:User:EkidenUser`;
+		return `${this.config.packageName || this.config.packageId}:User:EkidenUser`;
 	}
 
 	get fundingVaultTemplateId(): string {
-		return `${this.config.packageId}:User:FundingVault`;
+		return `${this.config.packageName || this.config.packageId}:User:FundingVault`;
 	}
 
 	private get transferInstructionInterfaceTemplateId(): string {
@@ -129,13 +171,40 @@ export class CantonCommands {
 		);
 	}
 
+	private get transferFactoryInterfaceTemplateId(): string {
+		return (
+			this.config.transferFactoryInterfaceTemplateId ||
+			DEFAULT_TRANSFER_FACTORY_INTERFACE_TEMPLATE_ID
+		);
+	}
+
 	/** Disclosure of the Ekiden `User:User` contract, required by most choices */
 	buildUserDisclosedContract(): CantonDisclosedContract {
 		return {
-			templateId: this.userTemplateId,
+			templateId: `${this.config.packageId}:User:User`,
 			contractId: this.config.userContractCid,
 			createdEventBlob: this.config.userContractEventBlob,
 			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	private async attachEcosystemRewards(action: EcosystemRewardAction): Promise<{
+		ecosystemRewards: EcosystemRewardsHook | null;
+		disclosedContracts: CantonDisclosedContract[];
+	}> {
+		if (!this.registry) {
+			return { ecosystemRewards: null, disclosedContracts: [] };
+		}
+
+		const { hook, disclosedContracts } = await resolveEcosystemRewardsHook({
+			config: this.config,
+			gateway: this.gateway,
+			registry: this.registry,
+			action,
+		});
+		return {
+			ecosystemRewards: hook,
+			disclosedContracts,
 		};
 	}
 
@@ -163,18 +232,30 @@ export class CantonCommands {
 		};
 	}
 
-	registerUser({ partyId, displayName = "Ekiden User" }: RegisterUserParams): CantonCommandBatch {
-		return this.exerciseUserChoice("create-ekiden-user", partyId, "CreateEkidenUser", {
-			user: partyId,
-			displayName,
-		});
+	async registerUser({
+		partyId,
+		displayName = "Ekiden User",
+	}: RegisterUserParams): Promise<CantonCommandBatch> {
+		const rewards = await this.attachEcosystemRewards("RewardAction_CreateUser");
+		return this.exerciseUserChoice(
+			"create-ekiden-user",
+			partyId,
+			"CreateEkidenUser",
+			{
+				user: partyId,
+				displayName,
+				ecosystemRewards: rewards.ecosystemRewards,
+			},
+			mergeDisclosedContracts([this.buildUserDisclosedContract()], rewards.disclosedContracts)
+		);
 	}
 
-	createSubAccountWithVault({
+	async createSubAccountWithVault({
 		partyId,
 		ekidenUserCid,
 		subType = "STCrossTrading",
-	}: CreateSubAccountWithVaultParams): CantonCommandBatch {
+	}: CreateSubAccountWithVaultParams): Promise<CantonCommandBatch> {
+		const rewards = await this.attachEcosystemRewards("RewardAction_CreateSubAccountWithVault");
 		return this.exerciseUserChoice(
 			"create-sub-account-with-vault",
 			partyId,
@@ -183,17 +264,19 @@ export class CantonCommands {
 				user: partyId,
 				ekidenUser: ekidenUserCid,
 				subType: { tag: subType, value: {} },
-			}
+				ecosystemRewards: rewards.ecosystemRewards,
+			},
+			mergeDisclosedContracts([this.buildUserDisclosedContract()], rewards.disclosedContracts)
 		);
 	}
 
-	depositIntoFunding({
+	async depositIntoFunding({
 		partyId,
 		amount,
 		fundingVaultCid,
 		holdingCids,
 		transferFactory,
-	}: DepositIntoFundingParams): CantonCommandBatch {
+	}: DepositIntoFundingParams): Promise<CantonCommandBatch> {
 		if (!holdingCids.length) {
 			throw new Error("At least one holding CID is required for a funding deposit");
 		}
@@ -202,6 +285,8 @@ export class CantonCommands {
 				"Direct transfer is required for funding deposit; enable platform transfer preapproval"
 			);
 		}
+
+		const rewards = await this.attachEcosystemRewards("RewardAction_DepositIntoFunding");
 
 		return this.exerciseUserChoice(
 			"fund-funding-account",
@@ -215,22 +300,24 @@ export class CantonCommands {
 				transferFactoryCid: transferFactory.factoryId,
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
+				ecosystemRewards: rewards.ecosystemRewards,
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
-				transferFactory.disclosedContracts
+				transferFactory.disclosedContracts,
+				rewards.disclosedContracts
 			)
 		);
 	}
 
-	depositIntoFundingWithTransferRequest({
+	async depositIntoFundingWithTransferRequest({
 		partyId,
 		amount,
 		fundingVaultCid,
 		tradingVaultCid,
 		holdingCids,
 		transferFactory,
-	}: DepositIntoFundingWithTransferRequestParams): CantonCommandBatch {
+	}: DepositIntoFundingWithTransferRequestParams): Promise<CantonCommandBatch> {
 		if (!holdingCids.length) {
 			throw new Error("At least one holding CID is required for a deposit");
 		}
@@ -239,6 +326,10 @@ export class CantonCommands {
 				"Direct transfer is required for deposit; enable platform transfer preapproval"
 			);
 		}
+
+		const rewards = await this.attachEcosystemRewards(
+			"RewardAction_DepositIntoFundingWithTransferRequest"
+		);
 
 		return this.exerciseUserChoice(
 			"deposit-into-funding-with-transfer-request",
@@ -253,21 +344,24 @@ export class CantonCommands {
 				transferFactoryCid: transferFactory.factoryId,
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
+				ecosystemRewards: rewards.ecosystemRewards,
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
-				transferFactory.disclosedContracts
+				transferFactory.disclosedContracts,
+				rewards.disclosedContracts
 			)
 		);
 	}
 
 	/** Propose moving funds from the funding vault into a trading vault */
-	createTransferRequest({
+	async createTransferRequest({
 		partyId,
 		amount,
 		fundingVaultCid,
 		tradingVaultCid,
-	}: CreateTransferRequestParams): CantonCommandBatch {
+	}: CreateTransferRequestParams): Promise<CantonCommandBatch> {
+		const rewards = await this.attachEcosystemRewards("RewardAction_CreateTransferRequest");
 		return this.exerciseUserChoice(
 			"propose-transfer-to-trading",
 			partyId,
@@ -277,17 +371,20 @@ export class CantonCommands {
 				fundingVault: fundingVaultCid,
 				tradingVault: tradingVaultCid,
 				amount,
-			}
+				ecosystemRewards: rewards.ecosystemRewards,
+			},
+			mergeDisclosedContracts([this.buildUserDisclosedContract()], rewards.disclosedContracts)
 		);
 	}
 
-	createWithdrawalRequest({
+	async createWithdrawalRequest({
 		partyId,
 		requestedAmount,
 		fundingVaultCid,
 		tradingVaultCid,
 		withdrawAvailable = true,
-	}: CreateWithdrawalRequestParams): CantonCommandBatch {
+	}: CreateWithdrawalRequestParams): Promise<CantonCommandBatch> {
+		const rewards = await this.attachEcosystemRewards("RewardAction_CreateWithdrawalRequest");
 		return this.exerciseUserChoice(
 			"create-withdrawal-request",
 			partyId,
@@ -298,17 +395,19 @@ export class CantonCommands {
 				tradingVault: tradingVaultCid,
 				requestedAmount,
 				withdrawAvailable,
-			}
+				ecosystemRewards: rewards.ecosystemRewards,
+			},
+			mergeDisclosedContracts([this.buildUserDisclosedContract()], rewards.disclosedContracts)
 		);
 	}
 
-	withdrawFromFunding({
+	async withdrawFromFunding({
 		partyId,
 		amount,
 		fundingVaultCid,
 		bankHoldings,
 		transferFactory,
-	}: WithdrawFromFundingParams): CantonCommandBatch {
+	}: WithdrawFromFundingParams): Promise<CantonCommandBatch> {
 		if (!bankHoldings.length) {
 			throw new Error("No bank holdings provided for withdrawal");
 		}
@@ -317,6 +416,8 @@ export class CantonCommands {
 				"Direct transfer is required for withdrawal; enable transfer preapproval first"
 			);
 		}
+
+		const rewards = await this.attachEcosystemRewards("RewardAction_WithdrawFromFunding");
 
 		return this.exerciseUserChoice(
 			"withdraw-from-funding",
@@ -330,6 +431,7 @@ export class CantonCommands {
 				transferFactoryCid: transferFactory.factoryId,
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
+				ecosystemRewards: rewards.ecosystemRewards,
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
@@ -339,7 +441,8 @@ export class CantonCommands {
 					contractId: holding.contractId,
 					createdEventBlob: holding.createdEventBlob,
 					synchronizerId: this.config.synchronizerId,
-				}))
+				})),
+				rewards.disclosedContracts
 			)
 		);
 	}
@@ -407,6 +510,117 @@ export class CantonCommands {
 				},
 			],
 			disclosedContracts: acceptContext.disclosedContracts,
+			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	rejectTransferOffer({
+		partyId,
+		contractId,
+		rejectContext,
+	}: RejectTransferOfferParams): CantonCommandBatch {
+		return {
+			commandId: commandId("reject-transfer-offer"),
+			actAs: [partyId],
+			commands: [
+				{
+					ExerciseCommand: {
+						templateId: this.transferInstructionInterfaceTemplateId,
+						contractId,
+						choice: "TransferInstruction_Reject",
+						choiceArgument: {
+							extraArgs: rejectContext.extraArgs,
+						},
+					},
+				},
+			],
+			disclosedContracts: rejectContext.disclosedContracts,
+			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	withdrawTransferOffer({
+		partyId,
+		contractId,
+		withdrawContext,
+	}: WithdrawTransferOfferParams): CantonCommandBatch {
+		return {
+			commandId: commandId("withdraw-transfer-offer"),
+			actAs: [partyId],
+			commands: [
+				{
+					ExerciseCommand: {
+						templateId: this.transferInstructionInterfaceTemplateId,
+						contractId,
+						choice: "TransferInstruction_Withdraw",
+						choiceArgument: {
+							extraArgs: withdrawContext.extraArgs,
+						},
+					},
+				},
+			],
+			disclosedContracts: withdrawContext.disclosedContracts,
+			synchronizerId: this.config.synchronizerId,
+		};
+	}
+
+	/**
+	 * Peer-to-peer USDCx (or other CIP-56 instrument) transfer via TransferFactory_Transfer.
+	 * Pass the same requestedAt/executeBefore used for `fetchTransferFactory`.
+	 */
+	createTransfer({
+		partyId,
+		receiver,
+		amount,
+		inputHoldingCids,
+		transferFactory,
+		requestedAt = new Date().toISOString(),
+		executeBefore = defaultExecuteBefore(),
+		reason,
+	}: CreateTransferParams): CantonCommandBatch {
+		if (!inputHoldingCids.length) {
+			throw new Error("At least one holding CID is required for a transfer");
+		}
+		if (!transferFactory.factoryId) {
+			throw new Error("Transfer factory id is required");
+		}
+
+		const metaValues: Record<string, unknown> = {};
+		if (reason?.trim()) {
+			metaValues["splice.lfdecentralizedtrust.org/reason"] = reason.trim();
+		}
+
+		return {
+			commandId: commandId("create-transfer"),
+			actAs: [partyId],
+			commands: [
+				{
+					ExerciseCommand: {
+						templateId: this.transferFactoryInterfaceTemplateId,
+						contractId: transferFactory.factoryId,
+						choice: "TransferFactory_Transfer",
+						choiceArgument: {
+							expectedAdmin: this.config.instrumentAdmin,
+							transfer: {
+								sender: partyId,
+								receiver,
+								amount,
+								instrumentId: {
+									admin: this.config.instrumentAdmin,
+									id: this.config.instrumentId,
+								},
+								lock: null,
+								requestedAt,
+								executeBefore,
+								inputHoldingCids,
+								meta: { values: metaValues },
+							},
+							extraArgs: transferFactory.transferExtraArgs,
+						},
+					},
+				},
+			],
+			disclosedContracts: transferFactory.disclosedContracts,
 			synchronizerId: this.config.synchronizerId,
 		};
 	}
