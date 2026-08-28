@@ -623,6 +623,65 @@ export interface GetRiskLimitParams {
 	cursor?: string | null;
 }
 
+/** Stats period for `/market/stats` and `/market/stats/volume`. */
+export type StatsPeriod = "24h" | "7d" | "30d" | "all_time";
+
+export interface StatsSummary {
+	turnover: string;
+	turnover_change: string;
+	active_traders: string;
+	active_traders_change: string;
+	trades: string;
+	trades_change: string;
+	open_interest_value: string;
+	open_interest_value_change: string;
+}
+
+export interface StatsMarket {
+	symbol: SymbolName;
+	last_price: string;
+	price_change: string;
+	avg_funding_rate: string;
+	turnover: string;
+	open_interest_value: string;
+	buy_ratio: string;
+	sell_ratio: string;
+	next_funding_time: string;
+}
+
+export interface GetStatsResponse {
+	period: StatsPeriod;
+	summary: StatsSummary;
+	list: StatsMarket[];
+}
+
+export interface GetStatsParams {
+	period: StatsPeriod;
+}
+
+export interface StatsVolumePoint {
+	timestamp: string;
+	turnover: string;
+}
+
+export interface StatsVolumeAggregates {
+	turnover_24h: string;
+	turnover_7d: string;
+	turnover_30d: string;
+	turnover_all_time: string;
+}
+
+export interface GetStatsVolumeResponse {
+	period: StatsPeriod;
+	list: StatsVolumePoint[];
+	aggregates: StatsVolumeAggregates;
+}
+
+export interface GetStatsVolumeParams {
+	period: StatsPeriod;
+	symbol?: SymbolName | null;
+}
+
 export interface Order {
 	order_id: OrderId;
 	symbol: SymbolName;

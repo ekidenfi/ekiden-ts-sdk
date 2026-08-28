@@ -18,6 +18,10 @@ import type {
 	GetRecentTradesResponse,
 	GetRiskLimitParams,
 	GetRiskLimitResponse,
+	GetStatsParams,
+	GetStatsResponse,
+	GetStatsVolumeParams,
+	GetStatsVolumeResponse,
 	GetTickersParams,
 	GetTickersResponse,
 	OrderPriceLimit,
@@ -97,6 +101,18 @@ export class MarketClient extends BaseHttpClient {
 
 	async getRiskLimit(params: GetRiskLimitParams = {}): Promise<GetRiskLimitResponse> {
 		return this.request<GetRiskLimitResponse>("/market/risk-limit", {}, { query: params });
+	}
+
+	async getStats(params: GetStatsParams): Promise<GetStatsResponse> {
+		return this.request<GetStatsResponse>("/market/stats", {}, { query: params });
+	}
+
+	async getStatsVolume(params: GetStatsVolumeParams): Promise<GetStatsVolumeResponse> {
+		return this.request<GetStatsVolumeResponse>(
+			"/market/stats/volume",
+			{},
+			{ query: params }
+		);
 	}
 
 	async getRecentTrades(params: GetRecentTradesParams): Promise<GetRecentTradesResponse> {
