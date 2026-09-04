@@ -341,15 +341,23 @@ export const findHoldingsInContracts = (
 		if (!contractId) continue;
 
 		const createArgument = readObj(createdEvent.createArgument);
-		const owner = String(createArgument.owner || "");
+		const fields = readDamlFields(createArgument);
+		const owner =
+			readPartyLike(createArgument.owner) ||
+			readDamlParty(readDamlFieldValue(fields, "owner"));
 		if (owner && owner !== partyId) continue;
 
 		const templateId = String(createdEvent.templateId || "");
 		if (!templateId) continue;
 
+		const amount =
+			fields.length > 0
+				? readDamlNumeric(readDamlFieldValue(fields, "amount"))
+				: readAmountLike(createArgument.amount);
+
 		holdings.push({
 			contractId,
-			amount: String(createArgument.amount || "0"),
+			amount,
 			createdEventBlob: String(createdEvent.createdEventBlob || ""),
 			templateId,
 		});
