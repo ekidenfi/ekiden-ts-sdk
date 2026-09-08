@@ -1,4 +1,5 @@
 import { resolveEcosystemRewardsHook } from "./ecosystemRewards";
+import { resolveFundingFeeConfig } from "./fundingFee";
 import type { CantonGatewayClient } from "./gateway";
 import type { CantonRegistryClient } from "./registry";
 import type {
@@ -8,6 +9,8 @@ import type {
 	CantonHolding,
 	EcosystemRewardAction,
 	EcosystemRewardsHook,
+	FundingFees,
+	FundingTransferFeeConfig,
 	TransferFactoryResult,
 	TransferOfferAcceptContext,
 } from "./types";
@@ -142,8 +145,8 @@ export interface CreateTransferParams {
  * Builders for Canton (DAML) command batches.
  *
  * Ledger state for deposits/withdrawals (vault/holding ids) must be provided by the
- * caller. Ecosystem rewards hooks are resolved internally from Canton Gateway ACS
- * when configured — callers cannot omit `ecosystemRewards` on User choices.
+ * caller. Ecosystem rewards hooks and `FundingTransferFeeConfig` are resolved
+ * internally from Canton Gateway ACS when configured.
  */
 export class CantonCommands {
 	constructor(
@@ -204,6 +207,48 @@ export class CantonCommands {
 		});
 		return {
 			ecosystemRewards: hook,
+			disclosedContracts,
+		};
+	}
+
+	/**
+	 * Current flat deposit/withdraw fees for UI display.
+	 * Same source as command builders (`FundingTransferFeeConfig` on gateway ACS).
+	 */
+	async getFundingFees(): Promise<FundingFees> {
+		const config = await this.resolveFundingFeeConfig();
+		return {
+			depositFee: config.depositFee,
+			withdrawFee: config.withdrawFee,
+			depositFeeCents: config.depositFeeCents,
+			withdrawFeeCents: config.withdrawFeeCents,
+		};
+	}
+
+	/**
+	 * Resolve live funding deposit/withdraw fee config from gateway ACS.
+	 * Use `depositFee` / `withdrawFee` when sizing CIP-56 transfer amounts and holdings.
+	 */
+	async resolveFundingFeeConfig(): Promise<FundingTransferFeeConfig> {
+		const { config } = await resolveFundingFeeConfig({
+			config: this.config,
+			gateway: this.gateway,
+		});
+		return config;
+	}
+
+	private async attachFundingFeeConfig(): Promise<{
+		fundingFeeConfigCid: string;
+		feeConfig: FundingTransferFeeConfig;
+		disclosedContracts: CantonDisclosedContract[];
+	}> {
+		const { config, disclosedContracts } = await resolveFundingFeeConfig({
+			config: this.config,
+			gateway: this.gateway,
+		});
+		return {
+			fundingFeeConfigCid: config.contractId,
+			feeConfig: config,
 			disclosedContracts,
 		};
 	}
@@ -286,7 +331,10 @@ export class CantonCommands {
 			);
 		}
 
-		const rewards = await this.attachEcosystemRewards("RewardAction_DepositIntoFunding");
+		const [rewards, fee] = await Promise.all([
+			this.attachEcosystemRewards("RewardAction_DepositIntoFunding"),
+			this.attachFundingFeeConfig(),
+		]);
 
 		return this.exerciseUserChoice(
 			"fund-funding-account",
@@ -301,10 +349,12 @@ export class CantonCommands {
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
 				ecosystemRewards: rewards.ecosystemRewards,
+				fundingFeeConfigCid: fee.fundingFeeConfigCid,
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
 				transferFactory.disclosedContracts,
+				fee.disclosedContracts,
 				rewards.disclosedContracts
 			)
 		);
@@ -327,9 +377,10 @@ export class CantonCommands {
 			);
 		}
 
-		const rewards = await this.attachEcosystemRewards(
-			"RewardAction_DepositIntoFundingWithTransferRequest"
-		);
+		const [rewards, fee] = await Promise.all([
+			this.attachEcosystemRewards("RewardAction_DepositIntoFundingWithTransferRequest"),
+			this.attachFundingFeeConfig(),
+		]);
 
 		return this.exerciseUserChoice(
 			"deposit-into-funding-with-transfer-request",
@@ -345,10 +396,12 @@ export class CantonCommands {
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
 				ecosystemRewards: rewards.ecosystemRewards,
+				fundingFeeConfigCid: fee.fundingFeeConfigCid,
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
 				transferFactory.disclosedContracts,
+				fee.disclosedContracts,
 				rewards.disclosedContracts
 			)
 		);
@@ -417,7 +470,10 @@ export class CantonCommands {
 			);
 		}
 
-		const rewards = await this.attachEcosystemRewards("RewardAction_WithdrawFromFunding");
+		const [rewards, fee] = await Promise.all([
+			this.attachEcosystemRewards("RewardAction_WithdrawFromFunding"),
+			this.attachFundingFeeConfig(),
+		]);
 
 		return this.exerciseUserChoice(
 			"withdraw-from-funding",
@@ -432,6 +488,7 @@ export class CantonCommands {
 				transferExtraArgs: transferFactory.transferExtraArgs,
 				transferMeta: { values: {} },
 				ecosystemRewards: rewards.ecosystemRewards,
+				fundingFeeConfigCid: fee.fundingFeeConfigCid,
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
@@ -442,6 +499,7 @@ export class CantonCommands {
 					createdEventBlob: holding.createdEventBlob,
 					synchronizerId: this.config.synchronizerId,
 				})),
+				fee.disclosedContracts,
 				rewards.disclosedContracts
 			)
 		);

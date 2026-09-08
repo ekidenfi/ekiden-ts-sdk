@@ -36,7 +36,8 @@ export interface CantonConfig {
 	transferFactoryInterfaceTemplateId?: string;
 	/**
 	 * Canton Gateway base URL (…/v1). When set, User choices auto-attach
-	 * `ecosystemRewards` from ACS config + distributor holdings.
+	 * `ecosystemRewards` from ACS config + distributor holdings, and
+	 * deposit/withdraw auto-attach `FundingTransferFeeConfig`.
 	 */
 	gatewayBaseUrl?: string;
 	/** Bridge onboarding parties; required only for bridge onboarding commands */
@@ -111,6 +112,7 @@ export interface CantonHolding {
 	amount: string;
 	createdEventBlob: string;
 	templateId: string;
+	provider: string;
 }
 
 export interface TransferExtraArgs {
@@ -132,6 +134,36 @@ export interface RewardDistributionInput {
 export interface EcosystemRewardsHook {
 	distributionCid: string;
 	inputs: RewardDistributionInput[];
+}
+
+/**
+ * Live `FundingFee:FundingTransferFeeConfig` from gateway ACS.
+ * Cents fields match on-ledger; `depositFee` / `withdrawFee` are Decimal strings.
+ */
+export interface FundingTransferFeeConfig {
+	contractId: string;
+	templateId: string;
+	createdEventBlob: string;
+	synchronizerId: string;
+	platform: string;
+	bank: string;
+	feeReceiver: string;
+	depositFeeCents: number;
+	withdrawFeeCents: number;
+	/** Decimal string (`cents / 100`), for CIP-56 transfer sizing */
+	depositFee: string;
+	/** Decimal string (`cents / 100`), for vault debit checks */
+	withdrawFee: string;
+}
+
+/** UI-facing funding fee quote (no ledger blobs / contract ids). */
+export interface FundingFees {
+	/** Flat deposit fee as Decimal string (e.g. `"0.5"`) */
+	depositFee: string;
+	/** Flat withdraw fee as Decimal string (e.g. `"0.5"`) */
+	withdrawFee: string;
+	depositFeeCents: number;
+	withdrawFeeCents: number;
 }
 
 export interface TransferFactoryResult {

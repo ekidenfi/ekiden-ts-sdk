@@ -30,6 +30,12 @@ export {
 	resolveEcosystemRewardsHook,
 } from "./ecosystemRewards";
 export {
+	addFundingAmounts,
+	fundingFeeCentsToDecimal,
+	type ResolveFundingFeeConfigResult,
+	resolveFundingFeeConfig,
+} from "./fundingFee";
+export {
 	CantonGatewayClient,
 	type CantonGatewayContract,
 	type CantonGatewayContractsResponse,
@@ -53,6 +59,8 @@ export type {
 	EcosystemFundKind,
 	EcosystemRewardAction,
 	EcosystemRewardsHook,
+	FundingFees,
+	FundingTransferFeeConfig,
 	HoldingInstrumentId,
 	RewardDistributionInput,
 	TransferExtraArgs,

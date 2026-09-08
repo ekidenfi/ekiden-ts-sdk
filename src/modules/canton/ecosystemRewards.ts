@@ -133,6 +133,7 @@ const holdingsFromGatewayContracts = (
 			amount: readString(fields.amount) || "0",
 			createdEventBlob,
 			templateId,
+			provider: readString(fields.provider),
 		});
 	}
 	return holdings;

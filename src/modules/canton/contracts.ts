@@ -331,7 +331,8 @@ export const findTransferPreapprovalInContracts = (
 /** Map raw active-contract entries to token holdings owned by a party */
 export const findHoldingsInContracts = (
 	contracts: Record<string, unknown>[],
-	partyId: string
+	partyId: string,
+	provider?: string
 ): CantonHolding[] => {
 	const holdings: CantonHolding[] = [];
 
@@ -346,6 +347,8 @@ export const findHoldingsInContracts = (
 			readPartyLike(createArgument.owner) ||
 			readDamlParty(readDamlFieldValue(fields, "owner"));
 		if (owner && owner !== partyId) continue;
+		const holdingProvider = readPartyLike(createArgument.provider) || readDamlParty(readDamlFieldValue(fields, "provider"));
+		if (holdingProvider && provider && holdingProvider !== provider) continue;
 
 		const templateId = String(createdEvent.templateId || "");
 		if (!templateId) continue;
@@ -360,6 +363,7 @@ export const findHoldingsInContracts = (
 			amount,
 			createdEventBlob: String(createdEvent.createdEventBlob || ""),
 			templateId,
+			provider: holdingProvider,
 		});
 	}
 

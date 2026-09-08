@@ -108,6 +108,7 @@ export class CantonGatewayClient {
 					amount: String(holding.amount || "0"),
 					createdEventBlob,
 					templateId: holdingTemplateId,
+					provider: String(holding.provider || ""),
 				} satisfies CantonHolding;
 			})
 			.filter((holding): holding is CantonHolding => holding != null);
