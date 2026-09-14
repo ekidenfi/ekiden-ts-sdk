@@ -626,21 +626,23 @@ export interface GetRiskLimitParams {
 /** Stats period for `/market/stats` and `/market/stats/volume`. */
 export type StatsPeriod = "24h" | "7d" | "30d" | "all_time";
 
+/** `*_change` is `null` when there is nothing to compare against. */
 export interface StatsSummary {
 	turnover: string;
-	turnover_change: string;
+	turnover_change: string | null;
 	active_traders: string;
-	active_traders_change: string;
+	active_traders_change: string | null;
 	trades: string;
-	trades_change: string;
+	trades_change: string | null;
 	open_interest_value: string;
-	open_interest_value_change: string;
+	open_interest_value_change: string | null;
 }
 
+/** `price_change` is `null` when there is no starting price. */
 export interface StatsMarket {
 	symbol: SymbolName;
 	last_price: string;
-	price_change: string;
+	price_change: string | null;
 	avg_funding_rate: string;
 	turnover: string;
 	open_interest_value: string;
