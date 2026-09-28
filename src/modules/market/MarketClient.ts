@@ -108,11 +108,7 @@ export class MarketClient extends BaseHttpClient {
 	}
 
 	async getStatsVolume(params: GetStatsVolumeParams): Promise<GetStatsVolumeResponse> {
-		return this.request<GetStatsVolumeResponse>(
-			"/market/stats/volume",
-			{},
-			{ query: params }
-		);
+		return this.request<GetStatsVolumeResponse>("/market/stats/volume", {}, { query: params });
 	}
 
 	async getRecentTrades(params: GetRecentTradesParams): Promise<GetRecentTradesResponse> {

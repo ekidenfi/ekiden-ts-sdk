@@ -347,7 +347,9 @@ export const findHoldingsInContracts = (
 			readPartyLike(createArgument.owner) ||
 			readDamlParty(readDamlFieldValue(fields, "owner"));
 		if (owner && owner !== partyId) continue;
-		const holdingProvider = readPartyLike(createArgument.provider) || readDamlParty(readDamlFieldValue(fields, "provider"));
+		const holdingProvider =
+			readPartyLike(createArgument.provider) ||
+			readDamlParty(readDamlFieldValue(fields, "provider"));
 		if (holdingProvider && provider && holdingProvider !== provider) continue;
 
 		const templateId = String(createdEvent.templateId || "");

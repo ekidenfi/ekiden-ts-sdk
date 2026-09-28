@@ -32,8 +32,7 @@ const readInt = (value: unknown): number => {
 };
 
 /** Matches on-ledger `FundingFee.fundingFeeCentsToDecimal` (cents → Decimal). */
-export const fundingFeeCentsToDecimal = (cents: number): string =>
-	new BN(cents).div(100).toFixed();
+export const fundingFeeCentsToDecimal = (cents: number): string => new BN(cents).div(100).toFixed();
 
 /** Sum two Decimal-like amounts for CIP-56 transfer sizing (`amount + fee`). */
 export const addFundingAmounts = (amount: string, fee: string): string =>
@@ -92,17 +91,11 @@ export const resolveFundingFeeConfig = async ({
 	gateway?: CantonGatewayClient;
 }): Promise<ResolveFundingFeeConfigResult> => {
 	if (!gateway || !config.gatewayBaseUrl || !config.packageName) {
-		throw new Error(
-			"Funding fee config requires canton.gatewayBaseUrl and canton.packageName"
-		);
+		throw new Error("Funding fee config requires canton.gatewayBaseUrl and canton.packageName");
 	}
 
 	const response = await gateway.getContracts({
-		templateId: gatewayTemplateId(
-			config.packageName,
-			"FundingFee",
-			"FundingTransferFeeConfig"
-		),
+		templateId: gatewayTemplateId(config.packageName, "FundingFee", "FundingTransferFeeConfig"),
 	});
 
 	const candidates = response.contracts
