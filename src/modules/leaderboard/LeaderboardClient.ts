@@ -18,16 +18,19 @@ export interface LeaderboardResponse {
 }
 
 export type LeaderboardTimeframe = "today" | "7d" | "30d" | "all";
+export type LeaderboardSortBy = "pnl" | "volume";
 
 export interface LeaderboardParams {
 	timeframe: LeaderboardTimeframe;
 	offset?: number;
 	limit?: number;
+	sort_by?: LeaderboardSortBy;
 }
 
 export interface LeaderboardPlacementParams {
 	timeframe: LeaderboardTimeframe;
 	sub_account?: string | null;
+	sort_by?: LeaderboardSortBy;
 }
 
 export class LeaderboardClient extends BaseHttpClient {
