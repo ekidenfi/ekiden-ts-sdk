@@ -762,8 +762,8 @@ export interface BatchPlaceOrdersResponse {
 export interface AmendOrderRequest {
 	sub_account_address: string;
 	symbol: SymbolName;
-	size: number;
-	price: number;
+	qty: string;
+	price: string;
 	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
 	order_iv?: number | null;
@@ -772,7 +772,7 @@ export interface AmendOrderRequest {
 }
 
 export interface AmendOrderResponse {
-	order_id: OrderId;
+	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
 }
 
@@ -795,7 +795,7 @@ export interface CancelOrderRequest {
 }
 
 export interface CancelOrderResponse {
-	order_id: OrderId;
+	order_id?: OrderId | null;
 	order_link_id?: OrderLinkId | null;
 }
 
