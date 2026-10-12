@@ -170,7 +170,12 @@ export type RejectReason =
 	| "EcOrderNotExist"
 	| "EcCancelByOrderValueZero"
 	| "EcCancelByMatchValueZero"
-	| "EcReachMarketPriceLimit";
+	| "EcReachMarketPriceLimit"
+	| "EcMarginModeMismatch"
+	| "EcMarginModeChangeWithExposure"
+	| "EcIsolatedMarginLimit"
+	| "EcCollateralNotAllowedInIsolated"
+	| "EcIsolatedMarginDisabled";
 
 export type TimeInForce = "GTC" | "IOC" | "FOK" | { GTD: number } | "Day";
 
@@ -307,6 +312,27 @@ export interface AccountBalance {
 	unrealised_pnl: string;
 	unrealized_funding: string;
 	realised_pnl_cum: string;
+	/** Sum of the `isolated_margin.value` of every isolated bucket; the fields above are the cross account only. */
+	isolated_margin_value: string;
+	/** Collateral other than the quote; omitted when none is held. */
+	collateral?: CollateralBalance[];
+}
+
+/** One non-quote collateral asset of an account, in whole tokens. */
+export interface CollateralBalance {
+	asset_id: number;
+	symbol: string;
+	/** Cross balance, including the part on hold. */
+	balance: string;
+	/** Part of `balance` on hold for pending withdrawals or transfers. */
+	frozen: string;
+	/** Held in isolated-margin buckets (sum over all of them), not part of `balance`. */
+	in_isolated: string;
+	price?: string;
+	initial_weight?: string;
+	maintenance_weight?: string;
+	initial_value?: string;
+	maintenance_value?: string;
 }
 
 export interface GetAccountBalanceResponse {
@@ -927,6 +953,30 @@ export interface Position {
 	trailing_stop?: string | null;
 	leverage_sys_updated_time?: string | null;
 	mmr_sys_update_time?: string | null;
+	/** The position's bucket when `margin_mode` is `"Isolated"`. */
+	isolated_margin?: IsolatedMargin | null;
+}
+
+/**
+ * One asset of an isolated-margin bucket. Amounts are signed: positive = into the bucket,
+ * negative = out of it (to cross); a negative quote leg in a bucket breakdown is the bucket's debt.
+ */
+export interface IsolatedMarginLeg {
+	asset_id: string;
+	symbol: string;
+	/** Asset units, signed. */
+	amount: string;
+	/** USDC value of `amount`, signed like it. */
+	quote_equiv: string;
+}
+
+/** Collateral held for one isolated market. The position is liquidatable when `value < liquidation_value`. */
+export interface IsolatedMargin {
+	/** Maintenance-weighted value of the bucket, debt included (signed). */
+	value: string;
+	/** Maintenance margin of the position; the threshold `value` is compared against. */
+	liquidation_value: string;
+	legs: IsolatedMarginLeg[];
 }
 
 export interface GetPositionInfoResponse {
@@ -986,6 +1036,83 @@ export interface SetLeverageRequest {
 export interface SetLeverageResponse {
 	success: boolean;
 	time: string;
+}
+
+/** A market can be switched only while the subaccount has no position and no open orders on it. */
+export interface SetMarginModeRequest {
+	sub_account_address: string;
+	symbol: SymbolName;
+	margin_mode: MarginMode;
+}
+
+export interface SetMarginModeResponse {
+	success: boolean;
+	time: string;
+}
+
+export type IsolatedMarginDirection = "Add" | "Remove";
+
+export interface AdjustIsolatedMarginRequest {
+	sub_account_address: string;
+	symbol: SymbolName;
+	asset_id: string;
+	/** Asset units, positive; `direction` gives the sign. */
+	amount: string;
+	direction: IsolatedMarginDirection;
+}
+
+export interface AdjustIsolatedMarginResponse {
+	success: boolean;
+	time: string;
+	isolated_margin: IsolatedMargin;
+}
+
+export interface GetMarginModesParams {
+	sub_account_address: string;
+}
+
+export interface MarketMarginMode {
+	symbol: SymbolName;
+	margin_mode: MarginMode;
+	isolated_margin: IsolatedMargin;
+}
+
+/** Markets set to Isolated; a symbol not listed is Cross. */
+export interface GetMarginModesResponse {
+	list: MarketMarginMode[];
+}
+
+export type CollateralAssetKind = "stable" | "volatile";
+export type CollateralAssetStatus = "active" | "reduce_only" | "disabled";
+export type CollateralMarketSession = "open" | "closed";
+
+/** One asset of the on-chain collateral registry. */
+export interface CollateralAssetInfo {
+	/** 1 is the quote asset. */
+	asset_id: number;
+	instrument_id: string;
+	symbol: string;
+	decimals: number;
+	kind: CollateralAssetKind;
+	status: CollateralAssetStatus;
+	initial_weight: string;
+	maintenance_weight: string;
+	max_total_deposit: string | null;
+	max_user_deposit: string | null;
+	liquidation_discount: string;
+	closed_market_haircut: string;
+	market_session: CollateralMarketSession;
+	liquidation_priority: number;
+	total_deposited: string | null;
+	cap_utilization: string | null;
+	/** Whether the asset may be moved into an isolated-margin bucket. */
+	allowed_in_isolated: boolean;
+}
+
+export interface GetCollateralAssetsResponse {
+	list: CollateralAssetInfo[];
+	/** Venue-wide switch; when false, `SetMarginMode` to Isolated is refused. */
+	isolated_margin_enabled: boolean;
 }
 
 export interface SetTradingStopRequest {

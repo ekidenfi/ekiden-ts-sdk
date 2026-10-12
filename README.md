@@ -23,7 +23,7 @@ EkidenClient
 ├── asset           - Deposit/withdrawal records
 ├── market          - Market data, orderbook, klines, tickers
 ├── trade           - Order management (place, amend, cancel)
-├── position        - Position management, leverage, TP/SL
+├── position        - Position management, leverage, margin modes, TP/SL
 ├── funding         - Funding rates
 ├── leaderboard     - Leaderboard data
 ├── user            - User authentication
@@ -351,6 +351,54 @@ await ekiden.position.setTradingStop({
 });
 ```
 
+#### Margin modes
+
+Each market of a subaccount is either `"Cross"` (the default) or `"Isolated"`. An isolated
+position is backed only by the collateral moved into its bucket, and is liquidated on that
+bucket alone.
+
+```typescript
+// Switch a market to isolated; only while the subaccount has no position and no open orders on it
+await ekiden.position.setMarginMode({
+  sub_account_address: "0x...",
+  symbol: "BTC-USDC",
+  margin_mode: "Isolated",
+});
+
+// Move collateral into the bucket ("Add") or back to cross ("Remove"); amount in asset units
+const { isolated_margin } = await ekiden.position.adjustIsolatedMargin({
+  sub_account_address: "0x...",
+  symbol: "BTC-USDC",
+  asset_id: "1",
+  amount: "250",
+  direction: "Add",
+});
+
+// Every market set to Isolated, with its bucket; a symbol not listed is Cross
+const { list } = await ekiden.position.getMarginModes({ sub_account_address: "0x..." });
+```
+
+`isolated_margin` (also on `Position` for an isolated position) is
+`{ value, liquidation_value, legs }`. `value` is the bucket's maintenance-weighted value, its
+quote debt included; the position is liquidatable when `value < liquidation_value`. Each leg is
+`{ asset_id, symbol, amount, quote_equiv }` with signed amounts: positive means into the bucket,
+negative out of it, so a negative quote leg is the bucket's debt.
+
+On the account side, `AccountBalance` covers cross only and adds `isolated_margin_value` (sum of
+all buckets), and each `collateral` entry adds `in_isolated` beside `balance` and `frozen`.
+`ekiden.asset.getCollateralAssets()` tells which assets may go into a bucket
+(`allowed_in_isolated`) and whether isolated margin is enabled at all (`isolated_margin_enabled`).
+
+Both POSTs answer HTTP 400 with an `Ec…` code on `APIError.code` when refused:
+
+| Code | Meaning |
+| --- | --- |
+| `EcIsolatedMarginDisabled` | Isolated margin is switched off venue-wide |
+| `EcMarginModeChangeWithExposure` | The market has a position or open orders |
+| `EcCollateralNotAllowedInIsolated` | The asset is not allowed in isolated buckets |
+| `EcIsolatedMarginLimit` | The amount is not positive, exceeds the available balance, or removing it would leave the position under-margined |
+| `EcMarginModeMismatch` | An order's margin mode differs from the market's setting (order reject) |
+
 ### AccountClient
 
 Account balance and fund management.
@@ -375,7 +423,7 @@ const withdrawn = await ekiden.account.withdraw({
 
 ### AssetClient
 
-Deposit and withdrawal records.
+Deposit and withdrawal records, and the collateral registry.
 
 ```typescript
 // Get deposit records
@@ -387,6 +435,9 @@ const deposits = await ekiden.asset.getDeposits({
 const withdrawals = await ekiden.asset.getWithdrawals({
   limit: 50,
 });
+
+// Collateral registry (public): weights, caps, allowed_in_isolated, isolated_margin_enabled
+const { list: collateralAssets, isolated_margin_enabled } = await ekiden.asset.getCollateralAssets();
 ```
 
 ### FundingClient
@@ -697,6 +748,11 @@ import type {
   PositionStatus,
   GetPositionInfoParams,
   SetLeverageRequest,
+  SetMarginModeRequest,
+  AdjustIsolatedMarginRequest,
+  GetMarginModesResponse,
+  IsolatedMargin,
+  IsolatedMarginLeg,
   SetTradingStopRequest,
 
   // Market types

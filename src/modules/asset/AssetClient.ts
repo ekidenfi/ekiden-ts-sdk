@@ -1,5 +1,6 @@
 import { BaseHttpClient } from "@/core/base";
 import type {
+	GetCollateralAssetsResponse,
 	GetDepositRecordsParams,
 	GetDepositRecordsResponse,
 	GetWithdrawalRecordsParams,
@@ -7,6 +8,11 @@ import type {
 } from "@/types/api";
 
 export class AssetClient extends BaseHttpClient {
+	/** The collateral registry; public, no auth. */
+	async getCollateralAssets(): Promise<GetCollateralAssetsResponse> {
+		return this.request<GetCollateralAssetsResponse>("/collateral/assets");
+	}
+
 	async getDeposits(params: GetDepositRecordsParams = {}): Promise<GetDepositRecordsResponse> {
 		this.ensureAuth();
 		return this.request<GetDepositRecordsResponse>(
