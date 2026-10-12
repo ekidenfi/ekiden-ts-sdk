@@ -170,7 +170,12 @@ export type RejectReason =
 	| "EcOrderNotExist"
 	| "EcCancelByOrderValueZero"
 	| "EcCancelByMatchValueZero"
-	| "EcReachMarketPriceLimit";
+	| "EcReachMarketPriceLimit"
+	| "EcMarginModeMismatch"
+	| "EcMarginModeChangeWithExposure"
+	| "EcIsolatedMarginLimit"
+	| "EcCollateralNotAllowedInIsolated"
+	| "EcIsolatedMarginDisabled";
 
 export type TimeInForce = "GTC" | "IOC" | "FOK" | { GTD: number } | "Day";
 

@@ -80,6 +80,14 @@ export const ORDER_ERROR_MESSAGES: Record<RejectReason, string> = {
 	EcWronglyRouted: "Order was incorrectly routed.",
 	EcLoadOrderCanMatch: "Order can match during loading.",
 
+	// Margin mode
+	EcMarginModeMismatch: "Order margin mode does not match this market's margin mode setting.",
+	EcMarginModeChangeWithExposure:
+		"Close the position and cancel open orders on this market before changing its margin mode.",
+	EcIsolatedMarginLimit: "Isolated margin cannot be adjusted by this amount.",
+	EcCollateralNotAllowedInIsolated: "This asset cannot be used as isolated margin.",
+	EcIsolatedMarginDisabled: "Isolated margin is currently disabled.",
+
 	// Generic
 	EcOthers: "An unexpected error occurred.",
 	EcUnknownMessageType: "Unknown message type received.",
