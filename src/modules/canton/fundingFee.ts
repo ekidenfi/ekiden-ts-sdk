@@ -1,7 +1,12 @@
 import { BN } from "@/utils/BigNumber";
 import { readCreateArgument } from "./ecosystemRewards";
 import type { CantonGatewayClient, CantonGatewayContract } from "./gateway";
-import type { CantonConfig, CantonDisclosedContract, FundingTransferFeeConfig } from "./types";
+import type {
+	CantonConfig,
+	CantonDisclosedContract,
+	FundingTransferFeeConfig,
+	HoldingInstrumentId,
+} from "./types";
 
 const gatewayTemplateId = (packageName: string, module: string, entity: string): string =>
 	`${packageName}:${module}:${entity}`;
@@ -30,6 +35,29 @@ const readInt = (value: unknown): number => {
 	}
 	return 0;
 };
+
+/**
+ * Reads the trailing `instrumentId : Optional InstrumentId`. Absent (pre-upgrade contracts) and
+ * `None` both mean the quote. Accepts the flat encoding, `{ fields }` records and wrapped optionals.
+ */
+const readInstrumentId = (value: unknown): HoldingInstrumentId | null => {
+	if (!value || typeof value !== "object") return null;
+	const obj = value as Record<string, unknown>;
+	if ("optional" in obj) {
+		const optional = obj.optional as Record<string, unknown> | null;
+		return readInstrumentId(optional?.value);
+	}
+	if ("Some" in obj) return readInstrumentId(obj.Some);
+	if ("record" in obj) return readInstrumentId(obj.record);
+
+	const fields = readCreateArgument(obj);
+	const admin = readString(fields.admin);
+	const id = readString(fields.id);
+	return admin && id ? { admin, id } : null;
+};
+
+const sameInstrument = (a: HoldingInstrumentId | null, b: HoldingInstrumentId | null): boolean =>
+	a === null || b === null ? a === b : a.admin === b.admin && a.id === b.id;
 
 /** Matches on-ledger `FundingFee.fundingFeeCentsToDecimal` (cents → Decimal). */
 export const fundingFeeCentsToDecimal = (cents: number): string => new BN(cents).div(100).toFixed();
@@ -70,6 +98,7 @@ const parseFeeConfig = (
 		withdrawFeeCents,
 		depositFee,
 		withdrawFee,
+		instrumentId: readInstrumentId(fields.instrumentId),
 	};
 };
 
@@ -80,15 +109,21 @@ export interface ResolveFundingFeeConfigResult {
 }
 
 /**
- * Resolve the live `FundingTransferFeeConfig` from Canton Gateway ACS.
+ * Resolve the live `FundingTransferFeeConfig` of one asset from Canton Gateway ACS.
  * Required for deposit/withdraw choices — on-ledger `None` aborts.
+ *
+ * Each collateral asset has its own config, and the ledger aborts a deposit or withdrawal whose
+ * config is for another asset ("funding fee config instrument mismatch"), so the config is selected
+ * by `instrumentId`: `null` (the default) is the quote.
  */
 export const resolveFundingFeeConfig = async ({
 	config,
 	gateway,
+	instrumentId = null,
 }: {
 	config: CantonConfig;
 	gateway?: CantonGatewayClient;
+	instrumentId?: HoldingInstrumentId | null;
 }): Promise<ResolveFundingFeeConfigResult> => {
 	if (!gateway || !config.gatewayBaseUrl || !config.packageName) {
 		throw new Error("Funding fee config requires canton.gatewayBaseUrl and canton.packageName");
@@ -100,10 +135,14 @@ export const resolveFundingFeeConfig = async ({
 
 	const candidates = response.contracts
 		.map((contract) => parseFeeConfig(contract, config.synchronizerId))
-		.filter((entry): entry is FundingTransferFeeConfig => entry != null);
+		.filter((entry): entry is FundingTransferFeeConfig => entry != null)
+		.filter((entry) => sameInstrument(entry.instrumentId, instrumentId));
 
 	if (!candidates.length) {
-		throw new Error("No active FundingTransferFeeConfig found on Canton Gateway");
+		const asset = instrumentId
+			? `${instrumentId.admin}::${instrumentId.id}`
+			: "the quote asset";
+		throw new Error(`No active FundingTransferFeeConfig for ${asset} found on Canton Gateway`);
 	}
 
 	// Prefer a config matching this deployment's platform when identifiable.

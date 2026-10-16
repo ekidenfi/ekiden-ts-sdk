@@ -11,6 +11,7 @@ import type {
 	EcosystemRewardsHook,
 	FundingFees,
 	FundingTransferFeeConfig,
+	HoldingInstrumentId,
 	TransferFactoryResult,
 	TransferOfferAcceptContext,
 } from "./types";
@@ -212,11 +213,11 @@ export class CantonCommands {
 	}
 
 	/**
-	 * Current flat deposit/withdraw fees for UI display.
+	 * Current flat deposit/withdraw fees of one asset (the quote by default) for UI display.
 	 * Same source as command builders (`FundingTransferFeeConfig` on gateway ACS).
 	 */
-	async getFundingFees(): Promise<FundingFees> {
-		const config = await this.resolveFundingFeeConfig();
+	async getFundingFees(instrumentId: HoldingInstrumentId | null = null): Promise<FundingFees> {
+		const config = await this.resolveFundingFeeConfig(instrumentId);
 		return {
 			depositFee: config.depositFee,
 			withdrawFee: config.withdrawFee,
@@ -226,13 +227,16 @@ export class CantonCommands {
 	}
 
 	/**
-	 * Resolve live funding deposit/withdraw fee config from gateway ACS.
+	 * Resolve the live funding deposit/withdraw fee config of one asset (the quote by default).
 	 * Use `depositFee` / `withdrawFee` when sizing CIP-56 transfer amounts and holdings.
 	 */
-	async resolveFundingFeeConfig(): Promise<FundingTransferFeeConfig> {
+	async resolveFundingFeeConfig(
+		instrumentId: HoldingInstrumentId | null = null
+	): Promise<FundingTransferFeeConfig> {
 		const { config } = await resolveFundingFeeConfig({
 			config: this.config,
 			gateway: this.gateway,
+			instrumentId,
 		});
 		return config;
 	}
@@ -242,9 +246,11 @@ export class CantonCommands {
 		feeConfig: FundingTransferFeeConfig;
 		disclosedContracts: CantonDisclosedContract[];
 	}> {
+		// The deposit and withdraw builders move the quote, so they need the quote's config.
 		const { config, disclosedContracts } = await resolveFundingFeeConfig({
 			config: this.config,
 			gateway: this.gateway,
+			instrumentId: null,
 		});
 		return {
 			fundingFeeConfigCid: config.contractId,
