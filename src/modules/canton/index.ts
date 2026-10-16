@@ -24,6 +24,7 @@ export {
 	findTransferPreapprovalInContracts,
 	isTransferOfferExpired,
 	type TransferOfferRole,
+	transferPreapprovalCoversInstrument,
 } from "./contracts";
 export {
 	type ResolveEcosystemRewardsHookResult,

@@ -2,6 +2,7 @@ import type {
 	CantonHolding,
 	CantonTransferOffer,
 	CantonTransferPreapproval,
+	HoldingInstrumentId,
 	TransferInstructionPayload,
 } from "./types";
 
@@ -305,9 +306,52 @@ export const findTransferOffersInContracts = (
 };
 
 /** Find a transfer preapproval owned by a party among raw active-contract entries */
+const readTextLike = (value: unknown): string => {
+	if (typeof value === "string") return value;
+	const obj = readObj(value);
+	if (typeof obj.text === "string") return obj.text;
+	if (typeof obj.party === "string") return obj.party;
+	return "";
+};
+
+/** Elements of a Daml list in the flat (`[…]`) or protobuf (`{ list: { elements } }`) encoding. */
+const readListLike = (value: unknown): unknown[] => {
+	if (Array.isArray(value)) return value;
+	const elements = readObj(readObj(value).list).elements;
+	return Array.isArray(elements) ? elements : [];
+};
+
+const readRecordField = (record: unknown, label: string): unknown => {
+	const obj = readObj(readObj(record).record ?? record);
+	if (label in obj) return obj[label];
+	return readDamlFieldValue(readDamlFields(obj), label);
+};
+
+/**
+ * Whether a utility `TransferPreapproval` covers `instrument`: issued for its admin, with an
+ * allowance for its id. A preapproval covers one instrument admin, so each token issuer needs its
+ * own.
+ */
+export const transferPreapprovalCoversInstrument = (
+	createArgument: Record<string, unknown>,
+	instrument: HoldingInstrumentId
+): boolean => {
+	if (readTextLike(readRecordField(createArgument, "instrumentAdmin")) !== instrument.admin) {
+		return false;
+	}
+	return readListLike(readRecordField(createArgument, "instrumentAllowances")).some(
+		(allowance) => readTextLike(readRecordField(allowance, "id")) === instrument.id
+	);
+};
+
+/**
+ * The party's `TransferPreapproval` among active contracts. With `instrument`, only one that
+ * covers that instrument; without, the first for the party (the configured quote's, in practice).
+ */
 export const findTransferPreapprovalInContracts = (
 	contracts: Record<string, unknown>[],
-	partyId: string
+	partyId: string,
+	instrument?: HoldingInstrumentId
 ): CantonTransferPreapproval | undefined => {
 	for (const contract of contracts) {
 		const createdEvent = extractActiveContractCreatedEvent(contract);
@@ -315,6 +359,15 @@ export const findTransferPreapprovalInContracts = (
 		if (!createArgument || typeof createArgument !== "object") continue;
 
 		if (!findCreateArgumentReceiver(createArgument as Record<string, unknown>, partyId)) {
+			continue;
+		}
+		if (
+			instrument &&
+			!transferPreapprovalCoversInstrument(
+				createArgument as Record<string, unknown>,
+				instrument
+			)
+		) {
 			continue;
 		}
 

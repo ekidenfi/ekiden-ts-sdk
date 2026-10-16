@@ -511,7 +511,18 @@ export class CantonCommands {
 		);
 	}
 
-	createPreapproveTransfers({ partyId }: { partyId: string }): CantonCommandBatch {
+	/**
+	 * Lets the party receive `instrument` (the configured quote by default) without accepting each
+	 * transfer, which synchronous bank → user withdrawals require. A preapproval covers one
+	 * instrument admin, so each token issuer needs its own.
+	 */
+	createPreapproveTransfers({
+		partyId,
+		instrument = { admin: this.config.instrumentAdmin, id: this.config.instrumentId },
+	}: {
+		partyId: string;
+		instrument?: HoldingInstrumentId;
+	}): CantonCommandBatch {
 		return {
 			commandId: commandId("preapprove-transfers"),
 			actAs: [partyId],
@@ -522,8 +533,8 @@ export class CantonCommands {
 						createArguments: {
 							operator: this.config.quoteAssetOperator,
 							receiver: partyId,
-							instrumentAdmin: this.config.instrumentAdmin,
-							instrumentAllowances: [{ id: this.config.instrumentId }],
+							instrumentAdmin: instrument.admin,
+							instrumentAllowances: [{ id: instrument.id }],
 						},
 					},
 				},
