@@ -154,6 +154,8 @@ export interface FundingTransferFeeConfig {
 	depositFee: string;
 	/** Decimal string (`cents / 100`), for vault debit checks */
 	withdrawFee: string;
+	/** Asset these fees apply to; `null` is the quote. */
+	instrumentId: HoldingInstrumentId | null;
 }
 
 /** UI-facing funding fee quote (no ledger blobs / contract ids). */
