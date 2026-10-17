@@ -100,6 +100,22 @@ export interface WithdrawFromFundingParams {
 	/** Platform (admin party) holdings, disclosed to the user for the payout */
 	bankHoldings: CantonHolding[];
 	transferFactory: TransferFactoryResult;
+	/**
+	 * Two-step withdrawal (non-quote assets only): when the user has no preapproval, let the payout
+	 * settle as a CIP-56 offer the user accepts within 24h instead of aborting. The fee is charged
+	 * only on accept; cancel or expiry refunds amount + fee.
+	 */
+	allowPending?: boolean;
+}
+
+export interface CancelPendingWithdrawalParams {
+	partyId: string;
+	/** `PendingFundingWithdrawal` contract id */
+	pendingWithdrawalCid: string;
+	/** The asset's current `FundingVault`, credited amount + fee */
+	fundingVaultCid: string;
+	/** Registry REJECT choice context of the withdrawal's transfer instruction */
+	rejectContext: TransferOfferAcceptContext;
 }
 
 export interface ArchivePreapproveTransfersParams {
@@ -466,11 +482,12 @@ export class CantonCommands {
 		fundingVaultCid,
 		bankHoldings,
 		transferFactory,
+		allowPending = false,
 	}: WithdrawFromFundingParams): Promise<CantonCommandBatch> {
 		if (!bankHoldings.length) {
 			throw new Error("No bank holdings provided for withdrawal");
 		}
-		if (transferFactory.transferKind !== "direct") {
+		if (!allowPending && transferFactory.transferKind !== "direct") {
 			throw new Error(
 				"Direct transfer is required for withdrawal; enable transfer preapproval first"
 			);
@@ -495,6 +512,8 @@ export class CantonCommands {
 				transferMeta: { values: {} },
 				ecosystemRewards: rewards.ecosystemRewards,
 				fundingFeeConfigCid: fee.fundingFeeConfigCid,
+				// Optional Bool on-ledger: omitted (None) keeps a pending payout an error.
+				...(allowPending ? { allowPending: true } : {}),
 			},
 			mergeDisclosedContracts(
 				[this.buildUserDisclosedContract()],
@@ -562,6 +581,39 @@ export class CantonCommands {
 			],
 			synchronizerId: this.config.synchronizerId,
 		};
+	}
+
+	/**
+	 * `CancelPendingWithdrawal`: rejects a two-step withdrawal's offer and refunds amount + fee to
+	 * the funding vault. The user observes the record and the instruction and owns the vault, so
+	 * only the registry's reject context needs disclosing besides the user registry.
+	 */
+	cancelPendingWithdrawal({
+		partyId,
+		pendingWithdrawalCid,
+		fundingVaultCid,
+		rejectContext,
+	}: CancelPendingWithdrawalParams): CantonCommandBatch {
+		return this.exerciseUserChoice(
+			"cancel-pending-withdrawal",
+			partyId,
+			"CancelPendingWithdrawal",
+			{
+				user: partyId,
+				pendingWithdrawal: pendingWithdrawalCid,
+				fundingVault: fundingVaultCid,
+				extraArgs: rejectContext.extraArgs,
+			},
+			mergeDisclosedContracts(
+				[this.buildUserDisclosedContract()],
+				rejectContext.disclosedContracts
+			)
+		);
+	}
+
+	/** Accepts any CIP-56 transfer instruction, e.g. a two-step withdrawal's offer. */
+	acceptTransferInstruction(params: AcceptTransferOfferParams): CantonCommandBatch {
+		return this.acceptTransferOffer(params);
 	}
 
 	acceptTransferOffer({
