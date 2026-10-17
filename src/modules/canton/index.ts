@@ -1,6 +1,7 @@
 export {
 	type AcceptTransferOfferParams,
 	type ArchivePreapproveTransfersParams,
+	type CancelPendingWithdrawalParams as CantonCancelPendingWithdrawalParams,
 	CantonCommands,
 	type CreateSubAccountWithVaultParams,
 	type CreateTransferParams,

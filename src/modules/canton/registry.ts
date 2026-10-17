@@ -143,12 +143,17 @@ export class CantonRegistryClient {
 		};
 	}
 
-	private async fetchTransferInstructionChoiceContext(
+	/**
+	 * The registry choice context for accepting, rejecting or withdrawing a CIP-56 transfer
+	 * instruction, from its instrument admin's registrar.
+	 */
+	async fetchTransferInstructionChoiceContext(
+		instrumentAdmin: string,
 		contractId: string,
 		choice: "accept" | "reject" | "withdraw"
 	): Promise<TransferOfferAcceptContext> {
 		const response = await fetch(
-			`${this.registrarBaseUrl(this.config.instrumentAdmin)}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/${choice}`,
+			`${this.registrarBaseUrl(instrumentAdmin)}/registry/transfer-instruction/v1/${encodeURIComponent(contractId)}/choice-contexts/${choice}`,
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -190,16 +195,28 @@ export class CantonRegistryClient {
 	}
 
 	async fetchTransferOfferAcceptContext(contractId: string): Promise<TransferOfferAcceptContext> {
-		return this.fetchTransferInstructionChoiceContext(contractId, "accept");
+		return this.fetchTransferInstructionChoiceContext(
+			this.config.instrumentAdmin,
+			contractId,
+			"accept"
+		);
 	}
 
 	async fetchTransferOfferRejectContext(contractId: string): Promise<TransferOfferAcceptContext> {
-		return this.fetchTransferInstructionChoiceContext(contractId, "reject");
+		return this.fetchTransferInstructionChoiceContext(
+			this.config.instrumentAdmin,
+			contractId,
+			"reject"
+		);
 	}
 
 	async fetchTransferOfferWithdrawContext(
 		contractId: string
 	): Promise<TransferOfferAcceptContext> {
-		return this.fetchTransferInstructionChoiceContext(contractId, "withdraw");
+		return this.fetchTransferInstructionChoiceContext(
+			this.config.instrumentAdmin,
+			contractId,
+			"withdraw"
+		);
 	}
 }
